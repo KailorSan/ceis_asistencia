@@ -7,9 +7,16 @@ if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
     exit;
 }
 
+// 1. CONFIRMAMOS LA ZONA HORARIA A VENEZUELA
+date_default_timezone_set('America/Caracas');
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $id_personal = $_POST['id_personal'];
     $fecha = $_POST['fecha_justificacion'];
+    
+    // Capturamos el momento exacto de la acción
+    $hora_actual = date('H:i:s');
+    $hora_formateada = date('h:i A');
     
     // RECIBIMOS EL NUEVO CAMPO
     $tipo = isset($_POST['tipo_incidencia']) ? $_POST['tipo_incidencia'] : 'Otro';
@@ -30,11 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $archivo = $_FILES['archivo_evidencia'];
         
-        // 1. Validamos la extensión del nombre (como ya hacías)
         $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
         $extensiones_validas = ['jpg', 'jpeg', 'png', 'pdf'];
 
-        // 2. NUEVO: Validamos el MIME Type real leyendo el contenido del archivo
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $archivo['tmp_name']);
         finfo_close($finfo);
@@ -45,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'application/pdf'
         ];
 
-        // Comprobamos que TANTO la extensión COMO el contenido interno sean válidos
         if (in_array($extension, $extensiones_validas) && in_array($mime_type, $mimes_validos)) {
             if ($archivo['size'] <= 5000000) {
                 $nombre_archivo_final = $id_personal . '_' . str_replace('-', '', $fecha) . '_' . time() . '.' . $extension;
@@ -57,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit;
             }
         } else {
-            // Mensaje de alerta si intentan subir un archivo camuflado
             $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Archivo no seguro o formato inválido. Solo PDF, JPG o PNG reales.'];
             header("Location: ../vistas/principal.php");
             exit;
@@ -66,20 +69,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // --- FIN LÓGICA DE ARCHIVO ---
 
     try {
-        $check = $conexion->prepare("SELECT id_asistencia FROM asistencias WHERE id_personal = ? AND fecha = ?");
+        $check = $conexion->prepare("SELECT * FROM asistencias WHERE id_personal = ? AND fecha = ?");
         $check->execute([$id_personal, $fecha]);
+        $registro = $check->fetch(PDO::FETCH_ASSOC);
         
-        if ($check->rowCount() > 0) {
-            // USAMOS $motivo_completo AQUÍ
-            $update = $conexion->prepare("UPDATE asistencias SET motivo_justificacion = ?, estado_justificacion = 'Pendiente', archivo_evidencia = ? WHERE id_personal = ? AND fecha = ?");
-            $update->execute([$motivo_completo, $nombre_archivo_final, $id_personal, $fecha]);
+        if ($registro) {
+            // SI YA EXISTE EL REGISTRO
+            $q = "UPDATE asistencias SET motivo_justificacion = ?, estado_justificacion = 'Pendiente'";
+            $params = [$motivo_completo];
+
+            if ($nombre_archivo_final) {
+                $q .= ", archivo_evidencia = ?";
+                $params[] = $nombre_archivo_final;
+            }
+
+            // Si es llegada tardía y no ha registrado entrada, guardamos la hora exacta
+            if ($tipo == 'Llegada Tardía' && empty($registro['hora_entrada'])) {
+                $q .= ", hora_entrada = ?, estado = 'Retraso (Pendiente)'";
+                $params[] = $hora_actual;
+            } 
+            // Si es salida temprana, capturamos su salida
+            elseif ($tipo == 'Salida Temprana' && empty($registro['hora_salida'])) {
+                $q .= ", hora_salida = ?, observacion = ?";
+                $params[] = $hora_actual;
+                $params[] = "[Salida Temprana Pendiente] - Registrada a las " . $hora_formateada . ".";
+            } 
+            // Si falta todo el día
+            elseif ($tipo == 'Inasistencia') {
+                $q .= ", estado = 'Justificado (Pendiente)'";
+            }
+
+            $q .= " WHERE id_personal = ? AND fecha = ?";
+            $params[] = $id_personal;
+            $params[] = $fecha;
+
+            $update = $conexion->prepare($q);
+            $update->execute($params);
+            
         } else {
-            // USAMOS $motivo_completo AQUÍ TAMBIÉN
-            $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, estado, motivo_justificacion, estado_justificacion, archivo_evidencia) VALUES (?, ?, 'Falta', ?, 'Pendiente', ?)");
-            $insert->execute([$id_personal, $fecha, $motivo_completo, $nombre_archivo_final]);
+            // SI NO EXISTE EL REGISTRO (Es el primer evento del día para él)
+            
+            // Obtenemos su hora esperada
+            $stmt_emp = $conexion->prepare("SELECT hora_entrada_personalizada FROM personal WHERE id_personal = ?");
+            $stmt_emp->execute([$id_personal]);
+            $emp = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+            
+            $stmt_conf = $conexion->query("SELECT hora_entrada_general FROM configuracion WHERE id_config = 1");
+            $conf = $stmt_conf->fetch(PDO::FETCH_ASSOC);
+            
+            $hora_esperada = !empty($emp['hora_entrada_personalizada']) ? $emp['hora_entrada_personalizada'] : ($conf['hora_entrada_general'] ?? '07:00:00');
+
+            $hora_entrada_val = null;
+            $hora_salida_val = null;
+            $estado_val = 'Justificado (Pendiente)';
+            $observacion_val = null;
+
+            if ($tipo == 'Llegada Tardía') {
+                $hora_entrada_val = $hora_actual;
+                $estado_val = 'Retraso (Pendiente)';
+            } elseif ($tipo == 'Salida Temprana') { 
+                $hora_salida_val = $hora_actual;
+                $observacion_val = "[Salida Temprana Pendiente] - Registrada a las " . $hora_formateada . ".";
+            }
+
+            $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, hora_salida, estado, motivo_justificacion, estado_justificacion, archivo_evidencia, observacion) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?, ?)");
+            $insert->execute([$id_personal, $fecha, $hora_esperada, $hora_entrada_val, $hora_salida_val, $estado_val, $motivo_completo, $nombre_archivo_final, $observacion_val]);
         }
 
-        $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Tu justificación y evidencia han sido enviadas.'];
+        $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Tu justificación ha sido enviada y la hora fue registrada.'];
     } catch (PDOException $e) {
         $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Error al procesar tu justificación en la base de datos.'];
     }

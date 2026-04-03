@@ -102,7 +102,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         [data-theme="dark"] .contenedor-filtros-globales select { background: #1e293b; border-color: #4f46e5; color: #ffffff !important; }
         [data-theme="dark"] .contenedor-filtros-globales select:hover { border-color: #818cf8; background: #334155; }
 
-        /* Buscador */
         .contenedor-busqueda-elegante { position: relative; display: flex; align-items: center; inline-size: 100%; max-inline-size: 350px; margin: 0 auto; }
         .campo-busqueda-elegante { inline-size: 100%; padding: 10px 40px 10px 18px; border-radius: 25px; border: 2px solid #e2e8f0; background: #f8fafc; color: #1e293b; font-size: 0.95rem; font-family: 'Montserrat', sans-serif; transition: 0.3s; outline: none; }
         .campo-busqueda-elegante:focus { border-color: #4f46e5; background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15); }
@@ -116,14 +115,27 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         .btn-filtro:hover { border-color: var(--primary-color); }
         .btn-filtro.activo { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px -1px rgba(64, 111, 243, 0.4); }
         
-        .grid-resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-block-start: 20px; }
-        .caja-resumen { padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; }
+        /* === CORRECCIÓN DE LA CUADRÍCULA (3x2 PERFECTO) === */
+        .grid-resumen { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); /* Fuerza 3 columnas exactamente */
+            gap: 15px; 
+            margin-block-start: 20px; 
+        }
+        @media (max-inline-size: 600px) {
+            .grid-resumen { grid-template-columns: repeat(2, 1fr); } /* 2 columnas en móviles */
+        }
+        /* =================================================== */
+
+        .caja-resumen { padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.85rem;}
         .caja-verde { background: linear-gradient(135deg, #10b981, #059669); }
         .caja-naranja { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .caja-roja { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .caja-azul { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
+        .caja-rojo-oscuro { background: linear-gradient(135deg, #991b1b, #7f1d1d); } 
         .caja-gris { background: linear-gradient(135deg, #64748b, #475569); }
-        .numero-resumen { font-size: 2rem; display: block; margin-block-start: 5px; }
-        .contenedor-grafico { inline-size: 100%; max-inline-size: 250px; margin: 20px auto; display: none; }
+        .numero-resumen { font-size: 1.8rem; display: block; margin-block-start: 5px; }
+        .contenedor-grafico { inline-size: 100%; max-inline-size: 280px; margin: 20px auto; display: none; }
 
         #directorio-personal .tarjeta-perfil { display: flex; flex-direction: column; block-size: 100%; }
         #directorio-personal .tarjeta-perfil.oculto { display: none !important; }
@@ -152,7 +164,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <!-- FORMULARIO ÚNICO PARA ENVÍO SEGURO AL PDF -->
             <form id="formGenerarPDF" action="generar_pdf_asistencia.php" method="POST" target="_blank" style="display: none;">
                 <input type="hidden" name="id_personal" id="pdf_id_personal">
                 <input type="hidden" name="mes" id="pdf_mes">
@@ -176,13 +187,10 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <?php if ($es_directivo): ?>
-                    <!-- Buscador solo para directivos -->
                     <div class="contenedor-busqueda-elegante">
                         <input type="text" id="buscador-empleados" class="campo-busqueda-elegante" placeholder="Buscar por nombre o cargo...">
                         <svg class="icono-busqueda" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-
-                    <!-- Botón General solo para directivos -->
                     <div class="grupo-acciones-derecha">
                         <button onclick="descargarPDF('todos')" class="btn-guardar" style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; padding: 10px 20px; background-color: #495b85; color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.2s; block-size: 46px; white-space: nowrap;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -193,7 +201,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <?php if ($es_directivo): ?>
-                <!-- Filtros de cargo solo para directivos -->
                 <div class="botones-filtro-cargo" id="contenedor-filtros">
                     <button class="btn-filtro activo" onclick="aplicarFiltrosCombinados('todos', this)">Todos</button>
                     <?php foreach($cargos as $c): ?>
@@ -232,9 +239,8 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         </main>
     </div>
 
-    <!-- MODAL -->
     <div class="modal-overlay" id="modalOverlayResumen">
-        <div class="modal-contenido" id="modalContenidoResumen" style="max-inline-size: 550px; padding: 2rem;">
+        <div class="modal-contenido" id="modalContenidoResumen" style="max-inline-size: 700px; padding: 2rem;">
             <div class="modal-header">
                 <h2>Resumen de Asistencia</h2>
                 <button class="btn-cerrar-modal" onclick="cerrarResumen()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
@@ -248,11 +254,14 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                 <svg class="animacion-vibrar" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--primary-color)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <div class="contenedor-grafico" id="contenedor-grafico-resumen"><canvas id="miGraficoDona"></canvas></div>
+            
             <div class="grid-resumen" id="datos-resumen" style="display: none;">
-                <div class="caja-resumen caja-verde">Puntuales<span class="numero-resumen" id="num-puntual">0</span></div>
-                <div class="caja-resumen caja-naranja">Retrasos<span class="numero-resumen" id="num-retraso">0</span></div>
-                <div class="caja-resumen caja-roja">Faltas<span class="numero-resumen" id="num-falta">0</span></div>
-                <div class="caja-resumen caja-gris">Justificadas<span class="numero-resumen" id="num-justificado">0</span></div>
+                <div class="caja-resumen caja-verde">Llegada<br>Puntual<span class="numero-resumen" id="num-puntual">0</span></div>
+                <div class="caja-resumen caja-naranja">Llegada<br>Tardía<span class="numero-resumen" id="num-retraso">0</span></div>
+                <div class="caja-resumen caja-azul">Salida<br>Temprana<span class="numero-resumen" id="num-salida-temp">0</span></div>
+                <div class="caja-resumen caja-rojo-oscuro">Salida<br>Irregular<span class="numero-resumen" id="num-salida-irreg">0</span></div>
+                <div class="caja-resumen caja-roja">Falta<br>Completa<span class="numero-resumen" id="num-falta">0</span></div>
+                <div class="caja-resumen caja-gris">Falta<br>Justificada<span class="numero-resumen" id="num-justificado">0</span></div>
             </div>
         </div>
     </div>
@@ -298,7 +307,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             });
         }
 
-        // Lógica Buscador (Solo si existe)
         const inputBuscador = document.getElementById('buscador-empleados');
         let cargoActivo = 'todos'; 
         
@@ -349,6 +357,8 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                     if(data.error) throw new Error(data.error);
                     document.getElementById('num-puntual').innerText = data.puntual;
                     document.getElementById('num-retraso').innerText = data.retraso;
+                    document.getElementById('num-salida-temp').innerText = data.salida_temprana;
+                    document.getElementById('num-salida-irreg').innerText = data.salida_irregular;
                     document.getElementById('num-falta').innerText = data.falta;
                     document.getElementById('num-justificado').innerText = data.justificado;
                     
@@ -361,10 +371,10 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                     chartInstancia = new Chart(ctx, {
                         type: 'doughnut', 
                         data: {
-                            labels: ['Puntuales', 'Retrasos', 'Faltas', 'Justificadas'],
+                            labels: ['Puntuales', 'Retrasos', 'Salidas Tempranas', 'Salidas Irregulares', 'Faltas', 'Justificadas'],
                             datasets: [{
-                                data: [data.puntual, data.retraso, data.falta, data.justificado],
-                                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b'], hoverOffset: 4
+                                data: [data.puntual, data.retraso, data.salida_temprana, data.salida_irregular, data.falta, data.justificado],
+                                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#991b1b', '#ef4444', '#64748b'], hoverOffset: 4
                             }]
                         }, options: { responsive: true, plugins: { legend: { display: false } } }
                     });
@@ -388,7 +398,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             
             document.getElementById('formGenerarPDF').submit();
         }
-
     </script>
 </body>
 </html>

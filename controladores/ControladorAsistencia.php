@@ -34,18 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion'])) {
         $stmt_conf->execute();
         $config = $stmt_conf->fetch(PDO::FETCH_ASSOC);
 
-        // Si no existe la configuración, ponemos valores por defecto para evitar errores
         if(!$config) {
-            $config = ['hora_entrada_general' => '07:00:00', 'minutos_tolerancia' => 15];
+            $config = ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
         }
 
         // ==========================================
         // DEFINIR CUÁL HORARIO APLICA (Personalizado o General)
         // ==========================================
         $hora_esperada = !empty($empleado['hora_entrada_personalizada']) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
+        $hora_salida_esperada = !empty($empleado['hora_salida_personalizada']) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
         $tolerancia = $config['minutos_tolerancia'];
 
-        // Tomamos la fecha y hora EXACTA del momento del clic
         $fecha_hoy = date('Y-m-d');
         $hora_actual = date('H:i:s');
 
@@ -54,19 +53,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion'])) {
         // ==========================================
         if ($accion === 'marcar_entrada') {
             
-            // Verificamos que no haya un registro previo hoy (Protección doble clic)
+            // Bloqueo de seguridad Backend: Evita registrar entrada "Puntual" si ya es tarde
+            $hora_maxima_permitida = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
+            
+            if ($hora_actual > $hora_maxima_permitida) {
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Tu límite de entrada pasó. Debes justificar tu llegada mediante el botón rojo.'];
+                header("Location: ../vistas/principal.php");
+                exit;
+            }
+
+            // Verificamos que no haya un registro previo hoy
             $check = $conexion->prepare("SELECT id_asistencia FROM asistencias WHERE id_personal = ? AND fecha = ?");
             $check->execute([$id_personal, $fecha_hoy]);
             
             if ($check->rowCount() == 0) {
-                // Cálculo matemático: Hora Esperada + Minutos de Tolerancia
-                $hora_maxima_permitida = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
-                
-                // Determinamos el estado comparando las horas
-                $estado = ($hora_actual > $hora_maxima_permitida) ? 'Retraso' : 'Puntual';
-
-                $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, estado) VALUES (?, ?, ?, ?, ?)");
-                $insert->execute([$id_personal, $fecha_hoy, $hora_esperada, $hora_actual, $estado]);
+                // Si pasa la validación, es puntual 100%
+                $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, estado) VALUES (?, ?, ?, ?, 'Puntual')");
+                $insert->execute([$id_personal, $fecha_hoy, $hora_esperada, $hora_actual]);
+                $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => '¡Entrada registrada correctamente!'];
             }
         } 
         
@@ -75,16 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion'])) {
         // ==========================================
         elseif ($accion === 'marcar_salida') {
             
+            // Bloqueo de seguridad Backend: Evita registrar salida temprana de forma normal
+            if ($hora_actual < $hora_salida_esperada) {
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Aún no es tu hora de salida. Debes crear una justificación para irte temprano.'];
+                header("Location: ../vistas/principal.php");
+                exit;
+            }
+
             // Actualizamos la hora de salida SOLO si está vacía
             $update = $conexion->prepare("UPDATE asistencias SET hora_salida = ? WHERE id_personal = ? AND fecha = ? AND hora_salida IS NULL");
             $update->execute([$hora_actual, $id_personal, $fecha_hoy]);
+            $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => '¡Salida registrada exitosamente! Nos vemos mañana.'];
         }
 
     } catch (Exception $e) {
-        // En un futuro podemos mostrar el error en pantalla con un SweetAlert, por ahora es silencioso
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Hubo un error al procesar la asistencia.'];
     }
 
-    // Sin importar lo que pase, devolvemos al panel principal
     header("Location: ../vistas/principal.php");
     exit;
 } else {

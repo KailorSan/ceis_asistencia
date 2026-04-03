@@ -10,7 +10,6 @@ $id_personal = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : date('n');
 $anio = isset($_GET['anio']) ? (int)$_GET['anio'] : date('Y');
 $es_admin = isset($_GET['admin']) && $_GET['admin'] === 'true';
-// CORRECCIÓN FLECHAS: Recibimos el ID exacto del contenedor desde JS
 $id_contenedor = isset($_GET['contenedor']) ? htmlspecialchars($_GET['contenedor']) : 'contenedor-calendario-inline';
 
 $meses_es = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -25,16 +24,19 @@ $fecha_hoy_str = date('Y-m-d');
 $mes_actual_real = (int)date('n');
 $anio_actual_real = (int)date('Y');
 
-// LÓGICA DEL PASADO: Buscar el "Día 1" del sistema
 $stmt_inicio = $conexion->query("SELECT MIN(fecha) FROM asistencias");
 $fecha_inicio_sistema = $stmt_inicio->fetchColumn();
-if (!$fecha_inicio_sistema) {
-    $fecha_inicio_sistema = $fecha_hoy_str; // Si está vacío, el Día 1 es hoy
-}
+if (!$fecha_inicio_sistema) { $fecha_inicio_sistema = $fecha_hoy_str; }
+
+// === OBTENEMOS LA FECHA DE INGRESO DEL EMPLEADO ===
+$stmt_ingreso = $conexion->prepare("SELECT fecha_ingreso FROM personal WHERE id_personal = ?");
+$stmt_ingreso->execute([$id_personal]);
+$fecha_ingreso_empleado = $stmt_ingreso->fetchColumn();
+if (!$fecha_ingreso_empleado) { $fecha_ingreso_empleado = $fecha_inicio_sistema; }
+
 $mes_inicio = (int)date('n', strtotime($fecha_inicio_sistema));
 $anio_inicio = (int)date('Y', strtotime($fecha_inicio_sistema));
 
-// Consultar asistencia
 $asistencias = [];
 try {
     $sql = "SELECT fecha, estado, estado_justificacion, motivo_justificacion, archivo_evidencia 
@@ -45,9 +47,8 @@ try {
     
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $estado_final = $row['estado'];
-        if ($row['estado_justificacion'] == 'Aprobada') {
-            $estado_final = 'Justificado';
-        }
+        $estado_final = str_replace(' (Pendiente)', '', $estado_final);
+        
         $asistencias[$row['fecha']] = [
             'estado' => $estado_final,
             'motivo' => $row['motivo_justificacion'] ?? '',
@@ -58,7 +59,6 @@ try {
     die("<p style='text-align:center; color:red;'>Error al consultar la BD.</p>");
 }
 
-// CONTROL DE FLECHAS (Ocultar si vamos más allá del Día 1 o del futuro)
 $btn_anterior = '<div style="inline-size: 34px;"></div>';
 if ($anio > $anio_inicio || ($anio == $anio_inicio && $mes > $mes_inicio)) {
     $btn_anterior = '<button class="btn-mes" onclick="cambiarMes(-1, \'' . $id_contenedor . '\')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>';
@@ -78,13 +78,9 @@ $html .= '</div>';
 $html .= '<div class="calendario-grid">';
 
 $dias_es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-foreach ($dias_es as $d) {
-    $html .= '<div class="dia-semana">' . $d . '</div>';
-}
+foreach ($dias_es as $d) { $html .= '<div class="dia-semana">' . $d . '</div>'; }
 
-for ($i = 1; $i < $dia_semana_inicio; $i++) {
-    $html .= '<div class="dia-celda vacio"></div>';
-}
+for ($i = 1; $i < $dia_semana_inicio; $i++) { $html .= '<div class="dia-celda vacio"></div>'; }
 
 for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
     $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $dia);
@@ -93,15 +89,10 @@ for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
     $dia_semana = date('N', strtotime($fecha_ciclo));
     $es_fin_semana = ($dia_semana == 6 || $dia_semana == 7);
 
-    $clase_estado = '';
-    $icono = '';
-    $estado_texto = '';
-    $motivo_texto = '';
-    $archivo_texto = '';
+    $clase_estado = ''; $icono = ''; $estado_texto = ''; $motivo_texto = ''; $archivo_texto = '';
 
     if ($es_fin_semana) {
-        $clase_estado = 'estado-fin-semana';
-        $estado_texto = 'Fin de Semana';
+        $clase_estado = 'estado-fin-semana'; $estado_texto = 'Fin de Semana';
     } else {
         if (isset($asistencias[$fecha_ciclo])) {
             $est = $asistencias[$fecha_ciclo]['estado'];
@@ -124,10 +115,38 @@ for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
                 $clase_estado = 'estado-falta';
                 $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
                 $estado_texto = 'Falta';
+            } elseif ($est == 'Salida Irregular') {
+                $clase_estado = 'estado-salida-irregular';
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+                $estado_texto = 'Salida Irregular';
+            } elseif ($est == 'Salida Temprana') {
+                $clase_estado = 'estado-retraso'; 
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = 'Salida Temprana';
+            } elseif ($est == 'Retraso y Salida Temprana' || $est == 'Retraso y Salida Irregular') {
+                $clase_estado = 'estado-retraso-salida';
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = $est;
+            } elseif ($est == 'Puntual y Salida Temprana' || $est == 'Puntual y Salida Irregular') {
+                $clase_estado = 'estado-puntual-salida';
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = $est;
+            } elseif ($est == 'Justificado y Salida Temprana' || $est == 'Justificado y Salida Irregular') {
+                $clase_estado = 'estado-justificado-salida';
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = $est;
+            } elseif ($est == 'Falta y Salida Temprana' || $est == 'Falta y Salida Irregular') {
+                $clase_estado = 'estado-falta-salida';
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = $est;
+            } else {
+                $clase_estado = 'estado-justificado'; 
+                $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+                $estado_texto = $est;
             }
         } else {
-            // CORRECCIÓN: Solo es falta si ya pasó Y si pertenece a la "era del sistema"
-            if ($fecha_ciclo < $fecha_hoy_str && $fecha_ciclo >= $fecha_inicio_sistema) {
+            // === AQUÍ ESTÁ LA CORRECCIÓN: SOLO PONE FALTA SI YA ESTABA EN LA EMPRESA ===
+            if ($fecha_ciclo < $fecha_hoy_str && $fecha_ciclo >= $fecha_ingreso_empleado) {
                 $clase_estado = 'estado-falta';
                 $icono = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
                 $estado_texto = 'Falta Injustificada';

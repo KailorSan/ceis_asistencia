@@ -649,6 +649,34 @@ body {
 .icono-estado { inline-size: 20px; block-size: 20px; margin-block-start: auto; }
 .numero-dia { font-size: 1.1rem; }
 
+/* Estados de Asistencia (Ya los tenías) */
+.estado-puntual { background-color: rgba(16, 185, 129, 0.1); border-color: #10b981; color: #059669; }
+.estado-retraso { background-color: rgba(245, 158, 11, 0.1); border-color: #f59e0b; color: #d97706; }
+.estado-falta { background-color: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #dc2626; }
+.estado-justificado { background-color: rgba(100, 116, 139, 0.1); border-color: #64748b; color: #475569; }
+
+/* NUEVA MAGIA: Estados Combinados (Doble Incidencia) */
+.estado-retraso-salida { 
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 50%, rgba(239, 68, 68, 0.1) 50%); 
+    border: 2px dashed #f59e0b; 
+    color: #d97706; 
+}
+.estado-puntual-salida { 
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 50%, rgba(239, 68, 68, 0.1) 50%); 
+    border: 2px dashed #10b981; 
+    color: #059669; 
+}
+.estado-justificado-salida { 
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 50%, rgba(239, 68, 68, 0.1) 50%); 
+    border: 2px dashed #64748b; 
+    color: #475569; 
+}
+.estado-falta-salida { 
+    background: rgba(239, 68, 68, 0.1); 
+    border: 2px dashed #ef4444; 
+    color: #dc2626; 
+}
+
 /* =========================================================
    BARRA DE BÚSQUEDA NEON (MODERN UI)
    ========================================================= */
@@ -1105,4 +1133,11 @@ body {
 =======
     .acciones-respaldo { inline-size: 100%; justify-content: flex-end; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; }
 >>>>>>> 4d0c7f690881a50c755347a049f7dc86f1a26896
+}
+
+/* ESTADO: SALIDA IRREGULAR (Rojo Oscuro) */
+.estado-salida-irregular { 
+    background-color: rgba(127, 29, 29, 0.15); 
+    border-color: #7f1d1d; 
+    color: #7f1d1d; 
 }

@@ -7,7 +7,6 @@ $rol = $_SESSION['rol'];
 $id_rol = $_SESSION['id_rol'];
 $id_usuario = $_SESSION['id_usuario'];
 
-// Obtenemos los datos completos del usuario logueado para su tarjeta
 $stmt_mi_id = $conexion->prepare("SELECT p.id_personal, p.foto_perfil, p.nombres, p.apellidos, c.nombre_cargo 
                                   FROM personal p 
                                   INNER JOIN cargos c ON p.id_cargo = c.id_cargo 
@@ -19,11 +18,10 @@ $mi_id_personal = $mis_datos ? $mis_datos['id_personal'] : 0;
 $es_admin = ($id_rol == 1 || $id_rol == 2);
 
 $lista_personal = [];
-$cargos_activos_en_grid = []; // NUEVO: Array para guardar qué cargos realmente existen abajo
+$cargos_activos_en_grid = [];
 
 if ($es_admin) {
     try {
-        // Añadimos p.id_cargo a la consulta para poder filtrarlo inteligentemente
         $sql = "SELECT p.id_personal, p.cedula, p.nombres, p.apellidos, p.foto_perfil, p.id_cargo, c.nombre_cargo 
                 FROM personal p
                 INNER JOIN cargos c ON p.id_cargo = c.id_cargo
@@ -34,10 +32,8 @@ if ($es_admin) {
         $stmt->execute([$mi_id_personal]);
         $lista_personal = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Extraemos solo los IDs de los cargos de las personas que SÍ aparecen en la grilla inferior
         $cargos_activos_en_grid = array_unique(array_column($lista_personal, 'id_cargo'));
 
-        // Consultamos la tabla maestra de cargos
         $stmt_cargos = $conexion->query("SELECT id_cargo, nombre_cargo FROM cargos ORDER BY id_cargo ASC");
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
 
@@ -76,7 +72,6 @@ if ($es_admin) {
                     </div>
                 </div>
 
-                <!-- CORRECCIÓN DE ESPACIOS: Bajamos el margin-block-end a 1rem para acercarlo al separador -->
                 <div class="grid-perfiles" style="margin-block-end: 1rem;">
                     <div class="tarjeta-perfil" style="max-inline-size: 320px;"> 
                         <div class="banner-tarjeta" style="block-size: 70px;"></div>
@@ -97,10 +92,8 @@ if ($es_admin) {
                     </div>
                 </div>
 
-                <!-- Añadimos un pequeño margen abajo al separador -->
                 <div class="separador-personal" style="margin-block-end: 20px;">Asistencia del Personal</div>
 
-                <!-- CAJA GLOBAL ESTANDARIZADA -->
                 <div class="contenedor-filtros-globales" style="justify-content: center; margin-bottom: 25px; padding: 15px;">
                     <div class="contenedor-busqueda-elegante" style="margin: 0; width: 100%; max-width: 450px;">
                       <input type="text" id="buscador-universal" class="campo-busqueda-elegante" placeholder="Buscar por nombre o cargo...">
@@ -108,11 +101,9 @@ if ($es_admin) {
                     </div>
                 </div>
 
-                <!-- FILTROS INTELIGENTES -->
                 <div class="botones-filtro-cargo" style="margin-block-end: 30px;">
                     <button class="btn-filtro activo" onclick="aplicarFiltroUniversal('todos', this)">Todos</button>
                     <?php foreach($cargos as $c): ?>
-                        <!-- La Magia: Solo dibuja el botón si hay personal con este cargo en la grilla -->
                         <?php if(in_array($c['id_cargo'], $cargos_activos_en_grid)): ?>
                             <button class="btn-filtro" onclick="aplicarFiltroUniversal(<?php echo $c['id_cargo']; ?>, this)">
                                 <?php echo htmlspecialchars($c['nombre_cargo']); ?>
@@ -181,7 +172,6 @@ if ($es_admin) {
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script>
-        // --- MOTOR DE FILTRADO UNIVERSAL ---
         const inputBuscadorUniv = document.getElementById('buscador-universal');
         let cargoActivoUniv = 'todos'; 
         
@@ -191,17 +181,14 @@ if ($es_admin) {
                 document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
                 if(botonSeleccionado) botonSeleccionado.classList.add('activo');
             }
-            
             const textoBusqueda = inputBuscadorUniv ? inputBuscadorUniv.value.toLowerCase().trim() : '';
             
             document.querySelectorAll('.item-filtrable').forEach(item => {
                 const coincideCargo = (cargoActivoUniv === 'todos') || (item.getAttribute('data-cargo') == cargoActivoUniv);
                 const elNombre = item.querySelector('.nombre-empleado');
                 const elCargo = item.querySelector('.cargo-empleado');
-                
                 const nombre = elNombre ? elNombre.innerText.toLowerCase() : '';
                 const cargo = elCargo ? elCargo.innerText.toLowerCase() : '';
-                
                 const coincideTexto = nombre.includes(textoBusqueda) || cargo.includes(textoBusqueda);
                 
                 if (coincideCargo && coincideTexto) {
@@ -215,7 +202,6 @@ if ($es_admin) {
         if (inputBuscadorUniv) {
             inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal());
         }
-        // ------------------------------------
 
         const btnCambiarTema = document.getElementById('btnCambiarTema');
         if(btnCambiarTema) {
@@ -279,6 +265,15 @@ if ($es_admin) {
         function editarDia(fechaBD, fechaVisual, estadoActual, motivo, archivo) {
             if (!esModoAdmin) return;
 
+            let estadoPrimario = estadoActual;
+            let estadoSecundario = '';
+            
+            if (estadoActual && estadoActual.includes(' y ')) {
+                let partes = estadoActual.split(' y ');
+                estadoPrimario = partes[0].trim();
+                estadoSecundario = partes[1].trim();
+            }
+
             let enlaceEvidencia = '';
             if (archivo !== '') {
                 enlaceEvidencia = `
@@ -296,12 +291,36 @@ if ($es_admin) {
                 title: 'Modificar Asistencia',
                 html: `
                     <p style="margin-block-end:15px; font-weight:bold; color:var(--primary-color); font-size:1.1rem;">Fecha: ${fechaVisual}</p>
-                    <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:15px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
-                        <option value="Puntual" ${estadoActual === 'Puntual' ? 'selected' : ''}>Puntual (Verde)</option>
-                        <option value="Retraso" ${estadoActual === 'Retraso' ? 'selected' : ''}>Retraso (Naranja)</option>
-                        <option value="Justificado" ${estadoActual === 'Justificado' ? 'selected' : ''}>Justificado (Gris)</option>
-                        <option value="Falta" ${estadoActual.includes('Falta') ? 'selected' : ''}>Falta (Rojo)</option>
+                    
+                    <div style="text-align: start; margin-bottom: 5px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Estado Principal:</label>
+                    </div>
+                    <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:5px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
+                        <option value="Puntual" ${estadoPrimario === 'Puntual' ? 'selected' : ''}>Puntual (Verde)</option>
+                        <option value="Retraso" ${estadoPrimario === 'Retraso' ? 'selected' : ''}>Retraso (Naranja)</option>
+                        <option value="Salida Irregular" ${estadoPrimario === 'Salida Irregular' ? 'selected' : ''}>Salida Irregular (Rojo Oscuro)</option>
+                        <option value="Justificado" ${estadoPrimario === 'Justificado' ? 'selected' : ''}>Justificado (Gris)</option>
+                        <option value="Falta" ${estadoPrimario.includes('Falta') ? 'selected' : ''}>Falta (Rojo)</option>
                     </select>
+
+                    <div style="text-align: end; margin-block-end: 15px;">
+                        <button type="button" id="btn-add-secundaria" style="background: none; border: none; color: var(--primary-color); font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: transform 0.2s;">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            Añadir Incidencia Secundaria
+                        </button>
+                    </div>
+
+                    <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px dashed var(--primary-color);">
+                        <div style="text-align: start; margin-bottom: 5px;">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Segunda Incidencia:</label>
+                        </div>
+                        <select id="swal-estado-secundario" style="inline-size:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
+                            <option value="">Ninguna</option>
+                            <option value="Salida Temprana" ${estadoSecundario === 'Salida Temprana' ? 'selected' : ''}>Salida Temprana</option>
+                            <option value="Salida Irregular" ${estadoSecundario === 'Salida Irregular' ? 'selected' : ''}>Salida Irregular</option>
+                        </select>
+                    </div>
+
                     <textarea id="swal-motivo" placeholder="Escriba un motivo o nota de Dirección..." style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:15px; border:1px solid #ccc; min-block-size:80px; font-family:'Montserrat'; outline:none;">${motivo}</textarea>
                     ${enlaceEvidencia}
                     <div style="text-align: start; margin-block-start: 10px; overflow: hidden;">
@@ -326,11 +345,53 @@ if ($es_admin) {
                         const nombreArchivo = e.target.files[0] ? e.target.files[0].name : 'Seleccionar archivo...';
                         document.getElementById('texto-swal-archivo').textContent = nombreArchivo;
                     });
+
+                    const selectPrincipal = document.getElementById('swal-estado');
+                    const btnSecundaria = document.getElementById('btn-add-secundaria');
+                    const cajaSecundaria = document.getElementById('caja-secundaria');
+                    const selectSecundario = document.getElementById('swal-estado-secundario');
+
+                    // RESTRICCIONES DE INTERFAZ
+                    function evaluarBloqueos() {
+                        const estado = selectPrincipal.value;
+                        
+                        if (estado.includes('Falta') || estado === 'Salida Irregular') {
+                            btnSecundaria.style.display = 'none';
+                            cajaSecundaria.style.display = 'none';
+                            selectSecundario.value = '';
+                        } else {
+                            btnSecundaria.style.display = 'inline-flex';
+                        }
+                    }
+
+                    selectPrincipal.addEventListener('change', evaluarBloqueos);
+                    evaluarBloqueos(); // Ejecutar al cargar el modal
+
+                    btnSecundaria.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (cajaSecundaria.style.display === 'none') {
+                            cajaSecundaria.style.display = 'block';
+                            selectSecundario.value = 'Salida Temprana'; 
+                            btnSecundaria.style.color = '#ef4444';
+                            btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Quitar Incidencia Secundaria';
+                        } else {
+                            cajaSecundaria.style.display = 'none';
+                            selectSecundario.value = '';
+                            btnSecundaria.style.color = 'var(--primary-color)';
+                            btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg> Añadir Incidencia Secundaria';
+                        }
+                    });
+
+                    if (cajaSecundaria.style.display === 'block') {
+                        btnSecundaria.style.color = '#ef4444';
+                        btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Quitar Incidencia Secundaria';
+                    }
                 },
                 preConfirm: () => {
                     return {
                         fecha: fechaBD,
                         estado: document.getElementById('swal-estado').value,
+                        estado_secundario: document.getElementById('swal-estado-secundario').value,
                         motivo: document.getElementById('swal-motivo').value,
                         archivo: document.getElementById('swal-archivo').files[0]
                     }
@@ -341,6 +402,7 @@ if ($es_admin) {
                     formData.append('id_personal', idPersonalActual); 
                     formData.append('fecha', result.value.fecha);
                     formData.append('estado', result.value.estado);
+                    formData.append('estado_secundario', result.value.estado_secundario);
                     formData.append('motivo', result.value.motivo);
                     
                     if (result.value.archivo) {

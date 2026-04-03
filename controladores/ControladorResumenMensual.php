@@ -1,70 +1,42 @@
 <?php
-// ob_start() absorbe cualquier espacio en blanco o error oculto para que no rompa el JSON
-ob_start();
 session_start();
-header('Content-Type: application/json; charset=utf-8');
+require_once '../configuracion/conexion.php';
 
-// 1. Verificación básica de sesión
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['logueado'])) {
-    ob_end_clean();
-    echo json_encode(['error' => 'Acceso denegado. Inicie sesión.']);
+    echo json_encode(['error' => 'Acceso denegado']);
     exit;
 }
 
-require_once '../configuracion/conexion.php';
-
-// Recibir los parámetros de la URL
-$id_personal_solicitado = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_personal = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $mes = isset($_GET['mes']) ? $_GET['mes'] : date('n');
 $anio = isset($_GET['anio']) ? (int)$_GET['anio'] : date('Y');
 
-if ($id_personal_solicitado === 0) {
-    ob_end_clean();
-    echo json_encode(['error' => 'ID de personal inválido']);
-    exit;
-}
-
-// 2. OBTENER EL ID DEL USUARIO QUE ESTÁ NAVEGANDO (RBAC)
-$id_usuario_logueado = $_SESSION['id_usuario'];
-$stmt_mi_per = $conexion->prepare("SELECT id_personal FROM personal WHERE id_usuario = ?");
-$stmt_mi_per->execute([$id_usuario_logueado]);
-$mi_id_personal = $stmt_mi_per->fetchColumn();
-
-// 3. BARRERA DE SEGURIDAD INTELIGENTE
-$id_rol = $_SESSION['id_rol'];
-if ($id_rol != 1 && $id_rol != 2) { // Si NO es Administrador ni Directivo...
-    if ($id_personal_solicitado != $mi_id_personal) { // ...y trata de ver a otra persona
-        ob_end_clean();
-        echo json_encode(['error' => 'ACCESO DENEGADO: Solo puedes ver tus propias estadísticas.']);
-        exit;
-    }
-}
+// Variables contador (Ahora son 6)
+$p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
 
 try {
-    $puntual = 0;
-    $retraso = 0;
-    $falta = 0;
-    $justificado = 0;
-
     if ($mes === 'todos') {
-        // --- LÓGICA ANUAL ---
         $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
-        $stmt_stats->execute([$id_personal_solicitado, $anio]);
+        $stmt_stats->execute([$id_personal, $anio]);
         
         while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
             if ($row['estado_justificacion'] == 'Aprobada') {
-                $justificado++;
+                $j++;
             } else {
-                if ($row['estado'] == 'Puntual') $puntual++;
-                if ($row['estado'] == 'Retraso') $retraso++;
-                if ($row['estado'] == 'Falta') $falta++;
-                if ($row['estado'] == 'Justificado') $justificado++;
+                $est = $row['estado'];
+                if (strpos($est, 'Puntual') !== false) $p++;
+                if (strpos($est, 'Retraso') !== false) $r++;
+                if (strpos($est, 'Falta') !== false) $f++;
+                if (strpos($est, 'Justificado') !== false) $j++;
+                if (strpos($est, 'Salida Temprana') !== false) $st++;
+                if (strpos($est, 'Salida Irregular') !== false) $si++;
             }
         }
     } else {
-        // --- LÓGICA MENSUAL (CON RELLENO INTELIGENTE DE FALTAS) ---
         $stmt_stats = $conexion->prepare("SELECT fecha, estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND MONTH(fecha) = ? AND YEAR(fecha) = ?");
-        $stmt_stats->execute([$id_personal_solicitado, $mes, $anio]);
+        $stmt_stats->execute([$id_personal, $mes, $anio]);
         
         $registros_reales = [];
         while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
@@ -72,50 +44,41 @@ try {
         }
 
         $dias_del_mes = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
-        $fecha_hoy = date('Y-m-d'); // FECHA ACTUAL PARA BLOQUEAR EL FUTURO
-        
+        $fecha_hoy = date('Y-m-d'); 
+
         for ($d = 1; $d <= $dias_del_mes; $d++) {
             $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-            
-            // Si la fecha del ciclo es mayor a la fecha de hoy, rompemos el bucle
-            if ($fecha_ciclo > $fecha_hoy) {
-                break;
-            }
+            if ($fecha_ciclo > $fecha_hoy) break;
 
             $dia_semana = date('N', strtotime($fecha_ciclo)); 
-            
-            // Ignoramos fines de semana si no hay registros
-            if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) {
-                continue; 
-            }
+            if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
 
             if (isset($registros_reales[$fecha_ciclo])) {
                 $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
                 
-                if ($estado == 'Puntual') $puntual++;
-                elseif ($estado == 'Retraso') $retraso++;
-                elseif ($estado == 'Falta') $falta++;
-                elseif ($estado == 'Justificado') $justificado++;
+                if (strpos($estado, 'Puntual') !== false) $p++;
+                if (strpos($estado, 'Retraso') !== false) $r++;
+                if (strpos($estado, 'Falta') !== false) $f++;
+                if (strpos($estado, 'Justificado') !== false) $j++;
+                if (strpos($estado, 'Salida Temprana') !== false) $st++;
+                if (strpos($estado, 'Salida Irregular') !== false) $si++;
+                
             } else {
-                // Si es un día hábil y no hay registro, se cuenta como falta
-                $falta++;
+                $f++; 
             }
         }
     }
 
-    // Limpiamos el buffer para garantizar que solo salga el JSON
-    ob_end_clean();
     echo json_encode([
-        'puntual' => $puntual,
-        'retraso' => $retraso,
-        'falta' => $falta,
-        'justificado' => $justificado
+        'puntual' => $p,
+        'retraso' => $r,
+        'falta' => $f,
+        'salida_temprana' => $st,
+        'salida_irregular' => $si,
+        'justificado' => $j
     ]);
-    exit;
 
 } catch (PDOException $e) {
-    ob_end_clean();
-    echo json_encode(['error' => 'Error de base de datos']);
-    exit;
+    echo json_encode(['error' => 'Error de Base de Datos']);
 }
 ?>

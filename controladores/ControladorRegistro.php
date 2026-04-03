@@ -66,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $rol_director_id = $stmt_check->fetchColumn();
 
         $sql_usuarios = "SELECT COUNT(*) FROM usuarios WHERE id_rol = :id_rol";
-        $stmt_usuarios = $conexion->prepare($sql_usuarios);
+        $stmt_usuarios = $prepare = $conexion->prepare($sql_usuarios);
         $stmt_usuarios->execute([':id_rol' => $rol_director_id]);
         $existe_director = ($stmt_usuarios->fetchColumn() > 0);
 
@@ -101,9 +101,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $id_usuario_nuevo = $conexion->lastInsertId();
 
-        // Insertar Personal 
-        $sql_insert_personal = "INSERT INTO personal (cedula, nombres, apellidos, telefono, id_cargo, id_usuario, foto_perfil) 
-                                VALUES (:ced, :nom, :ape, :tel, :cargo, :user, :foto)";
+        // --- CORRECCIÓN MAGISTRAL: INYECTAR LA FECHA DE INGRESO EXACTA ---
+        $sql_insert_personal = "INSERT INTO personal (cedula, nombres, apellidos, telefono, id_cargo, id_usuario, foto_perfil, fecha_ingreso) 
+                                VALUES (:ced, :nom, :ape, :tel, :cargo, :user, :foto, CURDATE())";
         $stmt_insert_personal = $conexion->prepare($sql_insert_personal);
         $stmt_insert_personal->execute([
             ':ced' => $cedula,

@@ -7,7 +7,7 @@ if (!isset($_SESSION['logueado'])) {
 }
 
 require_once '../configuracion/conexion.php';
-require_once '../controladores/ControladorBitacora.php'; // Controlador de bitácora
+require_once '../controladores/ControladorBitacora.php'; 
 require_once '../recursos/librerias/dompdf/autoload.inc.php';
 
 use Dompdf\Dompdf;
@@ -22,10 +22,9 @@ $mi_id_personal = $stmt_mi_per->fetchColumn();
 
 $id_personal = isset($_POST['id_personal']) ? $_POST['id_personal'] : (isset($_GET['id']) ? $_GET['id'] : 'todos');
 $mes = isset($_POST['mes']) ? $_POST['mes'] : (isset($_GET['mes']) ? $_GET['mes'] : date('n'));
-$anio = isset($_POST['anio']) ? (int)$_POST['anio'] : (isset($_GET['anio']) ? (int)$GET['anio'] : date('Y'));
+$anio = isset($_POST['anio']) ? (int)$_POST['anio'] : (isset($_GET['anio']) ? (int)$_GET['anio'] : date('Y'));
 $filtro_cargo = isset($_POST['id_cargo']) ? $_POST['id_cargo'] : 'todos'; 
 
-// BARRERA DE SEGURIDAD
 if ($id_rol != 1 && $id_rol != 2) {
     if ($id_personal === 'todos' || $id_personal != $mi_id_personal) {
         die("<h2 style='color:red; text-align:center; margin-top:50px;'>ACCESO DENEGADO</h2>");
@@ -35,10 +34,6 @@ if ($id_rol != 1 && $id_rol != 2) {
 $meses_es = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 $nombre_mes = ($mes === 'todos') ? "TODO EL AÑO" : $meses_es[$mes - 1];
 
-// =========================================================================
-// SISTEMA ANTI-SPAM DE BITÁCORA (EJECUTADO AL INICIO)
-// =========================================================================
-// Obtenemos la cédula para el log si es individual
 $cedula_log = $id_personal;
 if ($id_personal != 'todos') {
     $stmt_ced = $conexion->prepare("SELECT cedula FROM personal WHERE id_personal = ?");
@@ -51,22 +46,16 @@ if ($filtro_cargo !== 'todos' && $id_personal == 'todos') {
     $detalle_reporte .= " (Filtrado por cargo)";
 }
 
-// Creamos un hash único de esta petición
 $hash_pdf = md5($id_personal . $mes . $anio . $filtro_cargo);
 $tiempo_actual = time();
 
-// Verificamos si ya registramos esta misma petición en los últimos 15 segundos
 if (!isset($_SESSION['bloqueo_pdf_'.$hash_pdf]) || ($tiempo_actual - $_SESSION['bloqueo_pdf_'.$hash_pdf]) > 15) {
     ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Reportes', 'Descarga de Reporte PDF', "Descargó $detalle_reporte correspondiente a: $nombre_mes de $anio.");
     $_SESSION['bloqueo_pdf_'.$hash_pdf] = $tiempo_actual;
-    
-    // ¡MAGIA! Guarda la sesión físicamente aquí mismo, evitando peticiones duplicadas del navegador.
     session_write_close(); 
 } else {
-    // Si es una petición fantasma (doble), cerramos sesión igual para no bloquear
     session_write_close(); 
 }
-// =========================================================================
 
 $stmt_config = $conexion->query("SELECT hora_entrada_general, hora_salida_general FROM configuracion LIMIT 1");
 $configuracion = $stmt_config->fetch(PDO::FETCH_ASSOC);
@@ -76,7 +65,6 @@ $opciones->set('isRemoteEnabled', true);
 $opciones->set('debugPng', false);
 $dompdf = new Dompdf($opciones);
 
-// --- CARGA DE LOGOS ---
 $ruta_simoncito = '../recursos/img/simoncito.jpg'; 
 if(!file_exists($ruta_simoncito)) $ruta_simoncito = '../recursos/img/simoncito.png';
 $base64_simoncito = file_exists($ruta_simoncito) ? 'data:image/' . pathinfo($ruta_simoncito, PATHINFO_EXTENSION) . ';base64,' . base64_encode(file_get_contents($ruta_simoncito)) : '';
@@ -146,15 +134,14 @@ $html = '
     </table>
 </div>';
 
-// =========================================================================
-// REPORTE INDIVIDUAL
-// =========================================================================
 if ($id_personal != 'todos') {
-    $sql_emp = "SELECT p.nombres, p.apellidos, p.cedula, p.telefono, p.foto_perfil, p.hora_entrada_personalizada, p.hora_salida_personalizada, c.nombre_cargo 
+    $sql_emp = "SELECT p.nombres, p.apellidos, p.cedula, p.telefono, p.foto_perfil, p.fecha_ingreso, p.hora_entrada_personalizada, p.hora_salida_personalizada, c.nombre_cargo 
                 FROM personal p INNER JOIN cargos c ON p.id_cargo = c.id_cargo WHERE p.id_personal = ?";
     $stmt_emp = $conexion->prepare($sql_emp);
     $stmt_emp->execute([$id_personal]);
     $emp = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+
+    $fecha_ing_emp = $emp['fecha_ingreso'] ?: '2000-01-01'; // Respaldo por si falla el SQL
 
     $ruta_foto = '../recursos/img/perfiles/' . $emp['foto_perfil'];
     if (!file_exists($ruta_foto) || empty($emp['foto_perfil'])) { $ruta_foto = '../recursos/img/perfiles/default.png'; }
@@ -190,19 +177,15 @@ if ($id_personal != 'todos') {
         $registros_reales = [];
         while($row = $stmt_asis->fetch(PDO::FETCH_ASSOC)) { $registros_reales[$row['fecha']] = $row; }
 
-        $p = 0; $r = 0; $f = 0; $j = 0;
+        $p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
         $dias_del_mes = cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
         $dias_evaluados = 0;
         $tabla_html = '';
-        $fecha_hoy = date('Y-m-d'); // FECHA ACTUAL PARA REPORTES
+        $fecha_hoy = date('Y-m-d'); 
 
         for ($d = 1; $d <= $dias_del_mes; $d++) {
             $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-            
-            // Si la fecha del ciclo es en el futuro, nos detenemos
-            if ($fecha_ciclo > $fecha_hoy) {
-                break;
-            }
+            if ($fecha_ciclo > $fecha_hoy) break;
 
             $dia_semana = date('N', strtotime($fecha_ciclo)); 
             if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
@@ -215,52 +198,65 @@ if ($id_personal != 'todos') {
                 $estado = $a['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $a['estado'];
                 $motivo = !empty($a['motivo_justificacion']) ? htmlspecialchars($a['motivo_justificacion']) : '-';
                 
-                if ($estado == 'Puntual') $p++; elseif ($estado == 'Retraso') $r++; elseif ($estado == 'Falta') $f++; elseif ($estado == 'Justificado') $j++;
-                $color = ($estado == 'Falta') ? 'class="alerta-roja"' : '';
+                if (strpos($estado, 'Puntual') !== false) $p++;
+                if (strpos($estado, 'Retraso') !== false) $r++;
+                if (strpos($estado, 'Falta') !== false) $f++;
+                if (strpos($estado, 'Justificado') !== false) $j++;
+                if (strpos($estado, 'Salida Temprana') !== false) $st++;
+                if (strpos($estado, 'Salida Irregular') !== false) $si++;
+
+                $color = (strpos($estado, 'Falta') !== false || strpos($estado, 'Irregular') !== false) ? 'class="alerta-roja"' : '';
                 $tabla_html .= "<tr><td>{$fecha_format}</td><td {$color}>{$estado}</td><td class='texto-izq'>{$motivo}</td></tr>";
             } else {
-                $f++; $tabla_html .= "<tr><td>{$fecha_format}</td><td class='alerta-roja'>Falta</td><td class='texto-izq alerta-roja'>Inasistencia automática</td></tr>";
+                // === CORRECCIÓN AQUÍ ===
+                if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
+                    $f++; $tabla_html .= "<tr><td>{$fecha_format}</td><td class='alerta-roja'>Falta</td><td class='texto-izq alerta-roja'>Inasistencia automática</td></tr>";
+                }
             }
         }
 
         $porc_p = $dias_evaluados > 0 ? round(($p / $dias_evaluados) * 100) : 0;
         $porc_r = $dias_evaluados > 0 ? round(($r / $dias_evaluados) * 100) : 0;
         $porc_f = $dias_evaluados > 0 ? round(($f / $dias_evaluados) * 100) : 0;
-        $porc_j = $dias_evaluados > 0 ? round(($j / $dias_evaluados) * 100) : 0;
+        $porc_st = $dias_evaluados > 0 ? round(($st / $dias_evaluados) * 100) : 0;
+        $porc_si = $dias_evaluados > 0 ? round(($si / $dias_evaluados) * 100) : 0;
 
-        if ($f == 0 && $r == 0) { $msg_eval = "Asistencia PERFECTA este mes. ¡Excelente!"; $bg_eval = "#dcfce7"; $col_eval = "#166534"; } 
-        elseif ($f == 0 && $r > 0) { $msg_eval = "Asistencia SATISFACTORIA, presentando solo retrasos."; $bg_eval = "#fef3c7"; $col_eval = "#92400e"; } 
+        if ($f == 0 && $r == 0 && $si == 0) { $msg_eval = "Asistencia PERFECTA este mes. ¡Excelente!"; $bg_eval = "#dcfce7"; $col_eval = "#166534"; } 
+        elseif ($f == 0 && ($r > 0 || $st > 0)) { $msg_eval = "Asistencia SATISFACTORIA, presentando incidencias menores."; $bg_eval = "#fef3c7"; $col_eval = "#92400e"; } 
         elseif ($f > 0 && $f <= 2) { $msg_eval = "Asistencia REGULAR. Se recomienda mejorar la constancia."; $bg_eval = "#ffedd5"; $col_eval = "#c2410c"; } 
-        else { $msg_eval = "Requiere supervisión debido a múltiples inasistencias en el mes."; $bg_eval = "#fee2e2"; $col_eval = "#991b1b"; }
+        else { $msg_eval = "Requiere supervisión debido a múltiples faltas y/o salidas irregulares."; $bg_eval = "#fee2e2"; $col_eval = "#991b1b"; }
 
         $html .= "<div class='caja-evaluacion' style='background: {$bg_eval}; color: {$col_eval}; border-color: {$col_eval};'>ATENCIÓN: {$msg_eval}</div>";
 
         $html_barra_p = $porc_p > 0 ? '<div class="barra-color" style="width: '.$porc_p.'%; background-color: #10b981;">'.$porc_p.'%</div>' : '';
         $html_barra_r = $porc_r > 0 ? '<div class="barra-color" style="width: '.$porc_r.'%; background-color: #f59e0b;">'.$porc_r.'%</div>' : '';
         $html_barra_f = $porc_f > 0 ? '<div class="barra-color" style="width: '.$porc_f.'%; background-color: #ef4444;">'.$porc_f.'%</div>' : '';
-        $html_barra_j = $porc_j > 0 ? '<div class="barra-color" style="width: '.$porc_j.'%; background-color: #64748b;">'.$porc_j.'%</div>' : '';
+        $html_barra_st = $porc_st > 0 ? '<div class="barra-color" style="width: '.$porc_st.'%; background-color: #3b82f6;">'.$porc_st.'%</div>' : '';
+        $html_barra_si = $porc_si > 0 ? '<div class="barra-color" style="width: '.$porc_si.'%; background-color: #991b1b;">'.$porc_si.'%</div>' : '';
 
         $html .= '<table class="grafico-contenedor">
-            <tr><td style="width: 25%;">Puntualidad ('.$p.')</td><td style="width: 75%;"><div class="barra-fondo">'.$html_barra_p.'</div></td></tr>
-            <tr><td>Retrasos ('.$r.')</td><td><div class="barra-fondo">'.$html_barra_r.'</div></td></tr>
-            <tr><td>Faltas ('.$f.')</td><td><div class="barra-fondo">'.$html_barra_f.'</div></td></tr>
-            <tr><td>Justificadas ('.$j.')</td><td><div class="barra-fondo">'.$html_barra_j.'</div></td></tr>
+            <tr><td style="width: 30%;">Llegada Puntual ('.$p.')</td><td style="width: 70%;"><div class="barra-fondo">'.$html_barra_p.'</div></td></tr>
+            <tr><td>Llegada Tardía ('.$r.')</td><td><div class="barra-fondo">'.$html_barra_r.'</div></td></tr>
+            <tr><td>Salida Temprana ('.$st.')</td><td><div class="barra-fondo">'.$html_barra_st.'</div></td></tr>
+            <tr><td>Salida Irregular ('.$si.')</td><td><div class="barra-fondo">'.$html_barra_si.'</div></td></tr>
+            <tr><td>Falta Completa ('.$f.')</td><td><div class="barra-fondo">'.$html_barra_f.'</div></td></tr>
         </table>';
 
-        $html .= '<table class="tabla-datos"><thead><tr><th style="width: 15%;">Fecha</th><th style="width: 20%;">Estado</th><th style="width: 65%;">Observación</th></tr></thead><tbody>';
+        $html .= '<table class="tabla-datos"><thead><tr><th style="width: 15%;">Fecha</th><th style="width: 25%;">Estado Exacto</th><th style="width: 60%;">Observación / Motivo</th></tr></thead><tbody>';
         $html .= $tabla_html;
         $html .= '</tbody></table>';
 
-        // Anexo individual
         $stmt_total_personal = $conexion->query("SELECT COUNT(*) FROM personal INNER JOIN usuarios ON personal.id_usuario = usuarios.id_usuario WHERE usuarios.estado = 'Activo'");
         $total_empleados = $stmt_total_personal->fetchColumn();
-        $stmt_media = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? AND estado != 'Falta'");
+        $stmt_media = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? AND estado NOT LIKE '%Falta%'");
         $stmt_media->execute([$mes, $anio]);
         $total_asistencias_institucion = $stmt_media->fetchColumn();
+        
         $media_institucional_asistencias = $total_empleados > 0 ? round($total_asistencias_institucion / $total_empleados) : 0;
         $porc_media_inst = $dias_evaluados > 0 ? round(($media_institucional_asistencias / $dias_evaluados) * 100) : 0;
         if($porc_media_inst > 100) $porc_media_inst = 100;
-        $porc_emp_efectiva = $porc_p + $porc_r + $porc_j;
+        
+        $porc_emp_efectiva = round((($p + $r + $j) / $dias_evaluados) * 100);
         if($porc_emp_efectiva > 100) $porc_emp_efectiva = 100;
         
         $color_emp = $porc_emp_efectiva < $porc_media_inst ? "#ef4444" : ($porc_emp_efectiva == $porc_media_inst ? "#f59e0b" : "#10b981");
@@ -277,40 +273,38 @@ if ($id_personal != 'todos') {
         </div></div>';
 
     } else {
-        $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Mes</th><th>Puntuales</th><th>Retrasos</th><th>Faltas</th><th>Justificadas</th></tr></thead><tbody>';
+        $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Mes</th><th>Puntual</th><th>Retraso</th><th>S.Temp</th><th>S.Irreg</th><th>Falta</th><th>Justif.</th></tr></thead><tbody>';
         for($m = 1; $m <= 12; $m++) {
             $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND MONTH(fecha) = ? AND YEAR(fecha) = ?");
             $stmt_stats->execute([$id_personal, $m, $anio]);
-            $p = 0; $r = 0; $f = 0; $j = 0;
+            $p = 0; $r = 0; $f = 0; $j = 0; $st = 0; $si = 0;
             while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
                 if ($row['estado_justificacion'] == 'Aprobada') { $j++; } 
                 else {
-                    if ($row['estado'] == 'Puntual') $p++;
-                    if ($row['estado'] == 'Retraso') $r++;
-                    if ($row['estado'] == 'Falta') $f++;
-                    if ($row['estado'] == 'Justificado') $j++;
+                    $est = $row['estado'];
+                    if (strpos($est, 'Puntual') !== false) $p++;
+                    if (strpos($est, 'Retraso') !== false) $r++;
+                    if (strpos($est, 'Falta') !== false) $f++;
+                    if (strpos($est, 'Justificado') !== false) $j++;
+                    if (strpos($est, 'Salida Temprana') !== false) $st++;
+                    if (strpos($est, 'Salida Irregular') !== false) $si++;
                 }
             }
-            $html .= "<tr><td class='texto-izq'>{$meses_es[$m-1]}</td><td>{$p}</td><td>{$r}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
+            $html .= "<tr><td class='texto-izq'>{$meses_es[$m-1]}</td><td>{$p}</td><td>{$r}</td><td style='color:#3b82f6;font-weight:bold;'>{$st}</td><td style='color:#991b1b;font-weight:bold;'>{$si}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
         }
         $html .= '</tbody></table>';
     }
 
 } else {
-    // =========================================================================
-    // REPORTE GENERAL (FILTRABLE Y CON CÁLCULO INTELIGENTE)
-    // =========================================================================
     $nombre_cargo_filtro = "";
-    $sql_personal = "SELECT p.id_personal, p.nombres, p.apellidos, c.nombre_cargo 
+    $sql_personal = "SELECT p.id_personal, p.nombres, p.apellidos, p.fecha_ingreso, c.nombre_cargo 
                      FROM personal p 
                      INNER JOIN cargos c ON p.id_cargo = c.id_cargo 
                      INNER JOIN usuarios u ON p.id_usuario = u.id_usuario 
                      WHERE u.estado = 'Activo'";
     
-    // Aplicamos el filtro de cargo si existe
     if ($filtro_cargo !== 'todos') {
         $sql_personal .= " AND p.id_cargo = " . (int)$filtro_cargo;
-        
         $stmt_nom_cargo = $conexion->prepare("SELECT nombre_cargo FROM cargos WHERE id_cargo = ?");
         $stmt_nom_cargo->execute([$filtro_cargo]);
         $nombre_cargo_filtro = " - " . mb_strtoupper($stmt_nom_cargo->fetchColumn());
@@ -321,17 +315,19 @@ if ($id_personal != 'todos') {
     $personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
     $html .= '<div class="titulo-reporte">REPORTE GENERAL' . $nombre_cargo_filtro . ' - ' . $nombre_mes . ' ' . $anio . '</div>';
-    $html .= '<div style="margin-bottom: 15px; font-size: 12px; text-align: left;"><strong>Día de Emisión:</strong> ' . date('d/m/Y') . ' | <strong>Total Empleados Evaluados:</strong> ' . count($personal) . '</div>';
+    $html .= '<div style="margin-bottom: 15px; font-size: 12px; text-align: left;"><strong>Día de Emisión:</strong> ' . date('d/m/Y') . ' | <strong>Empleados Evaluados:</strong> ' . count($personal) . '</div>';
     
-    $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Empleado</th><th>Cargo</th><th>Puntuales</th><th>Retrasos</th><th>Faltas</th><th>Justific.</th></tr></thead><tbody>';
+    $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Empleado</th><th>Puntual</th><th>Retraso</th><th>S.Temp</th><th>S.Irreg</th><th>Falta</th><th>Justif.</th></tr></thead><tbody>';
 
-    $total_p_gen = 0; $total_r_gen = 0; $total_f_gen = 0; $total_j_gen = 0;
+    $total_p_gen = 0; $total_r_gen = 0; $total_f_gen = 0; $total_st_gen = 0; $total_si_gen = 0; $total_j_gen = 0;
     $dias_del_mes = ($mes === 'todos') ? 0 : cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
-    $fecha_hoy = date('Y-m-d'); // FECHA ACTUAL PARA BLOQUEAR FUTURO EN REPORTE GENERAL
+    $fecha_hoy = date('Y-m-d'); 
 
     foreach ($personal as $per) {
         $id_p = $per['id_personal'];
-        $p = 0; $r = 0; $f = 0; $j = 0;
+        $fecha_ing_per = $per['fecha_ingreso'] ?: '2000-01-01'; // Respaldo seguro
+        
+        $p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
 
         if($mes === 'todos') {
             $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
@@ -339,10 +335,13 @@ if ($id_personal != 'todos') {
             while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
                 if ($row['estado_justificacion'] == 'Aprobada') { $j++; } 
                 else {
-                    if ($row['estado'] == 'Puntual') $p++;
-                    if ($row['estado'] == 'Retraso') $r++;
-                    if ($row['estado'] == 'Falta') $f++;
-                    if ($row['estado'] == 'Justificado') $j++;
+                    $est = $row['estado'];
+                    if (strpos($est, 'Puntual') !== false) $p++;
+                    if (strpos($est, 'Retraso') !== false) $r++;
+                    if (strpos($est, 'Falta') !== false) $f++;
+                    if (strpos($est, 'Justificado') !== false) $j++;
+                    if (strpos($est, 'Salida Temprana') !== false) $st++;
+                    if (strpos($est, 'Salida Irregular') !== false) $si++;
                 }
             }
         } else {
@@ -356,36 +355,36 @@ if ($id_personal != 'todos') {
 
             for ($d = 1; $d <= $dias_del_mes; $d++) {
                 $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-                
-                // Si la fecha del ciclo es en el futuro, nos detenemos
-                if ($fecha_ciclo > $fecha_hoy) {
-                    break;
-                }
+                if ($fecha_ciclo > $fecha_hoy) break;
 
                 $dia_semana = date('N', strtotime($fecha_ciclo)); 
-                
                 if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
 
                 if (isset($registros_reales[$fecha_ciclo])) {
                     $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
-                    if ($estado == 'Puntual') $p++; 
-                    elseif ($estado == 'Retraso') $r++; 
-                    elseif ($estado == 'Falta') $f++; 
-                    elseif ($estado == 'Justificado') $j++;
+                    if (strpos($estado, 'Puntual') !== false) $p++;
+                    if (strpos($estado, 'Retraso') !== false) $r++;
+                    if (strpos($estado, 'Falta') !== false) $f++;
+                    if (strpos($estado, 'Justificado') !== false) $j++;
+                    if (strpos($estado, 'Salida Temprana') !== false) $st++;
+                    if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
-                    $f++; 
+                    // === CORRECCIÓN AQUÍ ===
+                    if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
+                        $f++; 
+                    }
                 }
             }
         }
         
-        $total_p_gen += $p; $total_r_gen += $r; $total_f_gen += $f; $total_j_gen += $j;
+        $total_p_gen += $p; $total_r_gen += $r; $total_f_gen += $f; $total_st_gen += $st; $total_si_gen += $si; $total_j_gen += $j;
 
-        $html .= "<tr><td class='texto-izq'>{$per['nombres']} {$per['apellidos']}</td><td style='font-size: 10px;'>{$per['nombre_cargo']}</td><td>{$p}</td><td>{$r}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
+        $html .= "<tr><td class='texto-izq'>{$per['nombres']} {$per['apellidos']}</td><td>{$p}</td><td>{$r}</td><td style='color:#3b82f6;font-weight:bold;'>{$st}</td><td style='color:#991b1b;font-weight:bold;'>{$si}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
     }
     $html .= '</tbody></table>';
 
     if ($mes !== 'todos' && count($personal) > 0) {
-        $total_eventos = $total_p_gen + $total_r_gen + $total_f_gen + $total_j_gen;
+        $total_eventos = $total_p_gen + $total_r_gen + $total_f_gen + $total_j_gen; 
         if ($total_eventos > 0) {
             $porc_asistencia_gen = round((($total_p_gen + $total_r_gen + $total_j_gen) / $total_eventos) * 100);
             $porc_faltas_gen = round(($total_f_gen / $total_eventos) * 100);
@@ -406,7 +405,7 @@ if ($id_personal != 'todos') {
                     '.($porc_asistencia_gen > 0 ? '<div class="barra-comparativa-fill" style="width: '.$porc_asistencia_gen.'%; background-color: '.$color_gen.';">'.$porc_asistencia_gen.'%</div>' : '').'
                 </div>
                 
-                <div class="comparativa-texto" style="margin-top: 15px;"><strong>Índice de Ausentismo (Faltas):</strong> '.$porc_faltas_gen.'%</div>
+                <div class="comparativa-texto" style="margin-top: 15px;"><strong>Índice de Ausentismo (Faltas Completas):</strong> '.$porc_faltas_gen.'%</div>
                 <div class="barra-comparativa-fondo">
                     '.($porc_faltas_gen > 0 ? '<div class="barra-comparativa-fill" style="width: '.$porc_faltas_gen.'%; background-color: #ef4444;">'.$porc_faltas_gen.'%</div>' : '').'
                 </div>
@@ -420,7 +419,6 @@ if ($id_personal != 'todos') {
     }
 }
 
-// === EL PIE DE PÁGINA ABSOLUTO ===
 $html .= '
 <div class="firmas-footer">
     <table class="firmas">

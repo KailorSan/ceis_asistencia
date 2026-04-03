@@ -15,15 +15,95 @@ $titulo_tarjeta_2 = "Cargando..."; $valor_tarjeta_2 = 0;
 $titulo_tarjeta_3 = "Cargando..."; $valor_tarjeta_3 = 0;
 
 try {
-    // 1. OBTENEMOS EL ID_PERSONAL PARA TODOS LOS USUARIOS
-    $stmt_emp = $conexion->prepare("SELECT id_personal FROM personal WHERE id_usuario = :id_user");
-    $stmt_emp->execute([':id_user' => $id_usuario]);
-    $id_personal = $stmt_emp->fetchColumn();
+    // ========================================================
+    // === SCRIPT CENTINELA (AUTO-FALTA E IRREGULAR) ===
+    // ========================================================
+    
+    $hora_actual_sec = date('H:i:s');
+    $stmt_conf_limit = $conexion->query("SELECT hora_entrada_general, hora_salida_general FROM configuracion WHERE id_config = 1");
+    $conf_limit = $stmt_conf_limit->fetch(PDO::FETCH_ASSOC);
 
-    // 2. LÓGICA DEL BOTÓN CAMALEÓN
+    if ($conf_limit) {
+        
+        $dia_semana_hoy = date('N'); // 1 es Lunes, 5 es Viernes, 6 Sabado, 7 Domingo
+        
+        // TAREA 1: AUTO-FALTA (SOLO DE LUNES A VIERNES Y RESPETANDO FECHA DE INGRESO)
+        if ($dia_semana_hoy <= 5) {
+            $sql_ausentes = "SELECT p.id_personal, p.hora_entrada_personalizada, p.hora_salida_personalizada 
+                             FROM personal p
+                             INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
+                             WHERE u.estado = 'Activo' 
+                             AND p.fecha_ingreso <= CURDATE()
+                             AND p.id_personal NOT IN (SELECT id_personal FROM asistencias WHERE fecha = CURDATE())";
+            $ausentes = $conexion->query($sql_ausentes)->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($ausentes as $aus) {
+                $h_entrada_p = !empty($aus['hora_entrada_personalizada']) ? $aus['hora_entrada_personalizada'] : $conf_limit['hora_entrada_general'];
+                $h_salida_p = !empty($aus['hora_salida_personalizada']) ? $aus['hora_salida_personalizada'] : $conf_limit['hora_salida_general'];
+
+                if ($hora_actual_sec > $h_salida_p) {
+                    $ins_falta = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, estado) VALUES (?, CURDATE(), ?, 'Falta')");
+                    $ins_falta->execute([$aus['id_personal'], $h_entrada_p]);
+                }
+            }
+        }
+
+        // TAREA 2: AUTO-SALIDA IRREGULAR (Se ejecuta todos los días por si alguien quedó colgado el viernes)
+        $sql_incompletos = "SELECT a.id_asistencia, a.estado, a.fecha, p.hora_salida_personalizada 
+                            FROM asistencias a
+                            INNER JOIN personal p ON a.id_personal = p.id_personal
+                            WHERE a.hora_salida IS NULL 
+                            AND a.estado != 'Falta'
+                            AND a.estado NOT LIKE '%Salida Irregular%'
+                            AND (a.estado_justificacion IS NULL OR a.estado_justificacion != 'Pendiente')";
+        $incompletos = $conexion->query($sql_incompletos)->fetchAll(PDO::FETCH_ASSOC);
+
+        $fecha_hoy_comparar = date('Y-m-d');
+
+        foreach ($incompletos as $inc) {
+            $h_salida_p = !empty($inc['hora_salida_personalizada']) ? $inc['hora_salida_personalizada'] : $conf_limit['hora_salida_general'];
+            $limite_salida = date('H:i:s', strtotime("+60 minutes", strtotime($h_salida_p)));
+
+            if ($inc['fecha'] < $fecha_hoy_comparar || ($inc['fecha'] == $fecha_hoy_comparar && $hora_actual_sec > $limite_salida)) {
+                $estado_actual = $inc['estado'];
+                $nuevo_estado = 'Salida Irregular';
+                
+                if (strpos($estado_actual, 'Retraso') !== false) {
+                    $nuevo_estado = 'Retraso y Salida Irregular';
+                } elseif (strpos($estado_actual, 'Puntual') !== false) {
+                    $nuevo_estado = 'Puntual y Salida Irregular';
+                }
+
+                $upd_irr = $conexion->prepare("UPDATE asistencias SET estado = ?, observacion = 'El sistema cerró la jornada automáticamente por omisión de salida.' WHERE id_asistencia = ?");
+                $upd_irr->execute([$nuevo_estado, $inc['id_asistencia']]);
+            }
+        }
+    }
+    // ========================================================
+    // === FIN SCRIPT CENTINELA ===============================
+    // ========================================================
+
+    $stmt_emp = $conexion->prepare("SELECT id_personal, hora_entrada_personalizada, hora_salida_personalizada FROM personal WHERE id_usuario = :id_user");
+    $stmt_emp->execute([':id_user' => $id_usuario]);
+    $empleado = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+    $id_personal = $empleado ? $empleado['id_personal'] : null;
+
+    $stmt_conf = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
+    $config = $stmt_conf->fetch(PDO::FETCH_ASSOC) ?: ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
+
     $asistencia_hoy = false;
     $ya_salio = false;
     $hora_entrada_registrada = "";
+
+    $hora_esperada = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
+    $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
+    $tolerancia = $config['minutos_tolerancia'];
+
+    $hora_actual = date('H:i:s');
+    $limite_entrada = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
+    
+    $es_tarde = ($hora_actual > $limite_entrada);
+    $es_temprano_salida = ($hora_actual < $hora_salida_esperada);
 
     if ($id_personal) {
         $stmt_check = $conexion->prepare("SELECT hora_entrada, hora_salida FROM asistencias WHERE id_personal = :id AND fecha = CURDATE()");
@@ -39,7 +119,6 @@ try {
         }
     }
 
-    // 3. LÓGICA DE TARJETAS
     if ($id_rol == 1 || $id_rol == 2) {
         $titulo_tarjeta_1 = "Personal Registrado";
         $stmt1 = $conexion->query("SELECT COUNT(*) FROM personal");
@@ -53,21 +132,18 @@ try {
         $valor_tarjeta_3 = $valor_tarjeta_1 - $valor_tarjeta_2; 
         if ($valor_tarjeta_3 < 0) $valor_tarjeta_3 = 0; 
     } else {
-        // Tarjeta 1: Mis Asistencias
         $titulo_tarjeta_1 = "Mis Asistencias (Mes)";
         $stmt1 = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND hora_entrada IS NOT NULL");
         $stmt1->execute([':id' => $id_personal]);
         $valor_tarjeta_1 = $stmt1->fetchColumn();
         
-        // Tarjeta 2: Faltas Justificadas
         $titulo_tarjeta_2 = "Faltas Justificadas";
         $stmt2 = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estado = 'Justificado'");
         $stmt2->execute([':id' => $id_personal]);
         $valor_tarjeta_2 = $stmt2->fetchColumn();
         
-        // Tarjeta 3: Mis Retrasos
         $titulo_tarjeta_3 = "Mis Retrasos (Mes)";
-        $stmt3 = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estado = 'Retraso'");
+        $stmt3 = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estado LIKE '%Retraso%'");
         $stmt3->execute([':id' => $id_personal]);
         $valor_tarjeta_3 = $stmt3->fetchColumn();
     }
@@ -111,25 +187,47 @@ try {
                 <div class="botones-asistencia">
                     
                     <?php if (!$asistencia_hoy): ?>
-                        <form action="../controladores/ControladorAsistencia.php" method="POST">
-                            <input type="hidden" name="accion" value="marcar_entrada">
-                            <button type="submit" class="btn-marcar-entrada" id="btnAsistencia">
+                        
+                        <?php if ($es_tarde): ?>
+                            <button type="button" class="btn-marcar-entrada" style="background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="abrirModalJustificacion('Llegada Tardía')">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
-                                Registrar Entrada
+                                Justificar Llegada Tardía
                             </button>
-                        </form>
+                        <?php else: ?>
+                            <form action="../controladores/ControladorAsistencia.php" method="POST">
+                                <input type="hidden" name="accion" value="marcar_entrada">
+                                <button type="submit" class="btn-marcar-entrada" id="btnAsistencia">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Registrar Entrada
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
                     <?php elseif ($asistencia_hoy && !$ya_salio): ?>
-                        <form action="../controladores/ControladorAsistencia.php" method="POST">
-                            <input type="hidden" name="accion" value="marcar_salida">
-                            <button type="submit" class="btn-marcar-salida" id="btnSalida">
+                        
+                        <?php if ($es_temprano_salida): ?>
+                            <button type="button" class="btn-marcar-salida" disabled style="background-color: #94a3b8; cursor: not-allowed; box-shadow: none;">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Registrar Salida
+                                ¡Espera a tu salida!
                             </button>
-                        </form>
+                        <?php else: ?>
+                            <form action="../controladores/ControladorAsistencia.php" method="POST">
+                                <input type="hidden" name="accion" value="marcar_salida">
+                                <button type="submit" class="btn-marcar-salida" id="btnSalida">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    Registrar Salida
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
                     <?php else: ?>
                         <div style="color: #10b981; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -151,7 +249,11 @@ try {
                 <p class="texto-estado-asistencia">
                     <?php 
                         if (!$asistencia_hoy) {
-                            echo "Aún no has registrado tu entrada el día de hoy.";
+                            if($es_tarde) {
+                                echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong>.";
+                            } else {
+                                echo "Aún no has registrado tu entrada el día de hoy.";
+                            }
                         } elseif ($asistencia_hoy && !$ya_salio) {
                             echo "Entrada registrada a las <strong>" . date('h:i A', strtotime($hora_entrada_registrada)) . "</strong>. ¡No olvides marcar tu salida!";
                         } else {
@@ -190,7 +292,7 @@ try {
                 <input type="hidden" name="id_personal" value="<?php echo $id_personal; ?>">
                 
                 <p style="font-size: 0.85rem; margin-block-end: 15px; color: var(--text-color);">
-                    Detalla el motivo de tu inasistencia o llegada tardía y adjunta una prueba si es necesario.
+                    Detalla el motivo de tu incidencia y adjunta una prueba si es necesario.
                 </p>
 
                 <div class="grupo-input" style="margin-block-end: 15px;">
@@ -205,7 +307,7 @@ try {
                     <label>Tipo de Incidencia</label>
                     <div class="input-con-icono">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <select name="tipo_incidencia" style="inline-size: 100%; padding: 12px 15px 12px 45px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 600; outline: none;" required>
+                        <select name="tipo_incidencia" id="modal_j_tipo" style="inline-size: 100%; padding: 12px 15px 12px 45px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 600; outline: none;" required>
                             <option value="" disabled selected>Selecciona una opción...</option>
                             <option value="Inasistencia">Falté todo el día</option>
                             <option value="Llegada Tardía">Llegué tarde</option>
@@ -247,25 +349,21 @@ try {
             btnCambiarTema.addEventListener('click', function(e) {
                 e.preventDefault();
                 this.classList.add('girando');
-                
                 const temaActual = html.getAttribute('data-theme');
                 const nuevoTema = temaActual === 'light' ? 'dark' : 'light';
-                
                 html.setAttribute('data-theme', nuevoTema);
                 localStorage.setItem(claveTemaPersonalizado, nuevoTema);
-                
-                setTimeout(() => {
-                    this.classList.remove('girando');
-                }, 500);
+                setTimeout(() => { this.classList.remove('girando'); }, 500);
             });
         }
 
-        // LÓGICA DEL MODAL DE JUSTIFICACIÓN
         const modalOverlay = document.getElementById('modalOverlay');
         const modalJustificacion = document.getElementById('modalJustificacion');
 
-        function abrirModalJustificacion() {
+        function abrirModalJustificacion(tipo = '') {
             document.getElementById('modal_j_fecha').valueAsDate = new Date();
+            const selectTipo = document.getElementById('modal_j_tipo');
+            if(tipo) { selectTipo.value = tipo; } else { selectTipo.selectedIndex = 0; }
             modalOverlay.classList.add('activo');
             modalJustificacion.classList.add('activo');
         }
@@ -279,7 +377,6 @@ try {
             if (e.target === modalOverlay) cerrarModales();
         });
 
-        // LÓGICA PARA EL BOTÓN DE ARCHIVOS
         const archivoInput = document.getElementById('modal_j_archivo');
         if (archivoInput) {
             archivoInput.addEventListener('change', function(e) {
@@ -292,7 +389,7 @@ try {
     <?php if(isset($_SESSION['alerta_principal'])): ?>
         <script>
             Swal.fire({
-                title: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Enviado!' : '¡Error!'; ?>',
+                title: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : '¡Aviso!'; ?>',
                 text: '<?php echo $_SESSION['alerta_principal']['mensaje']; ?>',
                 icon: '<?php echo $_SESSION['alerta_principal']['tipo']; ?>',
                 confirmButtonColor: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '#10b981' : '#ef4444'; ?>',

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../configuracion/conexion.php';
-require_once 'ControladorBitacora.php'; // NUEVO: Incluimos la bitácora
+require_once 'ControladorBitacora.php'; 
 
 header('Content-Type: application/json');
 
@@ -14,10 +14,20 @@ if (!isset($_SESSION['logueado']) || ($_SESSION['id_rol'] != 1 && $_SESSION['id_
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $id_personal = (int)$_POST['id_personal'];
     $fecha = $_POST['fecha'];
-    $estado = $_POST['estado'];
     $motivo = trim($_POST['motivo']);
     
-    // CORRECCIÓN DEL BUG: Si no es "Justificado", borramos la marca de "Aprobada"
+    // OBTENEMOS EL ESTADO PRINCIPAL Y EL SECUNDARIO
+    $estado_primario = $_POST['estado'];
+    $estado_secundario = isset($_POST['estado_secundario']) ? trim($_POST['estado_secundario']) : '';
+    
+    // COMBINAMOS LA LÓGICA DE ESTADOS
+    if (!empty($estado_secundario) && $estado_secundario !== 'Ninguna') {
+        $estado = $estado_primario . ' y ' . $estado_secundario;
+    } else {
+        $estado = $estado_primario;
+    }
+
+    // CORRECCIÓN DEL BUG: Mantenemos el estado aprobado solo si se marca como Justificado explícitamente
     $estado_justificacion = ($estado === 'Justificado') ? 'Aprobada' : NULL;
     
     // 2. Lógica para subir una nueva evidencia
@@ -52,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     try {
-        // CORRECCIÓN APLICADA: Obtenemos el nombre y apellido del empleado para la bitácora
+        // Obtenemos el nombre y apellido del empleado para la bitácora
         $stmt_emp = $conexion->prepare("SELECT CONCAT(nombres, ' ', apellidos) FROM personal WHERE id_personal = ?");
         $stmt_emp->execute([$id_personal]);
         $nombre_empleado = $stmt_emp->fetchColumn();
@@ -64,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $existe = $stmt_check->fetchColumn();
 
         if ($existe) {
-            // UPDATE: Actualizamos el registro con el nuevo estado inteligente
+            // UPDATE: Actualizamos el registro con el nuevo estado (simple o combinado)
             if ($actualizar_archivo) {
                 $sql = "UPDATE asistencias SET estado = ?, motivo_justificacion = ?, archivo_evidencia = ?, estado_justificacion = ? WHERE id_personal = ? AND fecha = ?";
                 $params = [$estado, $motivo, $nombre_archivo_final, $estado_justificacion, $id_personal, $fecha];
@@ -82,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$id_personal, $fecha, $estado, $motivo, $estado_justificacion, $nombre_archivo_final]);
         }
 
-        // NUEVO: Registrar en Bitácora el evento de asistencia modificado
+        // Registrar en Bitácora el evento de asistencia modificado
         ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Asistencia', 'Modificación de Asistencia', "Cambió el estado a '$estado' para el empleado '$nombre_empleado' en la fecha: $fecha.");
 
         echo json_encode(['success' => true, 'msg' => 'La asistencia ha sido modificada correctamente.']);

@@ -89,13 +89,23 @@ try {
             <h1 style="margin-block-end: 25px;">Justificaciones Pendientes</h1>
 
             <div class="grid-justificaciones">
-                <?php foreach ($pendientes as $req): ?>
+                <?php foreach ($pendientes as $req): 
+                    // EXTRAEMOS EL TIPO DE INCIDENCIA Y ESTADO BASE PARA LA ALERTA DINÁMICA
+                    $estado_base = trim(str_replace(['(Pendiente)', ' (Pendiente)'], '', $req['estado']));
+                    
+                    $tipo_incidencia = 'Inasistencia'; // Por defecto
+                    if (strpos($req['motivo_justificacion'], '[Llegada Tardía]') !== false) {
+                        $tipo_incidencia = 'Llegada Tardía';
+                    } elseif (strpos($req['motivo_justificacion'], '[Salida Temprana]') !== false) {
+                        $tipo_incidencia = 'Salida Temprana';
+                    }
+                ?>
                     <div class="tarjeta-justificacion">
                         <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($req['foto_perfil']); ?>" alt="Avatar" class="tj-avatar">
                         <div class="tj-info">
                             <h4><?php echo htmlspecialchars($req['nombres'] . ' ' . $req['apellidos']); ?> <span>(<?php echo $req['nombre_cargo']; ?>)</span></h4>
                             <p style="margin: 5px 0; font-size: 0.85rem; color: #f59e0b; font-weight: bold;">
-                                Fecha incidencia: <?php echo date('d-m-Y', strtotime($req['fecha'])); ?> | Estado original: <?php echo $req['estado']; ?>
+                                Fecha incidencia: <?php echo date('d-m-Y', strtotime($req['fecha'])); ?> | Estado actual: <?php echo $estado_base; ?>
                             </p>
                             <div class="tj-motivo">"<?php echo htmlspecialchars($req['motivo_justificacion']); ?>"</div>
                             
@@ -115,10 +125,10 @@ try {
 
                         </div>
                         <div class="tj-acciones">
-                            <button onclick="procesar(<?php echo $req['id_asistencia']; ?>, 'aprobar')" class="btn-aprobar">
+                            <button onclick="procesar(<?php echo $req['id_asistencia']; ?>, 'aprobar', '<?php echo $tipo_incidencia; ?>', '<?php echo $estado_base; ?>')" class="btn-aprobar">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg> Aprobar
                             </button>
-                            <button onclick="procesar(<?php echo $req['id_asistencia']; ?>, 'rechazar')" class="btn-rechazar">
+                            <button onclick="procesar(<?php echo $req['id_asistencia']; ?>, 'rechazar', '<?php echo $tipo_incidencia; ?>', '<?php echo $estado_base; ?>')" class="btn-rechazar">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Rechazar
                             </button>
                         </div>
@@ -163,14 +173,39 @@ try {
             });
         }
 
-        function procesar(id, accion) {
+        // FUNCIÓN PROCESAR CON INTELIGENCIA ARTIFICIAL DE ALERTAS
+        function procesar(id, accion, tipo, estado_base) {
+            let textoAlerta = '';
+            
+            if (accion === 'aprobar') {
+                if (tipo === 'Llegada Tardía') {
+                    textoAlerta = "La incidencia se registrará oficialmente como 'Retraso'.";
+                } else if (tipo === 'Salida Temprana') {
+                    let nuevo_estado = (estado_base === 'Retraso' || estado_base === 'Puntual') ? (estado_base + ' y Salida Temprana') : 'Salida Temprana';
+                    textoAlerta = "El registro se actualizará a '" + nuevo_estado + "'.";
+                } else {
+                    textoAlerta = "La inasistencia se convertirá en 'Justificado'.";
+                }
+            } else {
+                if (tipo === 'Llegada Tardía' || tipo === 'Inasistencia') {
+                    textoAlerta = "La incidencia se marcará definitivamente como 'Falta'.";
+                } else if (tipo === 'Salida Temprana') {
+                    let nuevo_estado = (estado_base === 'Retraso' || estado_base === 'Puntual') ? (estado_base + ' y Salida Irregular') : 'Salida Irregular';
+                    textoAlerta = "Se denegará la salida y se marcará como '" + nuevo_estado + "'.";
+                } else {
+                    textoAlerta = "La incidencia se marcará como Falta.";
+                }
+            }
+
             Swal.fire({
                 title: '¿Estás seguro?',
-                text: accion === 'aprobar' ? "La incidencia se convertirá en 'Justificado'." : "La incidencia se mantendrá como Falta/Retraso.",
-                icon: 'question', showCancelButton: true,
+                text: textoAlerta,
+                icon: 'warning', 
+                showCancelButton: true,
                 confirmButtonColor: accion === 'aprobar' ? '#10b981' : '#ef4444',
                 cancelButtonColor: '#64748b',
                 confirmButtonText: 'Sí, ' + accion,
+                cancelButtonText: 'Cancelar',
                 background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
             }).then((result) => {
@@ -181,6 +216,5 @@ try {
         }
     </script>
 
-    
 </body>
 </html>
