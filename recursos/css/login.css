@@ -1,0 +1,380 @@
+/* =========================================
+   IMPORTACIÓN DE FUENTES LOCALES
+   ========================================= */
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+/* =========================================
+   1. VARIABLES Y CONFIGURACIÓN BASE
+   ========================================= */
+:root {
+    --azul-ceis: #003366;
+    --rojo-ceis: #cc0000;
+    --blanco: #ffffff;
+    --gris-fondo: #f6f5f7;
+    --gris-texto: #333333;
+    --gris-borde: #ddd;
+}
+
+/* Mantenemos el border-box global para no dañar el layout responsivo de la página */
+* { box-sizing: border-box; }
+
+body { 
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    background-attachment: fixed; /* ¡ESTO EVITA EL CORTE BLANCO! */
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Montserrat', sans-serif;
+    min-block-size: 100vh; /* Permite que crezca si el contenido es más alto */
+    margin: 0;
+    padding: 20px; /* Margen de seguridad para móviles */
+}
+
+/* =========================================
+   2. TIPOGRAFÍA Y ELEMENTOS COMUNES
+   ========================================= */
+h1 { font-weight: 800; margin: 0; color: var(--azul-ceis); }
+p { font-size: 14px; margin: 20px 0 30px; line-height: 1.5; }
+
+/* ¡ARREGLO DEFINITIVO AQUÍ! Limitamos el tamaño de los span SOLO a los contenedores propios para NO romper las proporciones en SweetAlert2 */
+.contenedor-principal span, .tarjeta-recuperacion span { font-size: 12px; }
+
+a { color: var(--gris-texto); font-size: 14px; text-decoration: none; margin: 15px 0; transition: 0.3s; }
+a:hover { color: var(--azul-ceis); font-weight: bold; }
+
+/* Botones Generales (Se aplica también a SweetAlert para que coincida con tu diseño) */
+button {
+    border-radius: 20px;
+    border: 1px solid var(--azul-ceis);
+    background-color: var(--azul-ceis);
+    color: var(--blanco);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 12px 45px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: transform 80ms ease-in, background-color 0.3s;
+    cursor: pointer;
+    margin-block-start: 10px;
+}
+button:active { transform: scale(0.95); }
+button:focus { outline: none; }
+button:hover { background-color: #002244; }
+
+/* Botón Transparente (Panel Login) */
+button.boton-transparente { background-color: transparent; border-color: var(--blanco); border-width: 2px; }
+
+/* =========================================
+   3. INPUTS Y FORMULARIOS
+   ========================================= */
+
+/* Contenedor Foto de Perfil */
+.contenedor-foto-perfil {
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin-block-end: 15px;
+}
+.label-foto {
+    position: relative; 
+    inline-size: 80px; 
+    block-size: 80px; 
+    border-radius: 50%; 
+    cursor: pointer;
+    overflow: hidden; 
+    border: 3px solid var(--azul-ceis);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.label-foto img {
+    inline-size: 100%; 
+    block-size: 100%; 
+    object-fit: cover;
+}
+.capa-subir {
+    position: absolute; 
+    inset-block-end: 0; 
+    inset-inline-start: 0; 
+    inline-size: 100%; 
+    block-size: 35%;
+    background: rgba(0, 51, 102, 0.7); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    transition: height 0.3s;
+}
+.label-foto:hover .capa-subir { 
+    block-size: 100%; 
+}
+.capa-subir svg { 
+    inline-size: 20px; 
+    block-size: 20px; 
+    color: white; 
+}
+
+input {
+    background-color: #eee;
+    border: 1px solid transparent;
+    padding: 10px 15px;
+    margin: 5px 0;
+    inline-size: 100%;
+    border-radius: 5px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+input:focus { outline: none; border-color: var(--azul-ceis); background-color: #fff; box-shadow: 0 0 5px rgba(0,51,102,0.1); }
+
+select {
+    appearance: none; -webkit-appearance: none;
+    background-color: #eee; border: 1px solid transparent;
+    padding: 10px 15px; margin: 5px 0; inline-size: 100%;
+    border-radius: 5px; font-family: 'Montserrat', sans-serif; font-size: 13px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23003366%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto;
+}
+select:focus { outline: none; border-color: var(--azul-ceis); background-color: #fff; }
+option:disabled { color: #999; background-color: #f0f0f0; font-style: italic; }
+
+.contenedor-clave {
+    position: relative; inline-size: 100%; display: flex; align-items: center; margin-block-end: 10px;
+}
+.contenedor-clave input {
+    inline-size: 100%; padding-inline-end: 45px !important; margin-block-end: 0 !important;
+}
+
+.icono-alternar {
+    position: absolute; inset-inline-end: 12px; cursor: pointer; color: #888;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.3s ease, transform 0.2s ease;
+    user-select: none; z-index: 10; background: transparent; border: none; padding: 0; block-size: 100%;
+}
+.icono-alternar:hover { color: #555; }
+.icono-alternar:active { transform: scale(0.9); }
+.icono-svg { inline-size: 22px; block-size: 22px; fill: currentColor; }
+.icono-ver path, .icono-ver circle { stroke: currentColor; }
+
+/* =========================================
+   4. ESTRUCTURA LOGIN / REGISTRO
+   ========================================= */
+.contenedor-principal {
+    background-color: #fff; border-radius: 10px;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    position: relative; overflow: hidden; inline-size: 850px; max-inline-size: 100%; min-block-size: 580px;
+}
+.contenedor-formulario { position: absolute; inset-block-start: 0; block-size: 100%; transition: all 0.6s ease-in-out; }
+.contenedor-ingreso { inset-inline-start: 0; inline-size: 50%; z-index: 2; }
+.contenedor-registro { inset-inline-start: 0; inline-size: 50%; opacity: 0; z-index: 1; }
+
+.contenedor-principal.panel-derecho-activo .contenedor-ingreso { transform: translateX(100%); }
+.contenedor-principal.panel-derecho-activo .contenedor-registro { 
+    transform: translateX(100%); opacity: 1; z-index: 5; animation: mostrar 0.6s; 
+}
+@keyframes mostrar { 0%, 49.99% { opacity: 0; z-index: 1; } 50%, 100% { opacity: 1; z-index: 5; } }
+
+/* Capa Deslizante (Azul) */
+.contenedor-capa { position: absolute; inset-block-start: 0; inset-inline-start: 50%; inline-size: 50%; block-size: 100%; overflow: hidden; transition: transform 0.6s ease-in-out; z-index: 100; }
+.contenedor-principal.panel-derecho-activo .contenedor-capa { transform: translateX(-100%); }
+.capa-deslizante { background: var(--azul-ceis); color: var(--blanco); position: relative; inset-inline-start: -100%; block-size: 100%; inline-size: 200%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+.contenedor-principal.panel-derecho-activo .capa-deslizante { transform: translateX(50%); }
+.panel-superior { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; text-align: center; inset-block-start: 0; block-size: 100%; inline-size: 50%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+.panel-superior h1 { color: var(--blanco); text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.panel-izquierdo { transform: translateX(-20%); }
+.contenedor-principal.panel-derecho-activo .panel-izquierdo { transform: translateX(0); }
+.panel-derecho { inset-inline-end: 0; transform: translateX(0); }
+.contenedor-principal.panel-derecho-activo .panel-derecho { transform: translateX(20%); }
+
+form { background-color: var(--blanco); display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; block-size: 100%; text-align: center; }
+.paso-registro { display: none; inline-size: 100%; animation: fadeEffect 0.5s; }
+.paso-registro.activo { display: block; }
+@keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+
+.botones-navegacion { display: flex; justify-content: space-between; inline-size: 100%; margin-block-start: 10px; }
+.botones-navegacion button { padding: 10px 30px; margin-block-start: 5px; } 
+.btn-siguiente { margin-inline-start: auto; }
+.btn-atras { background-color: #999; border-color: #999; }
+
+.indicadores-pasos { margin-block-start: 15px; display: flex; gap: 5px; }
+.punto { block-size: 8px; inline-size: 8px; background-color: #bbb; border-radius: 50%; display: inline-block; }
+.punto.activo { background-color: var(--azul-ceis); inline-size: 20px; border-radius: 10px; transition: 0.3s; }
+
+/* =========================================
+   5. TARJETA RECUPERACIÓN
+   ========================================= */
+.tarjeta-recuperacion {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    inline-size: 100%;
+    max-inline-size: 420px; 
+    padding: 30px 40px; 
+    text-align: center;
+    position: relative;
+    animation: aparecerSuave 0.4s ease-out;
+    margin: auto; 
+}
+
+@keyframes aparecerSuave {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.tarjeta-recuperacion h1 {
+    color: var(--azul-ceis);
+    font-size: 1.6rem; 
+    margin-block-end: 5px; 
+    font-weight: 800;
+}
+
+.tarjeta-recuperacion p {
+    font-size: 13px;
+    color: #666;
+    margin-block-end: 20px; 
+    line-height: 1.4;
+}
+
+.tarjeta-recuperacion form {
+    padding: 0; 
+}
+
+.input-gris {
+    background-color: #f0f2f5;
+    border: 1px solid transparent;
+    padding: 12px 15px;      
+    margin: 5px 0 15px 0;     
+    inline-size: 100%;
+    border-radius: 5px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+.input-gris:focus { outline: none; border-color: var(--azul-ceis); background-color: #fff; box-shadow: 0 0 5px rgba(0,51,102,0.1); }
+
+.etiqueta-pregunta {
+    display: block;
+    text-align: start;
+    font-size: 12px; 
+    color: var(--azul-ceis);
+    font-weight: 700;
+    margin-block-start: 10px; 
+    margin-block-end: 2px;
+}
+
+.boton-completo { inline-size: 100%; margin-block-start: 15px; padding: 12px; font-size: 13px; }
+
+.enlace-cancelar {
+    display: inline-block;
+    margin-block-start: 20px;
+    font-size: 13px;
+    color: #666;
+    text-decoration: none;
+    border-block-end: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.enlace-cancelar:hover { border-block-end-color: #666; color: var(--azul-ceis); }
+
+.tarjeta-recuperacion .icono-exito {
+    color: #28a745;
+    font-size: 50px; 
+    margin-block-end: 10px;
+    display: block;
+}
+
+/* =========================================
+   6. LOGO FLOTANTE
+   ========================================= */
+@keyframes flotar {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+}
+
+.logo-login-flotante {
+    inline-size: 180px;     
+    block-size: auto;
+    display: block;
+    margin: 0 auto 15px auto; 
+    mix-blend-mode: multiply; 
+    filter: contrast(1.15) brightness(1.08); 
+    clip-path: inset(10px 2px 2px 2px); 
+    animation: flotar 3.5s ease-in-out infinite;
+}
+
+.tarjeta-recuperacion .logo-login-flotante {
+    inline-size: 140px; 
+    margin: 0 auto 15px auto;
+}
+
+/* =========================================
+   7. UTILIDADES (ERRORES Y SWEETALERT)
+   ========================================= */
+.campo-error { border: 1px solid #cc0000 !important; background-color: #fff5f5 !important; }
+.campo-error::placeholder { color: #cc0000; }
+
+@keyframes animacionTemblor {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.animacion-vibrar { animation: animacionTemblor 0.4s ease-in-out; }
+
+/* Configuración básica de SweetAlert2 */
+.swal2-popup { font-family: 'Montserrat', sans-serif !important; font-size: 15px !important; }
+.swal2-title { font-size: 1.6em !important; }
+.swal2-container { z-index: 20000 !important; }
+
+/* ¡NUEVO!: FIX EXTREMO PARA LOS ICONOS DE SWEETALERT */
+/* 1. Evitamos que cualquier pseudoelemento de SweetAlert se contamine con el border-box global */
+.swal2-icon, 
+.swal2-icon *, 
+.swal2-icon::before, 
+.swal2-icon::after,
+.swal2-icon *::before, 
+.swal2-icon *::after {
+    box-sizing: content-box !important;
+}
+
+/* =========================================
+   8. MEDIA QUERIES (RESPONSIVE)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Login */
+    .contenedor-principal { inline-size: 100%; min-block-size: auto; flex-direction: column; box-shadow: none; border-radius: 0; }
+    .contenedor-capa { display: none; }
+    .contenedor-ingreso, .contenedor-registro { inline-size: 100%; position: relative; opacity: 1; inset-inline-start: 0; block-size: auto; padding: 20px 0; }
+    .contenedor-registro { display: none; }
+    .contenedor-principal.modo-movil-registro .contenedor-registro { display: flex; }
+    .contenedor-principal.modo-movil-registro .contenedor-ingreso { display: none; }
+    .btn-cambio-movil { display: block; margin-block-start: 15px; color: var(--azul-ceis); cursor: pointer; text-decoration: underline; font-weight: bold; }
+    
+    .logo-login-flotante { inline-size: 150px; }
+    
+    /* Recuperación */
+    .tarjeta-recuperacion { padding: 30px 20px; }
+}
+
+@media (min-width: 769px) { 
+    .btn-cambio-movil { display: none; } 
+}

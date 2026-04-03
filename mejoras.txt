@@ -1,0 +1,22 @@
+agreagar la vista a usuario comun en reportes
+
+"Firma de Conformidad del Trabajador": Podemos agregar un tercer espacio para firmar al final de la página 
+(solo en los reportes individuales) que diga: "Recibí conforme y acepto el presente registro de asistencia".
+Legalmente, esto evita problemas con el Ministerio si un profesor quiere reclamar que le descontaron días
+injustamente.
+
+
+Ya que estamos dejando la interfaz como un sistema de Silicon Valley, te propongo un pequeño detalle visual que le
+ encantaría a la Directora: El Indicador de Estatus Diario.
+
+Podríamos agregar un pequeño círculo (un puntito) en la esquina de la foto de perfil en esta misma vista:
+
+🟢 Puntito Verde: Si el empleado ya marcó asistencia el día de hoy.
+
+🔴 Puntito Rojo: Si aún no ha llegado (o si ya faltó).
+
+De un solo vistazo a esta pantalla, la Directora sabría quién está en la institución y quién no, sin necesidad de descargar el PDF.
+
+
+
+botones de resplado, mejor diseño
