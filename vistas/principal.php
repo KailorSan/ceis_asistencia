@@ -2,7 +2,6 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-// ¡VITAL! Configurar la zona horaria a Venezuela
 date_default_timezone_set('America/Caracas');
 
 $nombre = $_SESSION['usuario'];
@@ -18,16 +17,13 @@ try {
     // ========================================================
     // === SCRIPT CENTINELA (AUTO-FALTA E IRREGULAR) ===
     // ========================================================
-    
     $hora_actual_sec = date('H:i:s');
     $stmt_conf_limit = $conexion->query("SELECT hora_entrada_general, hora_salida_general FROM configuracion WHERE id_config = 1");
     $conf_limit = $stmt_conf_limit->fetch(PDO::FETCH_ASSOC);
 
     if ($conf_limit) {
+        $dia_semana_hoy = date('N'); 
         
-        $dia_semana_hoy = date('N'); // 1 es Lunes, 5 es Viernes, 6 Sabado, 7 Domingo
-        
-        // TAREA 1: AUTO-FALTA (SOLO DE LUNES A VIERNES Y RESPETANDO FECHA DE INGRESO)
         if ($dia_semana_hoy <= 5) {
             $sql_ausentes = "SELECT p.id_personal, p.hora_entrada_personalizada, p.hora_salida_personalizada 
                              FROM personal p
@@ -48,7 +44,6 @@ try {
             }
         }
 
-        // TAREA 2: AUTO-SALIDA IRREGULAR (Se ejecuta todos los días por si alguien quedó colgado el viernes)
         $sql_incompletos = "SELECT a.id_asistencia, a.estado, a.fecha, p.hora_salida_personalizada 
                             FROM asistencias a
                             INNER JOIN personal p ON a.id_personal = p.id_personal
@@ -91,9 +86,11 @@ try {
     $stmt_conf = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
     $config = $stmt_conf->fetch(PDO::FETCH_ASSOC) ?: ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
 
+    // === NUEVA LÓGICA DE VARIABLES PARA EL BOTÓN ===
     $asistencia_hoy = false;
     $ya_salio = false;
     $hora_entrada_registrada = "";
+    $ya_justifico_retraso = false;
 
     $hora_esperada = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
     $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
@@ -106,15 +103,22 @@ try {
     $es_temprano_salida = ($hora_actual < $hora_salida_esperada);
 
     if ($id_personal) {
-        $stmt_check = $conexion->prepare("SELECT hora_entrada, hora_salida FROM asistencias WHERE id_personal = :id AND fecha = CURDATE()");
+        $stmt_check = $conexion->prepare("SELECT hora_entrada, hora_salida, estado_justificacion FROM asistencias WHERE id_personal = :id AND fecha = CURDATE()");
         $stmt_check->execute([':id' => $id_personal]);
         $registro_hoy = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
         if ($registro_hoy) {
-            $asistencia_hoy = true;
-            $hora_entrada_registrada = $registro_hoy['hora_entrada'];
-            if ($registro_hoy['hora_salida'] !== null) {
-                $ya_salio = true; 
+            // Evaluamos ESTRICTAMENTE si ya marcó entrada física (no solo enviar excusa)
+            if ($registro_hoy['hora_entrada'] !== null) {
+                $asistencia_hoy = true;
+                $hora_entrada_registrada = $registro_hoy['hora_entrada'];
+                if ($registro_hoy['hora_salida'] !== null) {
+                    $ya_salio = true; 
+                }
+            }
+            // Evaluamos si ya envió su justificación hoy
+            if (!empty($registro_hoy['estado_justificacion'])) {
+                $ya_justifico_retraso = true;
             }
         }
     }
@@ -188,7 +192,7 @@ try {
                     
                     <?php if (!$asistencia_hoy): ?>
                         
-                        <?php if ($es_tarde): ?>
+                        <?php if ($es_tarde && !$ya_justifico_retraso): ?>
                             <button type="button" class="btn-marcar-entrada" style="background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="abrirModalJustificacion('Llegada Tardía')">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -198,11 +202,11 @@ try {
                         <?php else: ?>
                             <form action="../controladores/ControladorAsistencia.php" method="POST">
                                 <input type="hidden" name="accion" value="marcar_entrada">
-                                <button type="submit" class="btn-marcar-entrada" id="btnAsistencia">
+                                <button type="submit" class="btn-marcar-entrada" id="btnAsistencia" <?php echo ($es_tarde && $ya_justifico_retraso) ? 'style="background-color: #f59e0b; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);"' : ''; ?>>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    Registrar Entrada
+                                    <?php echo ($es_tarde && $ya_justifico_retraso) ? 'Registrar Entrada (Retraso)' : 'Registrar Entrada'; ?>
                                 </button>
                             </form>
                         <?php endif; ?>
@@ -249,8 +253,10 @@ try {
                 <p class="texto-estado-asistencia">
                     <?php 
                         if (!$asistencia_hoy) {
-                            if($es_tarde) {
-                                echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong>.";
+                            if($es_tarde && !$ya_justifico_retraso) {
+                                echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong> para habilitar el botón de entrada.";
+                            } elseif ($es_tarde && $ya_justifico_retraso) {
+                                echo "Justificación enviada a la Dirección. <strong>Ahora debes registrar tu entrada físicamente.</strong>";
                             } else {
                                 echo "Aún no has registrado tu entrada el día de hoy.";
                             }

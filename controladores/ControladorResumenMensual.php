@@ -13,10 +13,14 @@ $id_personal = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $mes = isset($_GET['mes']) ? $_GET['mes'] : date('n');
 $anio = isset($_GET['anio']) ? (int)$_GET['anio'] : date('Y');
 
-// Variables contador (Ahora son 6)
 $p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
 
 try {
+    // === OBTENER FECHA DE INGRESO PARA FRENAR FALTAS FANTASMAS ===
+    $stmt_ingreso = $conexion->prepare("SELECT fecha_ingreso FROM personal WHERE id_personal = ?");
+    $stmt_ingreso->execute([$id_personal]);
+    $fecha_ingreso_empleado = $stmt_ingreso->fetchColumn() ?: '2000-01-01';
+
     if ($mes === 'todos') {
         $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
         $stmt_stats->execute([$id_personal, $anio]);
@@ -64,7 +68,10 @@ try {
                 if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 
             } else {
-                $f++; 
+                // === CORRECCIÓN AQUÍ: EL BUCLE AHORA SÍ RESPETA LA FECHA DE INGRESO ===
+                if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ingreso_empleado) {
+                    $f++; 
+                }
             }
         }
     }

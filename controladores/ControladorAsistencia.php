@@ -1,105 +1,95 @@
 <?php
 session_start();
 require_once '../configuracion/conexion.php';
+require_once 'ControladorBitacora.php'; 
 
-// Si alguien intenta entrar aquí directamente por URL sin iniciar sesión, lo echamos
-if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
+if (!isset($_SESSION['logueado'])) {
     header("Location: ../vistas/login.php");
     exit;
 }
 
-// 1. CONFIRMAMOS LA ZONA HORARIA A VENEZUELA
 date_default_timezone_set('America/Caracas');
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion'])) {
-    
-    $accion = $_POST['accion'];
-    $id_usuario = $_SESSION['id_usuario'];
-    
-    try {
-        // ==========================================
-        // OBTENER DATOS DEL EMPLEADO Y SU HORARIO
-        // ==========================================
-        $stmt_emp = $conexion->prepare("SELECT id_personal, hora_entrada_personalizada, hora_salida_personalizada FROM personal WHERE id_usuario = ?");
-        $stmt_emp->execute([$id_usuario]);
-        $empleado = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+$id_usuario = $_SESSION['id_usuario'];
+$accion = $_POST['accion'] ?? '';
 
-        if (!$empleado) throw new Exception("Tu usuario no está vinculado a un empleado.");
-        $id_personal = $empleado['id_personal'];
+// 1. Obtener los datos del empleado
+$stmt_emp = $conexion->prepare("SELECT p.id_personal, p.nombres, p.apellidos, p.hora_entrada_personalizada, p.hora_salida_personalizada 
+                                FROM personal p WHERE p.id_usuario = ?");
+$stmt_emp->execute([$id_usuario]);
+$empleado = $stmt_emp->fetch(PDO::FETCH_ASSOC);
 
-        // ==========================================
-        // OBTENER LA CONFIGURACIÓN GLOBAL
-        // ==========================================
-        $stmt_conf = $conexion->prepare("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
-        $stmt_conf->execute();
-        $config = $stmt_conf->fetch(PDO::FETCH_ASSOC);
-
-        if(!$config) {
-            $config = ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
-        }
-
-        // ==========================================
-        // DEFINIR CUÁL HORARIO APLICA (Personalizado o General)
-        // ==========================================
-        $hora_esperada = !empty($empleado['hora_entrada_personalizada']) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
-        $hora_salida_esperada = !empty($empleado['hora_salida_personalizada']) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
-        $tolerancia = $config['minutos_tolerancia'];
-
-        $fecha_hoy = date('Y-m-d');
-        $hora_actual = date('H:i:s');
-
-        // ==========================================
-        // ACCIÓN 1: MARCAR ENTRADA
-        // ==========================================
-        if ($accion === 'marcar_entrada') {
-            
-            // Bloqueo de seguridad Backend: Evita registrar entrada "Puntual" si ya es tarde
-            $hora_maxima_permitida = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
-            
-            if ($hora_actual > $hora_maxima_permitida) {
-                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Tu límite de entrada pasó. Debes justificar tu llegada mediante el botón rojo.'];
-                header("Location: ../vistas/principal.php");
-                exit;
-            }
-
-            // Verificamos que no haya un registro previo hoy
-            $check = $conexion->prepare("SELECT id_asistencia FROM asistencias WHERE id_personal = ? AND fecha = ?");
-            $check->execute([$id_personal, $fecha_hoy]);
-            
-            if ($check->rowCount() == 0) {
-                // Si pasa la validación, es puntual 100%
-                $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, estado) VALUES (?, ?, ?, ?, 'Puntual')");
-                $insert->execute([$id_personal, $fecha_hoy, $hora_esperada, $hora_actual]);
-                $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => '¡Entrada registrada correctamente!'];
-            }
-        } 
-        
-        // ==========================================
-        // ACCIÓN 2: MARCAR SALIDA
-        // ==========================================
-        elseif ($accion === 'marcar_salida') {
-            
-            // Bloqueo de seguridad Backend: Evita registrar salida temprana de forma normal
-            if ($hora_actual < $hora_salida_esperada) {
-                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Aún no es tu hora de salida. Debes crear una justificación para irte temprano.'];
-                header("Location: ../vistas/principal.php");
-                exit;
-            }
-
-            // Actualizamos la hora de salida SOLO si está vacía
-            $update = $conexion->prepare("UPDATE asistencias SET hora_salida = ? WHERE id_personal = ? AND fecha = ? AND hora_salida IS NULL");
-            $update->execute([$hora_actual, $id_personal, $fecha_hoy]);
-            $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => '¡Salida registrada exitosamente! Nos vemos mañana.'];
-        }
-
-    } catch (Exception $e) {
-        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Hubo un error al procesar la asistencia.'];
-    }
-
-    header("Location: ../vistas/principal.php");
-    exit;
-} else {
+if (!$empleado) {
+    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Error: Tu usuario no está vinculado a un empleado.'];
     header("Location: ../vistas/principal.php");
     exit;
 }
+
+$id_personal = $empleado['id_personal'];
+$nombre_completo = $empleado['nombres'] . ' ' . $empleado['apellidos'];
+
+// 2. Obtener horarios de configuración
+$stmt_conf = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion LIMIT 1");
+$config = $stmt_conf->fetch(PDO::FETCH_ASSOC);
+
+$hora_esperada = $empleado['hora_entrada_personalizada'] ?: $config['hora_entrada_general'];
+$tolerancia = $config['minutos_tolerancia'];
+$limite_entrada = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
+$hora_actual = date('H:i:s');
+
+if ($accion === 'marcar_entrada') {
+    
+    $estado_marcado = ($hora_actual > $limite_entrada) ? 'Retraso' : 'Puntual';
+
+    // Verificamos si ya existe una fila para hoy (creada por una justificación previa, por ejemplo)
+    $stmt_check = $conexion->prepare("SELECT id_asistencia, hora_entrada FROM asistencias WHERE id_personal = ? AND fecha = CURDATE()");
+    $stmt_check->execute([$id_personal]);
+    $registro = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+    if ($registro) {
+        // La fila ya existía (Justificó primero, como es debido)
+        if ($registro['hora_entrada'] === null) {
+            
+            // Hacemos UPDATE para no causar error de duplicidad
+            $stmt_upd = $conexion->prepare("UPDATE asistencias SET hora_entrada = ?, estado = IF(estado_justificacion IS NOT NULL, estado, ?) WHERE id_asistencia = ?");
+            $stmt_upd->execute([$hora_actual, $estado_marcado, $registro['id_asistencia']]);
+            
+            ControladorBitacora::registrar($conexion, $id_usuario, 'Asistencia', 'Registro de Entrada (Tras Justificar)', "El empleado $nombre_completo marcó su entrada a las $hora_actual.");
+            $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Has registrado tu entrada física con éxito. ¡A trabajar!'];
+        
+        } else {
+            $_SESSION['alerta_principal'] = ['tipo' => 'warning', 'mensaje' => 'Ya habías registrado tu entrada el día de hoy.'];
+        }
+    } else {
+        // Es un registro normal (Puntual, sin justificación previa)
+        $stmt_ins = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, estado) VALUES (?, CURDATE(), ?, ?, ?)");
+        $stmt_ins->execute([$id_personal, $hora_esperada, $hora_actual, $estado_marcado]);
+        
+        ControladorBitacora::registrar($conexion, $id_usuario, 'Asistencia', 'Registro de Entrada', "El empleado $nombre_completo marcó su entrada a las $hora_actual.");
+        $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Entrada registrada a tiempo. ¡Que tengas un excelente día!'];
+    }
+
+} elseif ($accion === 'marcar_salida') {
+    
+    $stmt_check = $conexion->prepare("SELECT id_asistencia, hora_salida FROM asistencias WHERE id_personal = ? AND fecha = CURDATE()");
+    $stmt_check->execute([$id_personal]);
+    $registro = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+    if ($registro) {
+        if ($registro['hora_salida'] === null) {
+            $stmt_upd = $conexion->prepare("UPDATE asistencias SET hora_salida = ? WHERE id_asistencia = ?");
+            $stmt_upd->execute([$hora_actual, $registro['id_asistencia']]);
+            
+            ControladorBitacora::registrar($conexion, $id_usuario, 'Asistencia', 'Registro de Salida', "El empleado $nombre_completo marcó su salida a las $hora_actual.");
+            $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Salida registrada correctamente. ¡Hasta mañana!'];
+        } else {
+            $_SESSION['alerta_principal'] = ['tipo' => 'warning', 'mensaje' => 'Ya habías registrado tu salida el día de hoy.'];
+        }
+    } else {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'No puedes marcar salida sin haber marcado entrada primero.'];
+    }
+}
+
+header("Location: ../vistas/principal.php");
+exit;
 ?>
