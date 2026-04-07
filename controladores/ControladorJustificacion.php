@@ -14,11 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $id_personal = $_POST['id_personal'];
     $fecha = $_POST['fecha_justificacion'];
     
-    // Capturamos el momento exacto de la acción
-    $hora_actual = date('H:i:s');
-    $hora_formateada = date('h:i A');
-    
-    // RECIBIMOS EL NUEVO CAMPO
+    // === BLOQUEO FIN DE SEMANA ===
+    // date('N') nos da el día de la semana de la fecha enviada (6 = Sábado, 7 = Domingo)
+    if (date('N', strtotime($fecha)) >= 6) {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Operación denegada. No puedes registrar justificaciones para días de fin de semana.'];
+        header("Location: ../vistas/principal.php");
+        exit;
+    }
+
+    // RECIBIMOS LOS CAMPOS
     $tipo = isset($_POST['tipo_incidencia']) ? $_POST['tipo_incidencia'] : 'Otro';
     $motivo_texto = trim($_POST['motivo']);
     
@@ -74,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $registro = $check->fetch(PDO::FETCH_ASSOC);
         
         if ($registro) {
-            // SI YA EXISTE EL REGISTRO
+            // SI YA EXISTE EL REGISTRO (Ej: Ya marcó entrada en la mañana y ahora pide irse temprano)
+            // SOLO actualizamos la excusa, NO TOCAMOS LAS HORAS (Por eso el código es más corto).
             $q = "UPDATE asistencias SET motivo_justificacion = ?, estado_justificacion = 'Pendiente'";
             $params = [$motivo_completo];
 
@@ -83,19 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $params[] = $nombre_archivo_final;
             }
 
-            // Si es llegada tardía y no ha registrado entrada, guardamos la hora exacta
-            if ($tipo == 'Llegada Tardía' && empty($registro['hora_entrada'])) {
-                $q .= ", hora_entrada = ?, estado = 'Retraso (Pendiente)'";
-                $params[] = $hora_actual;
-            } 
-            // Si es salida temprana, capturamos su salida
-            elseif ($tipo == 'Salida Temprana' && empty($registro['hora_salida'])) {
-                $q .= ", hora_salida = ?, observacion = ?";
-                $params[] = $hora_actual;
-                $params[] = "[Salida Temprana Pendiente] - Registrada a las " . $hora_formateada . ".";
-            } 
-            // Si falta todo el día
-            elseif ($tipo == 'Inasistencia') {
+            // Si la excusa es porque faltó todo el día, le cambiamos el estado directamente.
+            if ($tipo == 'Inasistencia') {
                 $q .= ", estado = 'Justificado (Pendiente)'";
             }
 
@@ -107,9 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $update->execute($params);
             
         } else {
-            // SI NO EXISTE EL REGISTRO (Es el primer evento del día para él)
-            
-            // Obtenemos su hora esperada
+            // SI NO EXISTE EL REGISTRO (Ej: Es temprano en la mañana y está justificando su retraso)
             $stmt_emp = $conexion->prepare("SELECT hora_entrada_personalizada FROM personal WHERE id_personal = ?");
             $stmt_emp->execute([$id_personal]);
             $emp = $stmt_emp->fetch(PDO::FETCH_ASSOC);
@@ -119,24 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $hora_esperada = !empty($emp['hora_entrada_personalizada']) ? $emp['hora_entrada_personalizada'] : ($conf['hora_entrada_general'] ?? '07:00:00');
 
-            $hora_entrada_val = null;
-            $hora_salida_val = null;
-            $estado_val = 'Justificado (Pendiente)';
-            $observacion_val = null;
+            $estado_val = ($tipo == 'Inasistencia') ? 'Justificado (Pendiente)' : 'Pendiente';
 
-            if ($tipo == 'Llegada Tardía') {
-                $hora_entrada_val = $hora_actual;
-                $estado_val = 'Retraso (Pendiente)';
-            } elseif ($tipo == 'Salida Temprana') { 
-                $hora_salida_val = $hora_actual;
-                $observacion_val = "[Salida Temprana Pendiente] - Registrada a las " . $hora_formateada . ".";
-            }
-
-            $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, hora_entrada, hora_salida, estado, motivo_justificacion, estado_justificacion, archivo_evidencia, observacion) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?, ?)");
-            $insert->execute([$id_personal, $fecha, $hora_esperada, $hora_entrada_val, $hora_salida_val, $estado_val, $motivo_completo, $nombre_archivo_final, $observacion_val]);
+            // Insertamos la fila con la excusa, pero dejamos las horas físicas en blanco para que el botón las marque después.
+            $insert = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, estado, motivo_justificacion, estado_justificacion, archivo_evidencia) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)");
+            $insert->execute([$id_personal, $fecha, $hora_esperada, $estado_val, $motivo_completo, $nombre_archivo_final]);
         }
 
-        $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Tu justificación ha sido enviada y la hora fue registrada.'];
+        $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Justificación enviada. Ahora debes registrar tu hora física en el panel.'];
     } catch (PDOException $e) {
         $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Error al procesar tu justificación en la base de datos.'];
     }

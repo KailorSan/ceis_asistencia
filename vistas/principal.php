@@ -2,6 +2,7 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
+// ¡VITAL! Configurar la zona horaria a Venezuela
 date_default_timezone_set('America/Caracas');
 
 $nombre = $_SESSION['usuario'];
@@ -14,9 +15,6 @@ $titulo_tarjeta_2 = "Cargando..."; $valor_tarjeta_2 = 0;
 $titulo_tarjeta_3 = "Cargando..."; $valor_tarjeta_3 = 0;
 
 try {
-    // ========================================================
-    // === SCRIPT CENTINELA (AUTO-FALTA E IRREGULAR) ===
-    // ========================================================
     $hora_actual_sec = date('H:i:s');
     $stmt_conf_limit = $conexion->query("SELECT hora_entrada_general, hora_salida_general FROM configuracion WHERE id_config = 1");
     $conf_limit = $stmt_conf_limit->fetch(PDO::FETCH_ASSOC);
@@ -74,9 +72,6 @@ try {
             }
         }
     }
-    // ========================================================
-    // === FIN SCRIPT CENTINELA ===============================
-    // ========================================================
 
     $stmt_emp = $conexion->prepare("SELECT id_personal, hora_entrada_personalizada, hora_salida_personalizada FROM personal WHERE id_usuario = :id_user");
     $stmt_emp->execute([':id_user' => $id_usuario]);
@@ -86,11 +81,15 @@ try {
     $stmt_conf = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
     $config = $stmt_conf->fetch(PDO::FETCH_ASSOC) ?: ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
 
-    // === NUEVA LÓGICA DE VARIABLES PARA EL BOTÓN ===
     $asistencia_hoy = false;
     $ya_salio = false;
     $hora_entrada_registrada = "";
-    $ya_justifico_retraso = false;
+    
+    $ya_justifico_entrada = false;
+    $ya_justifico_salida = false;
+
+    // === ESCUDO FIN DE SEMANA ===
+    $es_fin_semana = (date('N') >= 6); 
 
     $hora_esperada = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
     $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
@@ -99,16 +98,15 @@ try {
     $hora_actual = date('H:i:s');
     $limite_entrada = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
     
-    $es_tarde = ($hora_actual > $limite_entrada);
-    $es_temprano_salida = ($hora_actual < $hora_salida_esperada);
+    $es_tarde = (strtotime($hora_actual) > strtotime($limite_entrada));
+    $es_temprano_salida = (strtotime($hora_actual) < strtotime($hora_salida_esperada));
 
     if ($id_personal) {
-        $stmt_check = $conexion->prepare("SELECT hora_entrada, hora_salida, estado_justificacion FROM asistencias WHERE id_personal = :id AND fecha = CURDATE()");
+        $stmt_check = $conexion->prepare("SELECT hora_entrada, hora_salida, estado_justificacion, motivo_justificacion FROM asistencias WHERE id_personal = :id AND fecha = CURDATE()");
         $stmt_check->execute([':id' => $id_personal]);
         $registro_hoy = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
         if ($registro_hoy) {
-            // Evaluamos ESTRICTAMENTE si ya marcó entrada física (no solo enviar excusa)
             if ($registro_hoy['hora_entrada'] !== null) {
                 $asistencia_hoy = true;
                 $hora_entrada_registrada = $registro_hoy['hora_entrada'];
@@ -116,9 +114,13 @@ try {
                     $ya_salio = true; 
                 }
             }
-            // Evaluamos si ya envió su justificación hoy
             if (!empty($registro_hoy['estado_justificacion'])) {
-                $ya_justifico_retraso = true;
+                if (strpos($registro_hoy['motivo_justificacion'], '[Llegada Tardía]') !== false) {
+                    $ya_justifico_entrada = true;
+                }
+                if (strpos($registro_hoy['motivo_justificacion'], '[Salida Temprana]') !== false) {
+                    $ya_justifico_salida = true;
+                }
             }
         }
     }
@@ -190,80 +192,102 @@ try {
                 
                 <div class="botones-asistencia">
                     
-                    <?php if (!$asistencia_hoy): ?>
-                        
-                        <?php if ($es_tarde && !$ya_justifico_retraso): ?>
-                            <button type="button" class="btn-marcar-entrada" style="background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="abrirModalJustificacion('Llegada Tardía')">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                Justificar Llegada Tardía
-                            </button>
-                        <?php else: ?>
-                            <form action="../controladores/ControladorAsistencia.php" method="POST">
-                                <input type="hidden" name="accion" value="marcar_entrada">
-                                <button type="submit" class="btn-marcar-entrada" id="btnAsistencia" <?php echo ($es_tarde && $ya_justifico_retraso) ? 'style="background-color: #f59e0b; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);"' : ''; ?>>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <?php echo ($es_tarde && $ya_justifico_retraso) ? 'Registrar Entrada (Retraso)' : 'Registrar Entrada'; ?>
-                                </button>
-                            </form>
-                        <?php endif; ?>
-
-                    <?php elseif ($asistencia_hoy && !$ya_salio): ?>
-                        
-                        <?php if ($es_temprano_salida): ?>
-                            <button type="button" class="btn-marcar-salida" disabled style="background-color: #94a3b8; cursor: not-allowed; box-shadow: none;">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                ¡Espera a tu salida!
-                            </button>
-                        <?php else: ?>
-                            <form action="../controladores/ControladorAsistencia.php" method="POST">
-                                <input type="hidden" name="accion" value="marcar_salida">
-                                <button type="submit" class="btn-marcar-salida" id="btnSalida">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                    </svg>
-                                    Registrar Salida
-                                </button>
-                            </form>
-                        <?php endif; ?>
+                    <?php if ($es_fin_semana): ?>
+                        <div style="color: #3b82f6; font-size: 1.2rem; font-weight: bold; text-align: center; padding: 15px; width: 100%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display: block; margin: 0 auto 10px auto;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            ¡Feliz Fin de Semana!<br>
+                            <span style="font-size: 0.9rem; font-weight: normal; color: var(--text-color);">El sistema de registros y justificaciones está deshabilitado hasta el lunes.</span>
+                        </div>
 
                     <?php else: ?>
-                        <div style="color: #10b981; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+
+                        <?php if (!$asistencia_hoy): ?>
+                            
+                            <?php if ($es_tarde && !$ya_justifico_entrada): ?>
+                                <button type="button" class="btn-marcar-entrada" style="background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="abrirModalJustificacion('Llegada Tardía')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Justificar Llegada Tardía
+                                </button>
+                            <?php else: ?>
+                                <form action="../controladores/ControladorAsistencia.php" method="POST">
+                                    <input type="hidden" name="accion" value="marcar_entrada">
+                                    <button type="submit" class="btn-marcar-entrada" id="btnAsistencia" <?php echo ($es_tarde && $ya_justifico_entrada) ? 'style="background-color: #f59e0b; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);"' : ''; ?>>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <?php echo ($es_tarde && $ya_justifico_entrada) ? 'Registrar Entrada (Retraso)' : 'Registrar Entrada'; ?>
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
+                        <?php elseif ($asistencia_hoy && !$ya_salio): ?>
+                            
+                            <?php if ($es_temprano_salida && !$ya_justifico_salida): ?>
+                                <button type="button" class="btn-marcar-salida" disabled style="background-color: #94a3b8; cursor: not-allowed; box-shadow: none;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    ¡Espera a tu salida!
+                                </button>
+                            <?php else: ?>
+                                <form action="../controladores/ControladorAsistencia.php" method="POST">
+                                    <input type="hidden" name="accion" value="marcar_salida">
+                                    <button type="submit" class="btn-marcar-salida" id="btnSalida" <?php echo ($es_temprano_salida && $ya_justifico_salida) ? 'style="background-color: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);"' : ''; ?>>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        <?php echo ($es_temprano_salida && $ya_justifico_salida) ? 'Registrar Salida Temprana' : 'Registrar Salida'; ?>
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
+                        <?php else: ?>
+                            <div style="color: #10b981; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Jornada Completada por hoy
+                            </div>
+                        <?php endif; ?>
+
+                        <button type="button" class="btn-justificacion" onclick="abrirModalJustificacion()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            Jornada Completada por hoy
-                        </div>
+                            Crear Justificación
+                        </button>
+
                     <?php endif; ?>
-
-                    <button type="button" class="btn-justificacion" onclick="abrirModalJustificacion()">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Crear Justificación
-                    </button>
-
                 </div>
                 
                 <p class="texto-estado-asistencia">
                     <?php 
-                        if (!$asistencia_hoy) {
-                            if($es_tarde && !$ya_justifico_retraso) {
-                                echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong> para habilitar el botón de entrada.";
-                            } elseif ($es_tarde && $ya_justifico_retraso) {
-                                echo "Justificación enviada a la Dirección. <strong>Ahora debes registrar tu entrada físicamente.</strong>";
-                            } else {
-                                echo "Aún no has registrado tu entrada el día de hoy.";
-                            }
-                        } elseif ($asistencia_hoy && !$ya_salio) {
-                            echo "Entrada registrada a las <strong>" . date('h:i A', strtotime($hora_entrada_registrada)) . "</strong>. ¡No olvides marcar tu salida!";
+                        if ($es_fin_semana) {
+                            echo "Los reportes y módulos están habilitados, pero el registro de personal y justificaciones se encuentra pausado.";
                         } else {
-                            echo "Has completado tu registro de asistencia de hoy exitosamente.";
+                            if (!$asistencia_hoy) {
+                                if($es_tarde && !$ya_justifico_entrada) {
+                                    echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong> para habilitar el botón de entrada.";
+                                } elseif ($es_tarde && $ya_justifico_entrada) {
+                                    echo "Justificación enviada a la Dirección. <strong>Ahora debes registrar tu entrada físicamente.</strong>";
+                                } else {
+                                    echo "Aún no has registrado tu entrada el día de hoy.";
+                                }
+                            } elseif ($asistencia_hoy && !$ya_salio) {
+                                if ($es_temprano_salida && !$ya_justifico_salida) {
+                                    echo "Entrada registrada a las <strong>" . date('h:i A', strtotime($hora_entrada_registrada)) . "</strong>. Tu botón de salida se habilitará a las " . date('h:i A', strtotime($hora_salida_esperada)) . ".";
+                                } elseif ($es_temprano_salida && $ya_justifico_salida) {
+                                    echo "Entrada: <strong>" . date('h:i A', strtotime($hora_entrada_registrada)) . "</strong>. Permiso procesado, <strong>ya puedes registrar tu salida temprana.</strong>";
+                                } else {
+                                    echo "Entrada registrada a las <strong>" . date('h:i A', strtotime($hora_entrada_registrada)) . "</strong>. ¡Es hora de ir a casa, no olvides marcar tu salida!";
+                                }
+                            } else {
+                                echo "Has completado tu registro de asistencia de hoy exitosamente.";
+                            }
                         }
                     ?>
                 </p>
@@ -365,9 +389,32 @@ try {
 
         const modalOverlay = document.getElementById('modalOverlay');
         const modalJustificacion = document.getElementById('modalJustificacion');
+        const fechaInput = document.getElementById('modal_j_fecha');
+
+        // BLOQUEO DE FIN DE SEMANA EN EL SELECTOR DE FECHAS
+        if (fechaInput) {
+            fechaInput.addEventListener('change', function() {
+                const val = this.value;
+                if (val) {
+                    const parts = val.split('-');
+                    const date = new Date(parts[0], parts[1] - 1, parts[2]); 
+                    if (date.getDay() === 0 || date.getDay() === 6) {
+                        Swal.fire('Fecha Inválida', 'No puedes justificar un Sábado o Domingo.', 'warning');
+                        this.value = ''; // Borra la fecha inválida
+                    }
+                }
+            });
+        }
 
         function abrirModalJustificacion(tipo = '') {
-            document.getElementById('modal_j_fecha').valueAsDate = new Date();
+            const hoy = new Date();
+            // Si hoy es fin de semana, no sugerir fecha actual, dejar vacío para que elijan un día hábil pasado
+            if(hoy.getDay() !== 0 && hoy.getDay() !== 6) {
+                fechaInput.valueAsDate = hoy;
+            } else {
+                fechaInput.value = '';
+            }
+
             const selectTipo = document.getElementById('modal_j_tipo');
             if(tipo) { selectTipo.value = tipo; } else { selectTipo.selectedIndex = 0; }
             modalOverlay.classList.add('activo');
