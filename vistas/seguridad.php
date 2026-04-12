@@ -72,7 +72,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
         <main class="contenido">
             
-            <div style="margin-bottom: 25px; display: flex; justify-content: flex-start;">
+            <div style="margin-block-end: 25px; display: flex; justify-content: flex-start;">
                 <button type="button" class="btn-guardar" style="padding: 12px 30px; font-size: 1.05rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(64, 111, 243, 0.3); display: flex; align-items: center; gap: 10px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="abrirModalBitacora()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -81,10 +81,10 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                 </button>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-block-end: 25px; flex-wrap: wrap; gap: 15px;">
                 
-                <div style="flex: 1; min-width: 250px;">
-                    <h1 style="margin-bottom: 5px;">Gestión de Base de Datos</h1>
+                <div style="flex: 1; min-inline-size: 250px;">
+                    <h1 style="margin-block-end: 5px;">Gestión de Base de Datos</h1>
                     <p style="margin: 0; font-size: 0.95rem; color: var(--text-color);">Administra los respaldos del sistema CEIS.</p>
                 </div>
                 
@@ -126,21 +126,21 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
             <div class="grid-seguridad">
                 
                 <div class="panel-seguridad" style="padding: 2rem;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <svg style="width: 28px; height: 28px; color: var(--primary-color);" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-block-end: 15px;">
+                        <svg style="inline-size: 28px; block-size: 28px; color: var(--primary-color);" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
                         <h2 style="color: var(--primary-color); margin:0; font-size: 1.4rem;">Crear Respaldo</h2>
                     </div>
-                    <p style="font-size: 0.9rem; margin-bottom: 20px;">Selecciona el método de generación o sube una copia externa.</p>
+                    <p style="font-size: 0.9rem; margin-block-end: 20px;">Selecciona el método de generación o sube una copia externa.</p>
 
                     <div class="botones-generar" style="display: flex; flex-direction: column; gap: 12px;">
                         
                         <button type="button" class="btn-guardar btn-completo" style="padding: 12px; font-size: 0.95rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('local', <?php echo $restantes_generar; ?>)">
-                            <svg style="width: 20px; height: 20px; margin-right: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                             <?php echo $restantes_generar > 0 ? 'Generar y Guardar en Historial' : 'Límite de generación alcanzado'; ?>
                         </button>
 
                         <button type="button" class="btn-cancelar btn-completo" style="padding: 12px; font-size: 0.95rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('descargar', <?php echo $restantes_generar; ?>)">
-                            <svg style="width: 20px; height: 20px; margin-right: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             <?php echo $restantes_generar > 0 ? 'Generar y Descargar Inmediata' : 'Límite de generación alcanzado'; ?>
                         </button>
 
@@ -151,14 +151,14 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             <div class="contenedor-archivo">
                                 <input type="file" name="archivo_sql" id="archivo_sql" accept=".sql" class="input-file-oculto" onchange="document.getElementById('form-subir').submit();" <?php echo $restantes_subir == 0 ? 'disabled' : ''; ?>>
                                 <label for="archivo_sql" class="btn-subir-archivo" style="justify-content: center; padding: 12px; font-size: 0.95rem; <?php echo $restantes_subir == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
-                                    <svg style="width: 20px; height: 20px; margin-right: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                    <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                     <span><?php echo $restantes_subir > 0 ? 'Cargar .SQL Externo' : 'Límite de cargas alcanzado'; ?></span>
                                 </label>
                             </div>
                         </form>
 
-                        <div style="background: rgba(64, 111, 243, 0.05); border: 1px solid rgba(64, 111, 243, 0.2); border-radius: 10px; padding: 12px; margin-top: 5px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--primary-color);">
+                        <div style="background: rgba(64, 111, 243, 0.05); border: 1px solid rgba(64, 111, 243, 0.2); border-radius: 10px; padding: 12px; margin-block-start: 5px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-block-end: 6px; color: var(--primary-color);">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <h4 style="margin: 0; font-size: 0.9rem;">Información de Seguridad</h4>
                             </div>
@@ -178,12 +178,12 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                         $total_respaldos = $archivos_sql ? count($archivos_sql) : 0;
                     ?>
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-block-end: 20px;">
                         <h2 style="color: var(--primary-color); margin:0; font-size: 1.4rem;">Historial</h2>
                         <span style="background: var(--bg-light); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: var(--text-color);">Total: <?php echo $total_respaldos; ?> / 10</span>
                     </div>
 
-                    <div class="lista-historial" style="max-block-size: 380px; padding-right: 5px;">
+                    <div class="lista-historial" style="max-block-size: 380px; padding-inline-end: 5px;">
                         <?php if($total_respaldos > 0): ?>
                             <?php foreach($archivos_sql as $ruta_archivo): 
                                 $nombre_archivo = basename($ruta_archivo);
@@ -198,10 +198,10 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             <div class="item-respaldo" style="padding: 12px 18px;">
                                 <div class="info-respaldo">
                                     <div class="icono-bd" style="padding: 8px;">
-                                        <svg style="width: 20px; height: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                                        <svg style="inline-size: 20px; block-size: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                                     </div>
                                     <div>
-                                        <h4 style="word-break: break-all; padding-right: 10px; font-size: 0.95rem; margin-bottom: 2px;"><?php echo htmlspecialchars($nombre_archivo); ?></h4>
+                                        <h4 style="word-break: break-all; padding-inline-end: 10px; font-size: 0.95rem; margin-block-end: 2px;"><?php echo htmlspecialchars($nombre_archivo); ?></h4>
                                         <small style="font-size: 0.8rem;"><?php echo $peso_mb; ?> • Creado: <?php echo $fecha_archivo; ?></small>
                                     </div>
                                 </div>
@@ -220,7 +220,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             <?php endforeach; ?>
                         <?php else: ?>
                             <div style="text-align: center; padding: 2rem; color: var(--text-color);">
-                                <svg xmlns="http://www.w3.org/2000/svg" style="width: 45px; height: 45px; opacity: 0.5; margin-bottom: 10px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" style="inline-size: 45px; block-size: 45px; opacity: 0.5; margin-block-end: 10px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
                                 <p style="font-size: 0.9rem;">No hay respaldos guardados en el historial.</p>
                             </div>
                         <?php endif; ?>
@@ -231,14 +231,14 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
         </main>
 
-        <div id="modalBitacora" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div id="modalBitacora" style="display: none; position: fixed; inset-block-start: 0; inset-inline-start: 0; inline-size: 100vw; block-size: 100vh; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
             
-            <div style="background: var(--bg-color); width: 95%; height: 95%; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: zoomIn 0.3s ease-out;">
+            <div style="background: var(--bg-color); inline-size: 95%; block-size: 95%; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: zoomIn 0.3s ease-out;">
                 
-                <div style="padding: 15px 30px; background: var(--navbar-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 2;">
+                <div style="padding: 15px 30px; background: var(--navbar-bg); border-block-end: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 2;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div style="background: rgba(64, 111, 243, 0.1); padding: 10px; border-radius: 10px; color: var(--primary-color);">
-                            <svg style="width: 28px; height: 28px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <svg style="inline-size: 28px; block-size: 28px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                         <div>
                             <h2 style="margin: 0; color: var(--text-color); font-size: 1.4rem;">Registro Inexpugnable (Bitácora)</h2>
@@ -252,8 +252,8 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
                 <div style="display: flex; flex: 1; overflow: hidden;">
                     
-                    <div style="width: 260px; background: var(--navbar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto;">
-                        <h3 style="padding: 0 25px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-color); opacity: 0.5; margin-bottom: 15px; letter-spacing: 1px;">Filtrar por Módulo</h3>
+                    <div style="inline-size: 260px; background: var(--navbar-bg); border-inline-end: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto;">
+                        <h3 style="padding: 0 25px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-color); opacity: 0.5; margin-block-end: 15px; letter-spacing: 1px;">Filtrar por Módulo</h3>
                         
                         <button class="btn-tab-bitacora activo" onclick="cambiarTabBitacora(this, 'Todos')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
@@ -288,15 +288,15 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
                     <div style="flex: 1; padding: 25px 30px; background: var(--bg-light); display: flex; flex-direction: column; overflow: hidden;">
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; background: var(--navbar-bg); padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-block-end: 20px; flex-wrap: wrap; gap: 15px; background: var(--navbar-bg); padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
                             
-                            <div style="position: relative; flex: 1; min-width: 250px; max-width: 400px;">
-                                <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-color); opacity: 0.5; width: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                <input type="text" placeholder="Buscar registro específico..." style="width: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
+                            <div style="position: relative; flex: 1; min-inline-size: 250px; max-inline-size: 400px;">
+                                <svg style="position: absolute; inset-inline-start: 15px; inset-block-start: 50%; transform: translateY(-50%); color: var(--text-color); opacity: 0.5; inline-size: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                <input type="text" placeholder="Buscar registro específico..." style="inline-size: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
                             </div>
 
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <svg style="color: var(--text-color); opacity: 0.6; width: 20px; margin-right: 5px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <svg style="color: var(--text-color); opacity: 0.6; inline-size: 20px; margin-inline-end: 5px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 
                                 <select class="select-filtro-bitacora">
                                     <option value="">Día</option>
@@ -317,16 +317,16 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                                     <option value="2025">2025</option>
                                 </select>
 
-                                <button style="padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; margin-left: 5px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                <button style="padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; margin-inline-start: 5px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                                     Filtrar
                                 </button>
                             </div>
                         </div>
 
-                        <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
-                            <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+                        <div style="flex: 1; overflow-y: auto; padding-inline-end: 5px;">
+                            <table style="inline-size: 100%; border-collapse: separate; border-spacing: 0 10px;">
                                 <thead>
-                                    <tr style="text-align: left; color: var(--text-color); font-size: 0.85rem; text-transform: uppercase; opacity: 0.7;">
+                                    <tr style="text-align: start; color: var(--text-color); font-size: 0.85rem; text-transform: uppercase; opacity: 0.7;">
                                         <th style="padding: 0 15px 10px 15px;">Fecha / Hora</th>
                                         <th style="padding: 0 15px 10px 15px;">Usuario Ejecutor</th>
                                         <th style="padding: 0 15px 10px 15px;">Módulo</th>
@@ -366,13 +366,13 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                                             }
                                         ?>
                                         <tr class="fila-bitacora" data-modulo="<?php echo htmlspecialchars($modulo); ?>" style="background: var(--navbar-bg); box-shadow: var(--shadow-sm); transition: transform 0.2s;">
-                                            <td style="padding: 15px; border-radius: 10px 0 0 10px; color: var(--text-color); width: 140px;">
+                                            <td style="padding: 15px; border-radius: 10px 0 0 10px; color: var(--text-color); inline-size: 140px;">
                                                 <strong><?php echo $fecha; ?></strong><br>
                                                 <small style="opacity: 0.7;"><?php echo $hora; ?></small>
                                             </td>
                                             <td style="padding: 15px; color: var(--text-color);">
                                                 <div style="display:flex; align-items:center; gap:10px;">
-                                                    <img src="../recursos/img/perfiles/default.png" style="width:30px; height:30px; border-radius:50%;"> 
+                                                    <img src="../recursos/img/perfiles/default.png" style="inline-size:30px; block-size:30px; border-radius:50%;"> 
                                                     <strong><?php echo htmlspecialchars($reg['nombre_usuario']); ?></strong>
                                                 </div>
                                             </td>

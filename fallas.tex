@@ -1,1 +1,9 @@
 no se debe restablecer la contrasna por la misma
+
+Áreas de Mejora Técnica:
+
+Validación de Fechas: En el modal de justificación, aunque bloqueas fines de semana en el cliente (JS),
+ recuerda siempre validar esto también en el controlador PHP por seguridad.
+
+Manejo de Errores: En la conexión PDO, el die() con el mensaje de error es útil en desarrollo,
+ pero en producción deberías registrarlo en un log y mostrar un mensaje genérico al usuario para no exponer detalles del servidor.

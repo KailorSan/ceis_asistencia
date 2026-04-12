@@ -173,7 +173,7 @@ try {
             });
         }
 
-        // FUNCIÓN PROCESAR CON INTELIGENCIA ARTIFICIAL DE ALERTAS
+        // FUNCIÓN PROCESAR CON ENCADENAMIENTO DE MODALES
         function procesar(id, accion, tipo, estado_base) {
             let textoAlerta = '';
             
@@ -210,7 +210,37 @@ try {
                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion;
+                    
+                    // SI ES RECHAZAR, DISPARAMOS EL SEGUNDO MODAL PIDIENDO EL MOTIVO
+                    if (accion === 'rechazar') {
+                        Swal.fire({
+                            title: 'Motivo del Rechazo',
+                            text: 'Por favor, indica a continuación por qué se rechaza esta justificación:',
+                            input: 'textarea',
+                            inputPlaceholder: 'Escribe el motivo aquí...',
+                            showCancelButton: true,
+                            confirmButtonColor: '#ef4444',
+                            cancelButtonColor: '#64748b',
+                            confirmButtonText: 'Rechazar y Enviar Observación',
+                            cancelButtonText: 'Cancelar',
+                            background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
+                            color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333',
+                            inputValidator: (value) => {
+                                if (!value) {
+                                    return '¡Necesitas escribir un motivo para poder rechazarlo!';
+                                }
+                            }
+                        }).then((motivoResult) => {
+                            if (motivoResult.isConfirmed) {
+                                // Codificamos el texto para enviarlo por URL de forma segura
+                                let motivoUrl = encodeURIComponent(motivoResult.value);
+                                window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion + '&motivo_rechazo=' + motivoUrl;
+                            }
+                        });
+                    } else {
+                        // SI ES APROBAR, PROCEDE NORMALMENTE
+                        window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion;
+                    }
                 }
             })
         }
