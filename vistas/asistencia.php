@@ -7,9 +7,11 @@ $rol = $_SESSION['rol'];
 $id_rol = $_SESSION['id_rol'];
 $id_usuario = $_SESSION['id_usuario'];
 
-$stmt_mi_id = $conexion->prepare("SELECT p.id_personal, p.foto_perfil, p.nombres, p.apellidos, c.nombre_cargo 
+$stmt_mi_id = $conexion->prepare("SELECT p.id_personal, p.foto_perfil, p.nombres, p.apellidos, c.nombre_cargo, 
+                                         a.hora_entrada AS asistio_hoy
                                   FROM personal p 
                                   INNER JOIN cargos c ON p.id_cargo = c.id_cargo 
+                                  LEFT JOIN asistencias a ON p.id_personal = a.id_personal AND a.fecha = CURDATE()
                                   WHERE p.id_usuario = ?");
 $stmt_mi_id->execute([$id_usuario]);
 $mis_datos = $stmt_mi_id->fetch(PDO::FETCH_ASSOC);
@@ -22,10 +24,12 @@ $cargos_activos_en_grid = [];
 
 if ($es_admin) {
     try {
-        $sql = "SELECT p.id_personal, p.cedula, p.nombres, p.apellidos, p.foto_perfil, p.id_cargo, c.nombre_cargo 
+        $sql = "SELECT p.id_personal, p.cedula, p.nombres, p.apellidos, p.foto_perfil, p.id_cargo, c.nombre_cargo,
+                       a.hora_entrada AS asistio_hoy
                 FROM personal p
                 INNER JOIN cargos c ON p.id_cargo = c.id_cargo
                 INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
+                LEFT JOIN asistencias a ON p.id_personal = a.id_personal AND a.fecha = CURDATE()
                 WHERE u.estado = 'Activo' AND p.id_personal != ?
                 ORDER BY p.nombres ASC";
         $stmt = $conexion->prepare($sql);
@@ -75,9 +79,18 @@ if ($es_admin) {
                 <div class="grid-perfiles" style="margin-block-end: 1rem;">
                     <div class="tarjeta-perfil" style="max-inline-size: 320px;"> 
                         <div class="banner-tarjeta" style="block-size: 70px;"></div>
+
                         <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
                             <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($mis_datos['foto_perfil']); ?>" alt="Mi Foto">
+                            <?php 
+                                if (!empty($mis_datos['asistio_hoy'])) {
+                                    echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($mis_datos['asistio_hoy'])) . ')"></span>';
+                                } else {
+                                    echo '<span class="indicador-estatus estatus-ausente" title="Aún no he llegado"></span>';
+                                }
+                            ?>
                         </div>
+
                         <div class="info-perfil" style="padding-block-start: 10px;">
                             <h3 class="nombre-empleado"><?php echo htmlspecialchars($mis_datos['nombres'] . ' ' . $mis_datos['apellidos']); ?></h3>
                             <span class="cargo-empleado"><?php echo htmlspecialchars($mis_datos['nombre_cargo']); ?></span>
@@ -94,8 +107,8 @@ if ($es_admin) {
 
                 <div class="separador-personal" style="margin-block-end: 20px;">Asistencia del Personal</div>
 
-                <div class="contenedor-filtros-globales" style="justify-content: center; margin-bottom: 25px; padding: 15px;">
-                    <div class="contenedor-busqueda-elegante" style="margin: 0; width: 100%; max-width: 450px;">
+                <div class="contenedor-filtros-globales" style="justify-content: center; margin-block-end: 25px; padding: 15px;">
+                    <div class="contenedor-busqueda-elegante" style="margin: 0; inline-size: 100%; max-inline-size: 450px;">
                       <input type="text" id="buscador-universal" class="campo-busqueda-elegante" placeholder="Buscar por nombre o cargo...">
                         <svg class="icono-busqueda" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
@@ -116,9 +129,18 @@ if ($es_admin) {
                     <?php foreach ($lista_personal as $emp): ?>
                         <div class="tarjeta-perfil item-filtrable" data-cargo="<?php echo $emp['id_cargo']; ?>">
                             <div class="banner-tarjeta" style="block-size: 70px;"></div>
+
                             <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
                                 <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($emp['foto_perfil']); ?>" alt="Foto">
+                                <?php 
+                                    if (!empty($emp['asistio_hoy'])) {
+                                        echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($emp['asistio_hoy'])) . ')"></span>';
+                                    } else {
+                                        echo '<span class="indicador-estatus estatus-ausente" title="Aún no ha llegado o ausente"></span>';
+                                    }
+                                ?>
                             </div>
+
                             <div class="info-perfil" style="padding-block-start: 10px;">
                                 <h3 class="nombre-empleado"><?php echo htmlspecialchars($emp['nombres'] . ' ' . $emp['apellidos']); ?></h3>
                                 <span class="cargo-empleado"><?php echo htmlspecialchars($emp['nombre_cargo']); ?></span>
@@ -292,7 +314,7 @@ if ($es_admin) {
                 html: `
                     <p style="margin-block-end:15px; font-weight:bold; color:var(--primary-color); font-size:1.1rem;">Fecha: ${fechaVisual}</p>
                     
-                    <div style="text-align: start; margin-bottom: 5px;">
+                    <div style="text-align: start; margin-block-end: 5px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Estado Principal:</label>
                     </div>
                     <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:5px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
@@ -311,7 +333,7 @@ if ($es_admin) {
                     </div>
 
                     <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px dashed var(--primary-color);">
-                        <div style="text-align: start; margin-bottom: 5px;">
+                        <div style="text-align: start; margin-block-end: 5px;">
                             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Segunda Incidencia:</label>
                         </div>
                         <select id="swal-estado-secundario" style="inline-size:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">

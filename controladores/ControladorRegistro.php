@@ -42,6 +42,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
+    // NUEVA VALIDACIÓN: Mínimo 3 caracteres por respuesta
+    if (mb_strlen($respuesta_1, 'UTF-8') < 3 || mb_strlen($respuesta_2, 'UTF-8') < 3 || mb_strlen($respuesta_3, 'UTF-8') < 3) {
+        $_SESSION['error_login'] = "Error de seguridad: Las respuestas deben tener al menos 3 caracteres.";
+        header("Location: ../vistas/login.php");
+        exit;
+    }
+
     // Lógica para subir Foto de Perfil
     $nombre_foto = 'default.png'; 
     

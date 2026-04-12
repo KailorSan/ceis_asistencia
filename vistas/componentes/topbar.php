@@ -101,20 +101,19 @@ $cantidad_notificaciones = count($notificaciones);
         });
     }
 
-    // MAGIA NUEVA: Función para expandir la notificación en un Modal
     function abrirNotificacion(mensaje, tipo, fecha) {
         let iconoAlerta = 'info';
         let tituloAlerta = 'Información';
-        let colorBoton = '#3b82f6'; // Azul Info
+        let colorBoton = '#3b82f6'; 
         
         if (tipo === 'Exito') {
             iconoAlerta = 'success';
             tituloAlerta = '¡Aprobado!';
-            colorBoton = '#10b981'; // Verde
+            colorBoton = '#10b981';
         } else if (tipo === 'Alerta') {
-            iconoAlerta = 'error'; // Error para los rechazos (Círculo con X)
+            iconoAlerta = 'error'; 
             tituloAlerta = 'Denegado';
-            colorBoton = '#ef4444'; // Rojo
+            colorBoton = '#ef4444'; 
         }
 
         Swal.fire({

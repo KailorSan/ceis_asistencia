@@ -338,10 +338,13 @@ $preguntas_seguridad = [
             const resp2 = document.getElementById('registro_respuesta_2');
             const resp3 = document.getElementById('registro_respuesta_3');
             
-            const campos = [selectPregunta1, selectPregunta2, selectPregunta3, resp1, resp2, resp3];
+            const selects = [selectPregunta1, selectPregunta2, selectPregunta3];
+            const respuestas = [resp1, resp2, resp3];
+            const campos = [...selects, ...respuestas];
             
             campos.forEach(limpiarError);
 
+            // 1. Validar que no estén vacíos
             campos.forEach(input => {
                 if (input.value.trim() === "") {
                     mostrarError(input);
@@ -351,6 +354,28 @@ $preguntas_seguridad = [
 
             if (!esValido) return false;
 
+            // 2. NUEVO: Validar longitud de las respuestas (mínimo 3 caracteres)
+            let respuestaCorta = false;
+            respuestas.forEach(input => {
+                if (input.value.trim().length < 3) {
+                    mostrarError(input);
+                    respuestaCorta = true;
+                    esValido = false;
+                }
+            });
+
+            if (respuestaCorta) {
+                Swal.fire({
+                    title: 'Respuesta Corta',
+                    text: 'Las respuestas de seguridad deben tener al menos 3 caracteres.',
+                    icon: 'warning', 
+                    confirmButtonColor: '#cc0000', 
+                    heightAuto: false 
+                });
+                return false;
+            }
+
+            // 3. Validar preguntas repetidas
             const v1 = selectPregunta1.value;
             const v2 = selectPregunta2.value;
             const v3 = selectPregunta3.value;

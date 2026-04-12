@@ -2,7 +2,6 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-// ¡VITAL! Protección: Solo Director (1) o Subdirector (2) pueden ver esta pantalla
 if ($_SESSION['id_rol'] != 1 && $_SESSION['id_rol'] != 2) {
     header("Location: principal.php");
     exit;
@@ -46,7 +45,7 @@ try {
    <?php $pagina_activa = 'configuracion'; require_once 'componentes/sidebar.php'; ?>
 
     <div class="contenedor-principal">
-        <?php $titulo_pagina = 'Módulo de Configuración'; require_once 'componentes/topbar.php'; ?>
+        <?php $titulo_pagina = 'Configuración de Asistencias'; require_once 'componentes/topbar.php'; ?>
 
         <main class="contenido">
             <h1>Reglas de Asistencia</h1>

@@ -194,15 +194,18 @@ $paso = $_SESSION['paso_recuperacion'];
 
 <?php if(isset($_SESSION['error_recup'])): ?>
 <script>
-    Swal.fire({
-        title: 'Atención',
-        text: '<?php echo $_SESSION['error_recup']; ?>',
-        icon: 'error',
-        confirmButtonColor: '#003366',
-        heightAuto: false,
-        inline-size: '350px' 
+    document.addEventListener("DOMContentLoaded", function() {
+        Swal.fire({
+            title: 'Atención',
+            text: '<?php echo addslashes($_SESSION['error_recup']); ?>',
+            icon: 'error',
+            confirmButtonColor: '#003366',
+            heightAuto: false,
+            width: '350px' /* Corregido: se usa width en lugar de inline-size */
+        });
     });
 </script>
 <?php unset($_SESSION['error_recup']); endif; ?>
+
 </body>
 </html>
