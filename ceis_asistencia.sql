@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-04-2026 a las 04:51:49
+-- Tiempo de generación: 13-04-2026 a las 22:05:07
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -46,225 +46,658 @@ CREATE TABLE `asistencias` (
 --
 
 INSERT INTO `asistencias` (`id_asistencia`, `id_personal`, `fecha`, `hora_esperada`, `hora_entrada`, `hora_salida`, `estado`, `motivo_justificacion`, `archivo_evidencia`, `estado_justificacion`, `observacion`) VALUES
-(1, 144, '2026-04-03', '20:10:00', '22:46:45', '22:46:47', 'Retraso (Pendiente)', '[Llegada Tardía] - porque si', NULL, 'Pendiente', NULL),
-(2, 301, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(3, 302, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(4, 303, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(5, 304, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(6, 305, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(7, 306, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(8, 307, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(9, 308, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(10, 309, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(11, 310, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(12, 311, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(13, 312, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(14, 313, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(15, 314, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(16, 315, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(17, 316, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(18, 317, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(19, 318, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(20, 319, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
-(21, 320, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `bitacora`
---
-
-CREATE TABLE `bitacora` (
-  `id_bitacora` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
-  `modulo` varchar(50) NOT NULL,
-  `accion` varchar(255) NOT NULL,
-  `detalles` text DEFAULT NULL,
-  `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
-  `ip` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
-
---
--- Volcado de datos para la tabla `bitacora`
---
-
-INSERT INTO `bitacora` (`id_bitacora`, `id_usuario`, `modulo`, `accion`, `detalles`, `fecha_hora`, `ip`) VALUES
-(1, 145, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 07:30:00, salida: 15:30:00, tolerancia: 60 minutos.', '2026-04-03 22:46:29', '::1'),
-(2, 145, 'Asistencia', 'Registro de Salida', 'El empleado Anthony Phrexiel marcó su salida a las 22:46:47.', '2026-04-03 22:46:47', '::1'),
-(3, 145, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 10:30:00, salida: 02:30:00, tolerancia: 60 minutos.', '2026-04-03 22:51:39', '::1');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `cargos`
---
-
-CREATE TABLE `cargos` (
-  `id_cargo` int(11) NOT NULL,
-  `nombre_cargo` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `cargos`
---
-
-INSERT INTO `cargos` (`id_cargo`, `nombre_cargo`) VALUES
-(1, 'Directora'),
-(2, 'Subdirectora'),
-(3, 'Docente de Aula'),
-(4, 'Personal Administrativo'),
-(5, 'Personal Obrero'),
-(6, 'Docente Especialista');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `configuracion`
---
-
-CREATE TABLE `configuracion` (
-  `id_config` int(11) NOT NULL,
-  `hora_entrada_general` time NOT NULL DEFAULT '07:00:00',
-  `hora_salida_general` time NOT NULL DEFAULT '13:00:00',
-  `minutos_tolerancia` int(11) NOT NULL DEFAULT 15
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `configuracion`
---
-
-INSERT INTO `configuracion` (`id_config`, `hora_entrada_general`, `hora_salida_general`, `minutos_tolerancia`) VALUES
-(1, '10:30:00', '02:30:00', 60);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `justificaciones`
---
-
-CREATE TABLE `justificaciones` (
-  `id_justificacion` int(11) NOT NULL,
-  `id_personal` int(11) NOT NULL,
-  `fecha_falta` date NOT NULL,
-  `motivo` varchar(100) NOT NULL,
-  `descripcion` text NOT NULL,
-  `fecha_solicitud` datetime NOT NULL DEFAULT current_timestamp(),
-  `estado_justificacion` enum('Pendiente','Aprobada','Rechazada') DEFAULT 'Pendiente'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `personal`
---
-
-CREATE TABLE `personal` (
-  `id_personal` int(11) NOT NULL,
-  `cedula` varchar(15) NOT NULL,
-  `nombres` varchar(100) NOT NULL,
-  `apellidos` varchar(100) NOT NULL,
-  `foto_perfil` varchar(255) NOT NULL DEFAULT 'default.png',
-  `telefono` varchar(20) NOT NULL,
-  `id_cargo` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
-  `hora_entrada_personalizada` time DEFAULT NULL,
-  `hora_salida_personalizada` time DEFAULT NULL,
-  `fecha_ingreso` date DEFAULT curdate()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `personal`
---
-
-INSERT INTO `personal` (`id_personal`, `cedula`, `nombres`, `apellidos`, `foto_perfil`, `telefono`, `id_cargo`, `id_usuario`, `hora_entrada_personalizada`, `hora_salida_personalizada`, `fecha_ingreso`) VALUES
-(144, '30710894', 'Anthony', 'Phrexiel', 'default.png', '04128725284', 1, 145, NULL, NULL, '2026-04-03'),
-(301, '15000001', 'Carlos', 'Perez', 'default.png', '0414-1234501', 3, 301, NULL, NULL, '2026-04-03'),
-(302, '15000002', 'Maria', 'Gomez', 'default.png', '0414-1234502', 4, 302, NULL, NULL, '2026-04-03'),
-(303, '15000003', 'Juan', 'Rodriguez', 'default.png', '0414-1234503', 5, 303, NULL, NULL, '2026-04-03'),
-(304, '15000004', 'Ana', 'Fernandez', 'default.png', '0414-1234504', 6, 304, NULL, NULL, '2026-04-03'),
-(305, '15000005', 'Luis', 'Martinez', 'default.png', '0414-1234505', 3, 305, NULL, NULL, '2026-04-03'),
-(306, '15000006', 'Carmen', 'Lopez', 'default.png', '0414-1234506', 4, 306, NULL, NULL, '2026-04-03'),
-(307, '15000007', 'Jose', 'Garcia', 'default.png', '0414-1234507', 5, 307, NULL, NULL, '2026-04-03'),
-(308, '15000008', 'Laura', 'Sanchez', 'default.png', '0414-1234508', 6, 308, NULL, NULL, '2026-04-03'),
-(309, '15000009', 'Pedro', 'Romero', 'default.png', '0414-1234509', 3, 309, NULL, NULL, '2026-04-03'),
-(310, '15000010', 'Sofia', 'Suarez', 'default.png', '0414-1234510', 4, 310, NULL, NULL, '2026-04-03'),
-(311, '15000011', 'Miguel', 'Diaz', 'default.png', '0414-1234511', 5, 311, NULL, NULL, '2026-04-03'),
-(312, '15000012', 'Lucia', 'Torres', 'default.png', '0414-1234512', 6, 312, NULL, NULL, '2026-04-03'),
-(313, '15000013', 'Jorge', 'Ruiz', 'default.png', '0414-1234513', 3, 313, NULL, NULL, '2026-04-03'),
-(314, '15000014', 'Elena', 'Ramirez', 'default.png', '0414-1234514', 4, 314, NULL, NULL, '2026-04-03'),
-(315, '15000015', 'Raul', 'Flores', 'default.png', '0414-1234515', 5, 315, NULL, NULL, '2026-04-03'),
-(316, '15000016', 'Paula', 'Benitez', 'default.png', '0414-1234516', 6, 316, NULL, NULL, '2026-04-03'),
-(317, '15000017', 'Alberto', 'Acosta', 'default.png', '0414-1234517', 3, 317, NULL, NULL, '2026-04-03'),
-(318, '15000018', 'Rosa', 'Medina', 'default.png', '0414-1234518', 4, 318, NULL, NULL, '2026-04-03'),
-(319, '15000019', 'Fernando', 'Castro', 'default.png', '0414-1234519', 5, 319, NULL, NULL, '2026-04-03'),
-(320, '15000020', 'Teresa', 'Rojas', 'default.png', '0414-1234520', 6, 320, NULL, NULL, '2026-04-03');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `roles`
---
-
-CREATE TABLE `roles` (
-  `id_rol` int(11) NOT NULL,
-  `nombre_rol` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `roles`
---
-
-INSERT INTO `roles` (`id_rol`, `nombre_rol`) VALUES
-(1, 'Director'),
-(2, 'Subdirector'),
-(3, 'Personal');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuarios`
---
-
-CREATE TABLE `usuarios` (
-  `id_usuario` int(11) NOT NULL,
-  `nombre_usuario` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `id_rol` int(11) NOT NULL,
-  `estado` enum('Activo','Inactivo') DEFAULT 'Activo',
-  `pregunta_1` int(11) NOT NULL,
-  `respuesta_1` varchar(255) NOT NULL,
-  `pregunta_2` int(11) NOT NULL,
-  `respuesta_2` varchar(255) NOT NULL,
-  `pregunta_3` int(11) NOT NULL,
-  `respuesta_3` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `usuarios`
---
-
-INSERT INTO `usuarios` (`id_usuario`, `nombre_usuario`, `password`, `id_rol`, `estado`, `pregunta_1`, `respuesta_1`, `pregunta_2`, `respuesta_2`, `pregunta_3`, `respuesta_3`) VALUES
-(145, 'Anthony12', '$2y$10$Os//b3c/xPolijXKN6PCWeAjxpTnawe3PBM7h0jTn1O2famBF31GK', 1, 'Activo', 1, '$2y$10$ZC7Y828xdYBX3.PxnwuMgeii/5TeTXcv6S44vfQiRIbYVPo868hZy', 2, '$2y$10$AIKQk7tISGxDspIOr5dZUepFHgzal5nf.vdgO14/b1e.qYm4ny5Pm', 3, '$2y$10$dg6wCo0Z7wVwgBTvvXkh.uVbrnV5kqkGCOZWk2vRyN/rldCsA4Odm'),
-(301, 'carlos.perez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(302, 'maria.gomez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(303, 'juan.rodriguez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(304, 'ana.fernandez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(305, 'luis.martinez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(306, 'carmen.lopez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(307, 'jose.garcia', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(308, 'laura.sanchez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(309, 'pedro.romero', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(310, 'sofia.suarez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(311, 'miguel.diaz', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(312, 'lucia.torres', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(313, 'jorge.ruiz', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(314, 'elena.ramirez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(315, 'raul.flores', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(316, 'paula.benitez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(317, 'alberto.acosta', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(318, 'rosa.medina', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(319, 'fernando.castro', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
-(320, 'teresa.rojas', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 'Activo', 1, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+(52, 144, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(53, 301, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(54, 302, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(55, 303, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(56, 304, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(57, 305, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(58, 306, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(59, 307, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(60, 308, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(61, 309, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(62, 310, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(63, 311, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(64, 312, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(65, 313, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(66, 314, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(67, 315, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(68, 316, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(69, 317, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(70, 318, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(71, 319, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(72, 320, '2026-04-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(73, 144, '2026-03-02', '07:30:00', '07:03:11', '15:22:28', 'Puntual', NULL, NULL, NULL, NULL),
+(74, 301, '2026-03-02', '07:30:00', '07:14:00', '15:21:29', 'Puntual', NULL, NULL, NULL, NULL),
+(75, 305, '2026-03-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(76, 309, '2026-03-02', '07:30:00', '07:02:18', '15:11:31', 'Puntual', NULL, NULL, NULL, NULL),
+(77, 313, '2026-03-02', '07:30:00', '07:47:45', '15:11:19', 'Retraso', NULL, NULL, NULL, NULL),
+(78, 317, '2026-03-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(79, 302, '2026-03-02', '07:30:00', '07:21:08', '15:01:33', 'Puntual', NULL, NULL, NULL, NULL),
+(80, 306, '2026-03-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(81, 310, '2026-03-02', '07:30:00', '07:02:43', '15:05:23', 'Puntual', NULL, NULL, NULL, NULL),
+(82, 314, '2026-03-02', '07:30:00', '07:59:17', '15:26:13', 'Retraso', NULL, NULL, NULL, NULL),
+(83, 318, '2026-03-02', '07:30:00', '07:11:47', '15:03:03', 'Puntual', NULL, NULL, NULL, NULL),
+(84, 303, '2026-03-02', '07:30:00', '07:04:01', '15:15:47', 'Puntual', NULL, NULL, NULL, NULL),
+(85, 307, '2026-03-02', '07:30:00', '07:04:01', '15:10:47', 'Puntual', NULL, NULL, NULL, NULL),
+(86, 311, '2026-03-02', '07:30:00', '07:12:35', '15:17:05', 'Puntual', NULL, NULL, NULL, NULL),
+(87, 315, '2026-03-02', '07:30:00', '07:24:21', '15:25:53', 'Puntual', NULL, NULL, NULL, NULL),
+(88, 319, '2026-03-02', '07:30:00', '07:09:05', '15:19:22', 'Puntual', NULL, NULL, NULL, NULL),
+(89, 304, '2026-03-02', '07:30:00', '07:18:48', '15:10:26', 'Puntual', NULL, NULL, NULL, NULL),
+(90, 308, '2026-03-02', '07:30:00', '07:09:25', '15:12:55', 'Puntual', NULL, NULL, NULL, NULL),
+(91, 312, '2026-03-02', '07:30:00', '07:20:34', '15:01:21', 'Puntual', NULL, NULL, NULL, NULL),
+(92, 316, '2026-03-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(93, 320, '2026-03-02', '07:30:00', '08:29:57', '15:00:57', 'Retraso', NULL, NULL, NULL, NULL),
+(94, 144, '2026-03-03', '07:30:00', '07:17:43', '15:01:54', 'Puntual', NULL, NULL, NULL, NULL),
+(95, 301, '2026-03-03', '07:30:00', '07:19:08', '15:07:34', 'Puntual', NULL, NULL, NULL, NULL),
+(96, 305, '2026-03-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(97, 309, '2026-03-03', '07:30:00', '07:12:00', '15:05:10', 'Puntual', NULL, NULL, NULL, NULL),
+(98, 313, '2026-03-03', '07:30:00', '07:14:44', '15:20:32', 'Puntual', NULL, NULL, NULL, NULL),
+(99, 317, '2026-03-03', '07:30:00', '07:54:49', '15:03:50', 'Retraso', NULL, NULL, NULL, NULL),
+(100, 302, '2026-03-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(101, 306, '2026-03-03', '07:30:00', '08:19:21', '15:05:33', 'Retraso', NULL, NULL, NULL, NULL),
+(102, 310, '2026-03-03', '07:30:00', '08:13:08', '15:06:31', 'Retraso', NULL, NULL, NULL, NULL),
+(103, 314, '2026-03-03', '07:30:00', '07:10:03', '15:11:20', 'Puntual', NULL, NULL, NULL, NULL),
+(104, 318, '2026-03-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(105, 303, '2026-03-03', '07:30:00', '07:09:37', '15:01:53', 'Puntual', NULL, NULL, NULL, NULL),
+(106, 307, '2026-03-03', '07:30:00', '07:15:15', '15:17:06', 'Puntual', NULL, NULL, NULL, NULL),
+(107, 311, '2026-03-03', '07:30:00', '07:10:01', '15:28:06', 'Puntual', NULL, NULL, NULL, NULL),
+(108, 315, '2026-03-03', '07:30:00', '07:14:53', '15:16:03', 'Puntual', NULL, NULL, NULL, NULL),
+(109, 319, '2026-03-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(110, 304, '2026-03-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(111, 308, '2026-03-03', '07:30:00', '07:52:11', '15:05:41', 'Retraso', NULL, NULL, NULL, NULL),
+(112, 312, '2026-03-03', '07:30:00', '07:19:23', '15:14:09', 'Puntual', NULL, NULL, NULL, NULL),
+(113, 316, '2026-03-03', '07:30:00', '07:18:34', '15:18:34', 'Puntual', NULL, NULL, NULL, NULL),
+(114, 320, '2026-03-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(115, 144, '2026-03-04', '07:30:00', '07:19:48', '15:15:47', 'Puntual', NULL, NULL, NULL, NULL),
+(116, 301, '2026-03-04', '07:30:00', '07:17:24', '15:21:28', 'Puntual', NULL, NULL, NULL, NULL),
+(117, 305, '2026-03-04', '07:30:00', '07:07:39', '15:01:43', 'Puntual', NULL, NULL, NULL, NULL),
+(118, 309, '2026-03-04', '07:30:00', '07:16:59', '15:08:33', 'Puntual', NULL, NULL, NULL, NULL),
+(119, 313, '2026-03-04', '07:30:00', '07:02:08', '15:07:52', 'Puntual', NULL, NULL, NULL, NULL),
+(120, 317, '2026-03-04', '07:30:00', '07:12:21', '15:09:02', 'Puntual', NULL, NULL, NULL, NULL),
+(121, 302, '2026-03-04', '07:30:00', '07:05:26', '15:00:25', 'Puntual', NULL, NULL, NULL, NULL),
+(122, 306, '2026-03-04', '07:30:00', '07:01:17', '15:00:05', 'Puntual', NULL, NULL, NULL, NULL),
+(123, 310, '2026-03-04', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(124, 314, '2026-03-04', '07:30:00', '07:21:35', '15:13:36', 'Puntual', NULL, NULL, NULL, NULL),
+(125, 318, '2026-03-04', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(126, 303, '2026-03-04', '07:30:00', '07:01:55', '15:09:37', 'Puntual', NULL, NULL, NULL, NULL),
+(127, 307, '2026-03-04', '07:30:00', '07:22:40', '15:12:22', 'Puntual', NULL, NULL, NULL, NULL),
+(128, 311, '2026-03-04', '07:30:00', '07:11:41', '15:09:27', 'Puntual', NULL, NULL, NULL, NULL),
+(129, 315, '2026-03-04', '07:30:00', '07:23:09', '15:03:13', 'Puntual', NULL, NULL, NULL, NULL),
+(130, 319, '2026-03-04', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(131, 304, '2026-03-04', '07:30:00', '07:01:55', '15:29:10', 'Puntual', NULL, NULL, NULL, NULL),
+(132, 308, '2026-03-04', '07:30:00', '07:55:49', '15:09:16', 'Retraso', NULL, NULL, NULL, NULL),
+(133, 312, '2026-03-04', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(134, 316, '2026-03-04', '07:30:00', '07:11:35', '15:22:45', 'Puntual', NULL, NULL, NULL, NULL),
+(135, 320, '2026-03-04', '07:30:00', '07:18:27', '15:14:31', 'Puntual', NULL, NULL, NULL, NULL),
+(136, 144, '2026-03-05', '07:30:00', '07:14:22', '15:07:42', 'Puntual', NULL, NULL, NULL, NULL),
+(137, 301, '2026-03-05', '07:30:00', '07:46:38', '15:14:54', 'Retraso', NULL, NULL, NULL, NULL),
+(138, 305, '2026-03-05', '07:30:00', '07:09:42', '15:24:24', 'Puntual', NULL, NULL, NULL, NULL),
+(139, 309, '2026-03-05', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(140, 313, '2026-03-05', '07:30:00', '07:17:11', '15:05:54', 'Puntual', NULL, NULL, NULL, NULL),
+(141, 317, '2026-03-05', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(142, 302, '2026-03-05', '07:30:00', '07:07:57', '15:16:15', 'Puntual', NULL, NULL, NULL, NULL),
+(143, 306, '2026-03-05', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(144, 310, '2026-03-05', '07:30:00', '07:12:02', '15:28:50', 'Puntual', NULL, NULL, NULL, NULL),
+(145, 314, '2026-03-05', '07:30:00', '07:22:55', '15:15:06', 'Puntual', NULL, NULL, NULL, NULL),
+(146, 318, '2026-03-05', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(147, 303, '2026-03-05', '07:30:00', '07:08:57', '15:23:45', 'Puntual', NULL, NULL, NULL, NULL),
+(148, 307, '2026-03-05', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(149, 311, '2026-03-05', '07:30:00', '07:15:22', '15:27:19', 'Puntual', NULL, NULL, NULL, NULL),
+(150, 315, '2026-03-05', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(151, 319, '2026-03-05', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(152, 304, '2026-03-05', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(153, 308, '2026-03-05', '07:30:00', '07:13:16', '15:25:11', 'Puntual', NULL, NULL, NULL, NULL),
+(154, 312, '2026-03-05', '07:30:00', '08:08:00', '15:22:07', 'Retraso', NULL, NULL, NULL, NULL),
+(155, 316, '2026-03-05', '07:30:00', '07:13:56', '15:09:48', 'Puntual', NULL, NULL, NULL, NULL),
+(156, 320, '2026-03-05', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(157, 144, '2026-03-06', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(158, 301, '2026-03-06', '07:30:00', '07:17:14', '15:22:38', 'Puntual', NULL, NULL, NULL, NULL),
+(159, 305, '2026-03-06', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(160, 309, '2026-03-06', '07:30:00', '07:04:13', '15:02:14', 'Puntual', NULL, NULL, NULL, NULL),
+(161, 313, '2026-03-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(162, 317, '2026-03-06', '07:30:00', '07:24:17', '15:15:24', 'Puntual', NULL, NULL, NULL, NULL),
+(163, 302, '2026-03-06', '07:30:00', '08:17:37', '15:19:56', 'Retraso', NULL, NULL, NULL, NULL),
+(164, 306, '2026-03-06', '07:30:00', '07:18:42', '15:08:55', 'Puntual', NULL, NULL, NULL, NULL),
+(165, 310, '2026-03-06', '07:30:00', '07:07:52', '15:25:32', 'Puntual', NULL, NULL, NULL, NULL),
+(166, 314, '2026-03-06', '07:30:00', '07:00:05', '15:02:30', 'Puntual', NULL, NULL, NULL, NULL),
+(167, 318, '2026-03-06', '07:30:00', '07:19:31', '15:20:37', 'Puntual', NULL, NULL, NULL, NULL),
+(168, 303, '2026-03-06', '07:30:00', '07:10:04', '15:22:03', 'Puntual', NULL, NULL, NULL, NULL),
+(169, 307, '2026-03-06', '07:30:00', '07:03:26', '15:08:28', 'Puntual', NULL, NULL, NULL, NULL),
+(170, 311, '2026-03-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(171, 315, '2026-03-06', '07:30:00', '07:18:46', '15:09:09', 'Puntual', NULL, NULL, NULL, NULL),
+(172, 319, '2026-03-06', '07:30:00', '07:11:18', '15:13:12', 'Puntual', NULL, NULL, NULL, NULL),
+(173, 304, '2026-03-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(174, 308, '2026-03-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(175, 312, '2026-03-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(176, 316, '2026-03-06', '07:30:00', '07:17:11', '15:02:49', 'Puntual', NULL, NULL, NULL, NULL),
+(177, 320, '2026-03-06', '07:30:00', '07:18:54', '15:16:42', 'Puntual', NULL, NULL, NULL, NULL),
+(178, 144, '2026-03-09', '07:30:00', '08:26:14', '15:00:52', 'Retraso', NULL, NULL, NULL, NULL),
+(179, 301, '2026-03-09', '07:30:00', '07:22:26', '15:08:54', 'Puntual', NULL, NULL, NULL, NULL),
+(180, 305, '2026-03-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(181, 309, '2026-03-09', '07:30:00', '07:24:09', '15:18:45', 'Puntual', NULL, NULL, NULL, NULL),
+(182, 313, '2026-03-09', '07:30:00', '07:06:41', '15:19:34', 'Puntual', NULL, NULL, NULL, NULL),
+(183, 317, '2026-03-09', '07:30:00', '07:08:33', '15:09:58', 'Puntual', NULL, NULL, NULL, NULL),
+(184, 302, '2026-03-09', '07:30:00', '07:52:56', '15:29:21', 'Retraso', NULL, NULL, NULL, NULL),
+(185, 306, '2026-03-09', '07:30:00', '07:21:59', '15:09:15', 'Puntual', NULL, NULL, NULL, NULL),
+(186, 310, '2026-03-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(187, 314, '2026-03-09', '07:30:00', '07:57:10', '15:16:52', 'Retraso', NULL, NULL, NULL, NULL),
+(188, 318, '2026-03-09', '07:30:00', '07:07:59', '15:17:49', 'Puntual', NULL, NULL, NULL, NULL),
+(189, 303, '2026-03-09', '07:30:00', '07:06:59', '15:10:49', 'Puntual', NULL, NULL, NULL, NULL),
+(190, 307, '2026-03-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(191, 311, '2026-03-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(192, 315, '2026-03-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(193, 319, '2026-03-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(194, 304, '2026-03-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(195, 308, '2026-03-09', '07:30:00', '08:03:31', '15:09:33', 'Retraso', NULL, NULL, NULL, NULL),
+(196, 312, '2026-03-09', '07:30:00', '07:20:44', '15:02:20', 'Puntual', NULL, NULL, NULL, NULL),
+(197, 316, '2026-03-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(198, 320, '2026-03-09', '07:30:00', '07:15:49', '15:10:57', 'Puntual', NULL, NULL, NULL, NULL),
+(199, 144, '2026-03-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(200, 301, '2026-03-10', '07:30:00', '08:26:38', '15:00:02', 'Retraso', NULL, NULL, NULL, NULL),
+(201, 305, '2026-03-10', '07:30:00', '07:03:47', '15:01:57', 'Puntual', NULL, NULL, NULL, NULL),
+(202, 309, '2026-03-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(203, 313, '2026-03-10', '07:30:00', '07:04:40', '15:13:37', 'Puntual', NULL, NULL, NULL, NULL),
+(204, 317, '2026-03-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(205, 302, '2026-03-10', '07:30:00', '07:20:32', '15:16:05', 'Puntual', NULL, NULL, NULL, NULL),
+(206, 306, '2026-03-10', '07:30:00', '07:11:54', '15:21:52', 'Puntual', NULL, NULL, NULL, NULL),
+(207, 310, '2026-03-10', '07:30:00', '07:22:25', '15:25:03', 'Puntual', NULL, NULL, NULL, NULL),
+(208, 314, '2026-03-10', '07:30:00', '07:23:02', '15:04:32', 'Puntual', NULL, NULL, NULL, NULL),
+(209, 318, '2026-03-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(210, 303, '2026-03-10', '07:30:00', '08:09:54', '15:07:30', 'Retraso', NULL, NULL, NULL, NULL),
+(211, 307, '2026-03-10', '07:30:00', '07:54:11', '15:07:27', 'Retraso', NULL, NULL, NULL, NULL),
+(212, 311, '2026-03-10', '07:30:00', '08:03:19', '15:04:17', 'Retraso', NULL, NULL, NULL, NULL),
+(213, 315, '2026-03-10', '07:30:00', '07:01:07', '15:22:10', 'Puntual', NULL, NULL, NULL, NULL),
+(214, 319, '2026-03-10', '07:30:00', '08:11:32', '15:07:56', 'Retraso', NULL, NULL, NULL, NULL),
+(215, 304, '2026-03-10', '07:30:00', '08:29:01', '15:06:50', 'Retraso', NULL, NULL, NULL, NULL),
+(216, 308, '2026-03-10', '07:30:00', '07:08:30', '15:02:34', 'Puntual', NULL, NULL, NULL, NULL),
+(217, 312, '2026-03-10', '07:30:00', '07:19:46', '15:21:48', 'Puntual', NULL, NULL, NULL, NULL),
+(218, 316, '2026-03-10', '07:30:00', '07:03:05', '15:25:05', 'Puntual', NULL, NULL, NULL, NULL),
+(219, 320, '2026-03-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(220, 144, '2026-03-11', '07:30:00', '07:57:58', '15:24:16', 'Retraso', NULL, NULL, NULL, NULL),
+(221, 301, '2026-03-11', '07:30:00', '07:11:51', '15:24:55', 'Puntual', NULL, NULL, NULL, NULL),
+(222, 305, '2026-03-11', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(223, 309, '2026-03-11', '07:30:00', '07:15:27', '15:18:07', 'Puntual', NULL, NULL, NULL, NULL),
+(224, 313, '2026-03-11', '07:30:00', '07:00:28', '15:17:55', 'Puntual', NULL, NULL, NULL, NULL),
+(225, 317, '2026-03-11', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(226, 302, '2026-03-11', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(227, 306, '2026-03-11', '07:30:00', '07:20:45', '15:21:30', 'Puntual', NULL, NULL, NULL, NULL),
+(228, 310, '2026-03-11', '07:30:00', '07:07:57', '15:09:17', 'Puntual', NULL, NULL, NULL, NULL),
+(229, 314, '2026-03-11', '07:30:00', '07:46:39', '15:12:10', 'Retraso', NULL, NULL, NULL, NULL),
+(230, 318, '2026-03-11', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(231, 303, '2026-03-11', '07:30:00', '07:02:49', '15:13:18', 'Puntual', NULL, NULL, NULL, NULL),
+(232, 307, '2026-03-11', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(233, 311, '2026-03-11', '07:30:00', '07:17:04', '15:06:44', 'Puntual', NULL, NULL, NULL, NULL),
+(234, 315, '2026-03-11', '07:30:00', '07:17:19', '15:07:20', 'Puntual', NULL, NULL, NULL, NULL),
+(235, 319, '2026-03-11', '07:30:00', '07:24:45', '15:15:32', 'Puntual', NULL, NULL, NULL, NULL),
+(236, 304, '2026-03-11', '07:30:00', '08:09:00', '15:24:28', 'Retraso', NULL, NULL, NULL, NULL),
+(237, 308, '2026-03-11', '07:30:00', '07:23:37', '15:08:40', 'Puntual', NULL, NULL, NULL, NULL),
+(238, 312, '2026-03-11', '07:30:00', '07:53:21', '15:02:55', 'Retraso', NULL, NULL, NULL, NULL),
+(239, 316, '2026-03-11', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(240, 320, '2026-03-11', '07:30:00', '07:00:14', '15:29:01', 'Puntual', NULL, NULL, NULL, NULL),
+(241, 144, '2026-03-12', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(242, 301, '2026-03-12', '07:30:00', '07:07:11', '15:00:16', 'Puntual', NULL, NULL, NULL, NULL),
+(243, 305, '2026-03-12', '07:30:00', '07:22:03', '15:25:58', 'Puntual', NULL, NULL, NULL, NULL),
+(244, 309, '2026-03-12', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(245, 313, '2026-03-12', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(246, 317, '2026-03-12', '07:30:00', '07:15:21', '15:01:17', 'Puntual', NULL, NULL, NULL, NULL),
+(247, 302, '2026-03-12', '07:30:00', '07:18:14', '15:15:59', 'Puntual', NULL, NULL, NULL, NULL),
+(248, 306, '2026-03-12', '07:30:00', '07:19:38', '15:14:55', 'Puntual', NULL, NULL, NULL, NULL),
+(249, 310, '2026-03-12', '07:30:00', '07:03:52', '15:11:34', 'Puntual', NULL, NULL, NULL, NULL),
+(250, 314, '2026-03-12', '07:30:00', '07:04:07', '15:12:57', 'Puntual', NULL, NULL, NULL, NULL),
+(251, 318, '2026-03-12', '07:30:00', '07:46:01', '15:03:40', 'Retraso', NULL, NULL, NULL, NULL),
+(252, 303, '2026-03-12', '07:30:00', '08:00:57', '15:04:11', 'Retraso', NULL, NULL, NULL, NULL),
+(253, 307, '2026-03-12', '07:30:00', '08:19:03', '15:26:21', 'Retraso', NULL, NULL, NULL, NULL),
+(254, 311, '2026-03-12', '07:30:00', '07:24:23', '15:15:22', 'Puntual', NULL, NULL, NULL, NULL),
+(255, 315, '2026-03-12', '07:30:00', '08:13:37', '15:08:18', 'Retraso', NULL, NULL, NULL, NULL),
+(256, 319, '2026-03-12', '07:30:00', '07:13:36', '15:08:54', 'Puntual', NULL, NULL, NULL, NULL),
+(257, 304, '2026-03-12', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(258, 308, '2026-03-12', '07:30:00', '07:07:06', '15:09:31', 'Puntual', NULL, NULL, NULL, NULL),
+(259, 312, '2026-03-12', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(260, 316, '2026-03-12', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(261, 320, '2026-03-12', '07:30:00', '07:20:19', '15:26:27', 'Puntual', NULL, NULL, NULL, NULL),
+(262, 144, '2026-03-13', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(263, 301, '2026-03-13', '07:30:00', '07:02:56', '15:29:09', 'Puntual', NULL, NULL, NULL, NULL),
+(264, 305, '2026-03-13', '07:30:00', '08:12:46', '15:17:00', 'Retraso', NULL, NULL, NULL, NULL),
+(265, 309, '2026-03-13', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(266, 313, '2026-03-13', '07:30:00', '07:02:13', '15:24:45', 'Puntual', NULL, NULL, NULL, NULL),
+(267, 317, '2026-03-13', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(268, 302, '2026-03-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(269, 306, '2026-03-13', '07:30:00', '07:55:43', '15:16:55', 'Retraso', NULL, NULL, NULL, NULL),
+(270, 310, '2026-03-13', '07:30:00', '07:20:59', '15:26:23', 'Puntual', NULL, NULL, NULL, NULL),
+(271, 314, '2026-03-13', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(272, 318, '2026-03-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(273, 303, '2026-03-13', '07:30:00', '07:13:23', '15:05:36', 'Puntual', NULL, NULL, NULL, NULL),
+(274, 307, '2026-03-13', '07:30:00', '07:01:52', '15:11:47', 'Puntual', NULL, NULL, NULL, NULL),
+(275, 311, '2026-03-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(276, 315, '2026-03-13', '07:30:00', '08:03:17', '15:13:38', 'Retraso', NULL, NULL, NULL, NULL),
+(277, 319, '2026-03-13', '07:30:00', '07:22:40', '15:11:09', 'Puntual', NULL, NULL, NULL, NULL),
+(278, 304, '2026-03-13', '07:30:00', '07:14:29', '15:14:28', 'Puntual', NULL, NULL, NULL, NULL),
+(279, 308, '2026-03-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(280, 312, '2026-03-13', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(281, 316, '2026-03-13', '07:30:00', '08:27:36', '15:03:50', 'Retraso', NULL, NULL, NULL, NULL),
+(282, 320, '2026-03-13', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(283, 144, '2026-03-16', '07:30:00', '08:16:23', '15:18:50', 'Retraso', NULL, NULL, NULL, NULL),
+(284, 301, '2026-03-16', '07:30:00', '07:08:54', '15:19:08', 'Puntual', NULL, NULL, NULL, NULL),
+(285, 305, '2026-03-16', '07:30:00', '07:17:08', '15:02:04', 'Puntual', NULL, NULL, NULL, NULL),
+(286, 309, '2026-03-16', '07:30:00', '07:05:50', '15:09:08', 'Puntual', NULL, NULL, NULL, NULL),
+(287, 313, '2026-03-16', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(288, 317, '2026-03-16', '07:30:00', '07:12:28', '15:27:32', 'Puntual', NULL, NULL, NULL, NULL),
+(289, 302, '2026-03-16', '07:30:00', '07:17:40', '15:07:43', 'Puntual', NULL, NULL, NULL, NULL),
+(290, 306, '2026-03-16', '07:30:00', '07:01:38', '15:24:44', 'Puntual', NULL, NULL, NULL, NULL),
+(291, 310, '2026-03-16', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(292, 314, '2026-03-16', '07:30:00', '07:00:04', '15:16:23', 'Puntual', NULL, NULL, NULL, NULL),
+(293, 318, '2026-03-16', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(294, 303, '2026-03-16', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(295, 307, '2026-03-16', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(296, 311, '2026-03-16', '07:30:00', '08:24:30', '15:17:51', 'Retraso', NULL, NULL, NULL, NULL),
+(297, 315, '2026-03-16', '07:30:00', '07:23:08', '15:18:03', 'Puntual', NULL, NULL, NULL, NULL),
+(298, 319, '2026-03-16', '07:30:00', '07:08:49', '15:02:08', 'Puntual', NULL, NULL, NULL, NULL),
+(299, 304, '2026-03-16', '07:30:00', '07:06:46', '15:13:53', 'Puntual', NULL, NULL, NULL, NULL),
+(300, 308, '2026-03-16', '07:30:00', '07:50:42', '15:03:44', 'Retraso', NULL, NULL, NULL, NULL),
+(301, 312, '2026-03-16', '07:30:00', '07:21:07', '15:14:48', 'Puntual', NULL, NULL, NULL, NULL),
+(302, 316, '2026-03-16', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(303, 320, '2026-03-16', '07:30:00', '07:02:42', '15:29:59', 'Puntual', NULL, NULL, NULL, NULL),
+(304, 144, '2026-03-17', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(305, 301, '2026-03-17', '07:30:00', '07:20:26', '15:29:31', 'Puntual', NULL, NULL, NULL, NULL),
+(306, 305, '2026-03-17', '07:30:00', '07:09:45', '15:16:21', 'Puntual', NULL, NULL, NULL, NULL),
+(307, 309, '2026-03-17', '07:30:00', '07:51:38', '15:02:02', 'Retraso', NULL, NULL, NULL, NULL),
+(308, 313, '2026-03-17', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(309, 317, '2026-03-17', '07:30:00', '07:17:29', '15:19:59', 'Puntual', NULL, NULL, NULL, NULL),
+(310, 302, '2026-03-17', '07:30:00', '07:03:55', '15:02:46', 'Puntual', NULL, NULL, NULL, NULL),
+(311, 306, '2026-03-17', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(312, 310, '2026-03-17', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(313, 314, '2026-03-17', '07:30:00', '07:02:29', '15:06:24', 'Puntual', NULL, NULL, NULL, NULL),
+(314, 318, '2026-03-17', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(315, 303, '2026-03-17', '07:30:00', '07:17:43', '15:28:05', 'Puntual', NULL, NULL, NULL, NULL),
+(316, 307, '2026-03-17', '07:30:00', '08:28:34', '15:05:14', 'Retraso', NULL, NULL, NULL, NULL),
+(317, 311, '2026-03-17', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(318, 315, '2026-03-17', '07:30:00', '07:17:27', '15:15:51', 'Puntual', NULL, NULL, NULL, NULL),
+(319, 319, '2026-03-17', '07:30:00', '07:51:47', '15:03:24', 'Retraso', NULL, NULL, NULL, NULL),
+(320, 304, '2026-03-17', '07:30:00', '07:05:44', '15:24:09', 'Puntual', NULL, NULL, NULL, NULL),
+(321, 308, '2026-03-17', '07:30:00', '07:06:52', '15:10:48', 'Puntual', NULL, NULL, NULL, NULL),
+(322, 312, '2026-03-17', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(323, 316, '2026-03-17', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(324, 320, '2026-03-17', '07:30:00', '07:24:23', '15:19:30', 'Puntual', NULL, NULL, NULL, NULL),
+(325, 144, '2026-03-18', '07:30:00', '07:16:49', '15:11:42', 'Puntual', NULL, NULL, NULL, NULL),
+(326, 301, '2026-03-18', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(327, 305, '2026-03-18', '07:30:00', '07:17:04', '15:27:43', 'Puntual', NULL, NULL, NULL, NULL),
+(328, 309, '2026-03-18', '07:30:00', '07:49:01', '15:21:53', 'Retraso', NULL, NULL, NULL, NULL),
+(329, 313, '2026-03-18', '07:30:00', '07:17:43', '15:12:10', 'Puntual', NULL, NULL, NULL, NULL),
+(330, 317, '2026-03-18', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(331, 302, '2026-03-18', '07:30:00', '07:19:10', '15:28:29', 'Puntual', NULL, NULL, NULL, NULL),
+(332, 306, '2026-03-18', '07:30:00', '07:09:39', '15:17:43', 'Puntual', NULL, NULL, NULL, NULL),
+(333, 310, '2026-03-18', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(334, 314, '2026-03-18', '07:30:00', '07:16:09', '15:18:17', 'Puntual', NULL, NULL, NULL, NULL),
+(335, 318, '2026-03-18', '07:30:00', '07:18:08', '15:08:50', 'Puntual', NULL, NULL, NULL, NULL),
+(336, 303, '2026-03-18', '07:30:00', '07:14:56', '15:03:00', 'Puntual', NULL, NULL, NULL, NULL),
+(337, 307, '2026-03-18', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(338, 311, '2026-03-18', '07:30:00', '07:02:04', '15:20:43', 'Puntual', NULL, NULL, NULL, NULL),
+(339, 315, '2026-03-18', '07:30:00', '07:23:43', '15:03:58', 'Puntual', NULL, NULL, NULL, NULL),
+(340, 319, '2026-03-18', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(341, 304, '2026-03-18', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(342, 308, '2026-03-18', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(343, 312, '2026-03-18', '07:30:00', '08:07:47', '15:16:10', 'Retraso', NULL, NULL, NULL, NULL),
+(344, 316, '2026-03-18', '07:30:00', '07:06:25', '15:22:51', 'Puntual', NULL, NULL, NULL, NULL),
+(345, 320, '2026-03-18', '07:30:00', '07:22:33', '15:11:58', 'Puntual', NULL, NULL, NULL, NULL),
+(346, 144, '2026-03-19', '07:30:00', '07:06:05', '15:10:34', 'Puntual', NULL, NULL, NULL, NULL),
+(347, 301, '2026-03-19', '07:30:00', '07:02:37', '15:12:48', 'Puntual', NULL, NULL, NULL, NULL),
+(348, 305, '2026-03-19', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(349, 309, '2026-03-19', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(350, 313, '2026-03-19', '07:30:00', '08:21:49', '15:03:30', 'Retraso', NULL, NULL, NULL, NULL),
+(351, 317, '2026-03-19', '07:30:00', '07:07:22', '15:02:40', 'Puntual', NULL, NULL, NULL, NULL),
+(352, 302, '2026-03-19', '07:30:00', '08:08:50', '15:29:08', 'Retraso', NULL, NULL, NULL, NULL),
+(353, 306, '2026-03-19', '07:30:00', '07:10:26', '15:08:42', 'Puntual', NULL, NULL, NULL, NULL),
+(354, 310, '2026-03-19', '07:30:00', '07:03:05', '15:00:37', 'Puntual', NULL, NULL, NULL, NULL),
+(355, 314, '2026-03-19', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(356, 318, '2026-03-19', '07:30:00', '08:21:02', '15:06:11', 'Retraso', NULL, NULL, NULL, NULL),
+(357, 303, '2026-03-19', '07:30:00', '08:08:37', '15:22:08', 'Retraso', NULL, NULL, NULL, NULL),
+(358, 307, '2026-03-19', '07:30:00', '07:09:02', '15:13:54', 'Puntual', NULL, NULL, NULL, NULL),
+(359, 311, '2026-03-19', '07:30:00', '07:19:13', '15:04:29', 'Puntual', NULL, NULL, NULL, NULL),
+(360, 315, '2026-03-19', '07:30:00', '07:18:54', '15:13:44', 'Puntual', NULL, NULL, NULL, NULL),
+(361, 319, '2026-03-19', '07:30:00', '07:18:13', '15:17:31', 'Puntual', NULL, NULL, NULL, NULL),
+(362, 304, '2026-03-19', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(363, 308, '2026-03-19', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(364, 312, '2026-03-19', '07:30:00', '07:05:00', '15:24:49', 'Puntual', NULL, NULL, NULL, NULL),
+(365, 316, '2026-03-19', '07:30:00', '07:53:57', '15:11:36', 'Retraso', NULL, NULL, NULL, NULL),
+(366, 320, '2026-03-19', '07:30:00', '07:13:12', '15:18:47', 'Puntual', NULL, NULL, NULL, NULL),
+(367, 144, '2026-03-20', '07:30:00', '08:23:56', '15:20:24', 'Retraso', NULL, NULL, NULL, NULL),
+(368, 301, '2026-03-20', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(369, 305, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(370, 309, '2026-03-20', '07:30:00', '08:10:50', '15:10:38', 'Retraso', NULL, NULL, NULL, NULL),
+(371, 313, '2026-03-20', '07:30:00', '07:04:52', '15:24:36', 'Puntual', NULL, NULL, NULL, NULL),
+(372, 317, '2026-03-20', '07:30:00', '07:50:27', '15:01:40', 'Retraso', NULL, NULL, NULL, NULL),
+(373, 302, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(374, 306, '2026-03-20', '07:30:00', '07:08:23', '15:12:45', 'Puntual', NULL, NULL, NULL, NULL),
+(375, 310, '2026-03-20', '07:30:00', '07:08:10', '15:08:13', 'Puntual', NULL, NULL, NULL, NULL),
+(376, 314, '2026-03-20', '07:30:00', '07:03:05', '15:13:31', 'Puntual', NULL, NULL, NULL, NULL),
+(377, 318, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(378, 303, '2026-03-20', '07:30:00', '07:16:32', '15:03:38', 'Puntual', NULL, NULL, NULL, NULL),
+(379, 307, '2026-03-20', '07:30:00', '08:18:27', '15:25:34', 'Retraso', NULL, NULL, NULL, NULL),
+(380, 311, '2026-03-20', '07:30:00', '07:15:13', '15:28:19', 'Puntual', NULL, NULL, NULL, NULL),
+(381, 315, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(382, 319, '2026-03-20', '07:30:00', '08:07:38', '15:18:07', 'Retraso', NULL, NULL, NULL, NULL),
+(383, 304, '2026-03-20', '07:30:00', '08:18:50', '15:06:38', 'Retraso', NULL, NULL, NULL, NULL),
+(384, 308, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(385, 312, '2026-03-20', '07:30:00', '08:02:56', '15:06:39', 'Retraso', NULL, NULL, NULL, NULL),
+(386, 316, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(387, 320, '2026-03-20', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(388, 144, '2026-03-23', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(389, 301, '2026-03-23', '07:30:00', '07:18:58', '15:03:32', 'Puntual', NULL, NULL, NULL, NULL),
+(390, 305, '2026-03-23', '07:30:00', '07:05:32', '15:04:53', 'Puntual', NULL, NULL, NULL, NULL),
+(391, 309, '2026-03-23', '07:30:00', '07:06:35', '15:26:00', 'Puntual', NULL, NULL, NULL, NULL),
+(392, 313, '2026-03-23', '07:30:00', '07:50:22', '15:28:56', 'Retraso', NULL, NULL, NULL, NULL),
+(393, 317, '2026-03-23', '07:30:00', '07:10:49', '15:23:03', 'Puntual', NULL, NULL, NULL, NULL),
+(394, 302, '2026-03-23', '07:30:00', '08:03:43', '15:13:24', 'Retraso', NULL, NULL, NULL, NULL),
+(395, 306, '2026-03-23', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(396, 310, '2026-03-23', '07:30:00', '07:45:03', '15:06:53', 'Retraso', NULL, NULL, NULL, NULL),
+(397, 314, '2026-03-23', '07:30:00', '07:00:58', '15:22:42', 'Puntual', NULL, NULL, NULL, NULL),
+(398, 318, '2026-03-23', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(399, 303, '2026-03-23', '07:30:00', '07:09:06', '15:17:58', 'Puntual', NULL, NULL, NULL, NULL),
+(400, 307, '2026-03-23', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(401, 311, '2026-03-23', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(402, 315, '2026-03-23', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(403, 319, '2026-03-23', '07:30:00', '07:24:32', '15:17:49', 'Puntual', NULL, NULL, NULL, NULL),
+(404, 304, '2026-03-23', '07:30:00', '07:08:45', '15:20:07', 'Puntual', NULL, NULL, NULL, NULL),
+(405, 308, '2026-03-23', '07:30:00', '07:12:32', '15:18:01', 'Puntual', NULL, NULL, NULL, NULL),
+(406, 312, '2026-03-23', '07:30:00', '07:17:13', '15:28:30', 'Puntual', NULL, NULL, NULL, NULL),
+(407, 316, '2026-03-23', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(408, 320, '2026-03-23', '07:30:00', '08:20:56', '15:08:29', 'Retraso', NULL, NULL, NULL, NULL),
+(409, 144, '2026-03-24', '07:30:00', '07:06:01', '15:04:33', 'Puntual', NULL, NULL, NULL, NULL),
+(410, 301, '2026-03-24', '07:30:00', '07:18:04', '15:15:12', 'Puntual', NULL, NULL, NULL, NULL),
+(411, 305, '2026-03-24', '07:30:00', '07:07:49', '15:13:58', 'Puntual', NULL, NULL, NULL, NULL),
+(412, 309, '2026-03-24', '07:30:00', '07:13:41', '15:17:06', 'Puntual', NULL, NULL, NULL, NULL),
+(413, 313, '2026-03-24', '07:30:00', '07:08:18', '15:01:03', 'Puntual', NULL, NULL, NULL, NULL),
+(414, 317, '2026-03-24', '07:30:00', '07:19:47', '15:12:36', 'Puntual', NULL, NULL, NULL, NULL),
+(415, 302, '2026-03-24', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(416, 306, '2026-03-24', '07:30:00', '07:16:29', '15:05:53', 'Puntual', NULL, NULL, NULL, NULL),
+(417, 310, '2026-03-24', '07:30:00', '07:10:34', '15:03:15', 'Puntual', NULL, NULL, NULL, NULL),
+(418, 314, '2026-03-24', '07:30:00', '07:01:06', '15:12:01', 'Puntual', NULL, NULL, NULL, NULL),
+(419, 318, '2026-03-24', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(420, 303, '2026-03-24', '07:30:00', '07:03:00', '15:04:56', 'Puntual', NULL, NULL, NULL, NULL),
+(421, 307, '2026-03-24', '07:30:00', '07:20:31', '15:21:26', 'Puntual', NULL, NULL, NULL, NULL),
+(422, 311, '2026-03-24', '07:30:00', '07:10:10', '15:21:06', 'Puntual', NULL, NULL, NULL, NULL),
+(423, 315, '2026-03-24', '07:30:00', '07:09:30', '15:00:11', 'Puntual', NULL, NULL, NULL, NULL),
+(424, 319, '2026-03-24', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(425, 304, '2026-03-24', '07:30:00', '07:12:40', '15:06:46', 'Puntual', NULL, NULL, NULL, NULL),
+(426, 308, '2026-03-24', '07:30:00', '08:01:22', '15:29:51', 'Retraso', NULL, NULL, NULL, NULL),
+(427, 312, '2026-03-24', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(428, 316, '2026-03-24', '07:30:00', '07:13:05', '15:09:23', 'Puntual', NULL, NULL, NULL, NULL),
+(429, 320, '2026-03-24', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(430, 144, '2026-03-25', '07:30:00', '07:04:30', '15:24:07', 'Puntual', NULL, NULL, NULL, NULL),
+(431, 301, '2026-03-25', '07:30:00', '07:24:38', '15:14:40', 'Puntual', NULL, NULL, NULL, NULL),
+(432, 305, '2026-03-25', '07:30:00', '07:24:29', '15:12:52', 'Puntual', NULL, NULL, NULL, NULL),
+(433, 309, '2026-03-25', '07:30:00', '07:18:37', '15:03:12', 'Puntual', NULL, NULL, NULL, NULL),
+(434, 313, '2026-03-25', '07:30:00', '07:04:23', '15:29:24', 'Puntual', NULL, NULL, NULL, NULL),
+(435, 317, '2026-03-25', '07:30:00', '07:23:20', '15:16:16', 'Puntual', NULL, NULL, NULL, NULL),
+(436, 302, '2026-03-25', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(437, 306, '2026-03-25', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(438, 310, '2026-03-25', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(439, 314, '2026-03-25', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(440, 318, '2026-03-25', '07:30:00', '07:20:38', '15:11:46', 'Puntual', NULL, NULL, NULL, NULL),
+(441, 303, '2026-03-25', '07:30:00', '07:06:14', '15:23:43', 'Puntual', NULL, NULL, NULL, NULL),
+(442, 307, '2026-03-25', '07:30:00', '07:16:24', '15:19:57', 'Puntual', NULL, NULL, NULL, NULL),
+(443, 311, '2026-03-25', '07:30:00', '07:19:37', '15:25:41', 'Puntual', NULL, NULL, NULL, NULL),
+(444, 315, '2026-03-25', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(445, 319, '2026-03-25', '07:30:00', '07:13:38', '15:15:59', 'Puntual', NULL, NULL, NULL, NULL),
+(446, 304, '2026-03-25', '07:30:00', '07:13:37', '15:19:08', 'Puntual', NULL, NULL, NULL, NULL),
+(447, 308, '2026-03-25', '07:30:00', '08:23:35', '15:18:45', 'Retraso', NULL, NULL, NULL, NULL),
+(448, 312, '2026-03-25', '07:30:00', '08:25:15', '15:24:17', 'Retraso', NULL, NULL, NULL, NULL),
+(449, 316, '2026-03-25', '07:30:00', '07:10:04', '15:27:26', 'Puntual', NULL, NULL, NULL, NULL),
+(450, 320, '2026-03-25', '07:30:00', '07:01:58', '15:09:04', 'Puntual', NULL, NULL, NULL, NULL),
+(451, 144, '2026-03-26', '07:30:00', '07:11:41', '15:15:24', 'Puntual', NULL, NULL, NULL, NULL),
+(452, 301, '2026-03-26', '07:30:00', '07:07:10', '15:28:05', 'Puntual', NULL, NULL, NULL, NULL),
+(453, 305, '2026-03-26', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(454, 309, '2026-03-26', '07:30:00', '07:01:10', '15:09:48', 'Puntual', NULL, NULL, NULL, NULL),
+(455, 313, '2026-03-26', '07:30:00', '07:12:08', '15:28:27', 'Puntual', NULL, NULL, NULL, NULL),
+(456, 317, '2026-03-26', '07:30:00', '07:14:29', '15:01:19', 'Puntual', NULL, NULL, NULL, NULL),
+(457, 302, '2026-03-26', '07:30:00', '07:06:50', '15:27:45', 'Puntual', NULL, NULL, NULL, NULL),
+(458, 306, '2026-03-26', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(459, 310, '2026-03-26', '07:30:00', '07:20:21', '15:10:02', 'Puntual', NULL, NULL, NULL, NULL),
+(460, 314, '2026-03-26', '07:30:00', '07:03:42', '15:01:28', 'Puntual', NULL, NULL, NULL, NULL),
+(461, 318, '2026-03-26', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(462, 303, '2026-03-26', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(463, 307, '2026-03-26', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(464, 311, '2026-03-26', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(465, 315, '2026-03-26', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(466, 319, '2026-03-26', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(467, 304, '2026-03-26', '07:30:00', '07:13:41', '15:12:24', 'Puntual', NULL, NULL, NULL, NULL),
+(468, 308, '2026-03-26', '07:30:00', '07:22:00', '15:03:51', 'Puntual', NULL, NULL, NULL, NULL),
+(469, 312, '2026-03-26', '07:30:00', '07:15:33', '15:03:13', 'Puntual', NULL, NULL, NULL, NULL),
+(470, 316, '2026-03-26', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(471, 320, '2026-03-26', '07:30:00', '07:03:30', '15:18:16', 'Puntual', NULL, NULL, NULL, NULL),
+(472, 144, '2026-03-27', '07:30:00', '07:58:34', '15:18:55', 'Retraso', NULL, NULL, NULL, NULL),
+(473, 301, '2026-03-27', '07:30:00', '07:08:54', '15:00:59', 'Puntual', NULL, NULL, NULL, NULL),
+(474, 305, '2026-03-27', '07:30:00', '07:09:32', '15:18:35', 'Puntual', NULL, NULL, NULL, NULL),
+(475, 309, '2026-03-27', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(476, 313, '2026-03-27', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(477, 317, '2026-03-27', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(478, 302, '2026-03-27', '07:30:00', '07:52:47', '15:28:36', 'Retraso', NULL, NULL, NULL, NULL),
+(479, 306, '2026-03-27', '07:30:00', '07:09:40', '15:05:32', 'Puntual', NULL, NULL, NULL, NULL),
+(480, 310, '2026-03-27', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(481, 314, '2026-03-27', '07:30:00', '07:00:25', '15:09:02', 'Puntual', NULL, NULL, NULL, NULL),
+(482, 318, '2026-03-27', '07:30:00', '07:09:17', '15:14:49', 'Puntual', NULL, NULL, NULL, NULL),
+(483, 303, '2026-03-27', '07:30:00', '07:07:19', '15:11:58', 'Puntual', NULL, NULL, NULL, NULL),
+(484, 307, '2026-03-27', '07:30:00', '07:09:45', '15:17:58', 'Puntual', NULL, NULL, NULL, NULL),
+(485, 311, '2026-03-27', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(486, 315, '2026-03-27', '07:30:00', '07:03:52', '15:23:58', 'Puntual', NULL, NULL, NULL, NULL),
+(487, 319, '2026-03-27', '07:30:00', '07:56:09', '15:19:36', 'Retraso', NULL, NULL, NULL, NULL),
+(488, 304, '2026-03-27', '07:30:00', '08:14:34', '15:21:28', 'Retraso', NULL, NULL, NULL, NULL),
+(489, 308, '2026-03-27', '07:30:00', '08:25:08', '15:19:06', 'Retraso', NULL, NULL, NULL, NULL),
+(490, 312, '2026-03-27', '07:30:00', '08:13:05', '15:18:01', 'Retraso', NULL, NULL, NULL, NULL),
+(491, 316, '2026-03-27', '07:30:00', '07:21:19', '15:26:10', 'Puntual', NULL, NULL, NULL, NULL),
+(492, 320, '2026-03-27', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(493, 144, '2026-03-30', '07:30:00', '07:14:21', '15:20:30', 'Puntual', NULL, NULL, NULL, NULL),
+(494, 301, '2026-03-30', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(495, 305, '2026-03-30', '07:30:00', '07:00:06', '15:23:09', 'Puntual', NULL, NULL, NULL, NULL),
+(496, 309, '2026-03-30', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(497, 313, '2026-03-30', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(498, 317, '2026-03-30', '07:30:00', '07:08:25', '15:19:21', 'Puntual', NULL, NULL, NULL, NULL),
+(499, 302, '2026-03-30', '07:30:00', '07:03:30', '15:01:41', 'Puntual', NULL, NULL, NULL, NULL),
+(500, 306, '2026-03-30', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(501, 310, '2026-03-30', '07:30:00', '07:01:47', '15:29:00', 'Puntual', NULL, NULL, NULL, NULL),
+(502, 314, '2026-03-30', '07:30:00', '07:53:50', '15:03:43', 'Retraso', NULL, NULL, NULL, NULL),
+(503, 318, '2026-03-30', '07:30:00', '07:19:33', '15:24:32', 'Puntual', NULL, NULL, NULL, NULL),
+(504, 303, '2026-03-30', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(505, 307, '2026-03-30', '07:30:00', '07:02:53', '15:23:00', 'Puntual', NULL, NULL, NULL, NULL),
+(506, 311, '2026-03-30', '07:30:00', '07:03:27', '15:06:48', 'Puntual', NULL, NULL, NULL, NULL),
+(507, 315, '2026-03-30', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(508, 319, '2026-03-30', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(509, 304, '2026-03-30', '07:30:00', '07:14:08', '15:12:36', 'Puntual', NULL, NULL, NULL, NULL),
+(510, 308, '2026-03-30', '07:30:00', '07:19:01', '15:17:45', 'Puntual', NULL, NULL, NULL, NULL),
+(511, 312, '2026-03-30', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(512, 316, '2026-03-30', '07:30:00', '07:45:08', '15:05:54', 'Retraso', NULL, NULL, NULL, NULL);
+INSERT INTO `asistencias` (`id_asistencia`, `id_personal`, `fecha`, `hora_esperada`, `hora_entrada`, `hora_salida`, `estado`, `motivo_justificacion`, `archivo_evidencia`, `estado_justificacion`, `observacion`) VALUES
+(513, 320, '2026-03-30', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(514, 144, '2026-03-31', '07:30:00', '07:12:16', '15:18:10', 'Puntual', NULL, NULL, NULL, NULL),
+(515, 301, '2026-03-31', '07:30:00', '08:28:30', '15:04:54', 'Retraso', NULL, NULL, NULL, NULL),
+(516, 305, '2026-03-31', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(517, 309, '2026-03-31', '07:30:00', '07:18:30', '15:12:08', 'Puntual', NULL, NULL, NULL, NULL),
+(518, 313, '2026-03-31', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(519, 317, '2026-03-31', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(520, 302, '2026-03-31', '07:30:00', '08:08:55', '15:27:03', 'Retraso', NULL, NULL, NULL, NULL),
+(521, 306, '2026-03-31', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(522, 310, '2026-03-31', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(523, 314, '2026-03-31', '07:30:00', '07:58:03', '15:21:41', 'Retraso', NULL, NULL, NULL, NULL),
+(524, 318, '2026-03-31', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(525, 303, '2026-03-31', '07:30:00', '08:09:16', '15:00:59', 'Retraso', NULL, NULL, NULL, NULL),
+(526, 307, '2026-03-31', '07:30:00', '08:13:22', '15:15:28', 'Retraso', NULL, NULL, NULL, NULL),
+(527, 311, '2026-03-31', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(528, 315, '2026-03-31', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(529, 319, '2026-03-31', '07:30:00', '07:04:22', '15:23:18', 'Puntual', NULL, NULL, NULL, NULL),
+(530, 304, '2026-03-31', '07:30:00', '07:11:42', '15:07:54', 'Puntual', NULL, NULL, NULL, NULL),
+(531, 308, '2026-03-31', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(532, 312, '2026-03-31', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(533, 316, '2026-03-31', '07:30:00', '07:04:39', '15:19:12', 'Puntual', NULL, NULL, NULL, NULL),
+(534, 320, '2026-03-31', '07:30:00', '07:58:19', '15:16:29', 'Retraso', NULL, NULL, NULL, NULL),
+(535, 144, '2026-04-01', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(536, 301, '2026-04-01', '07:30:00', '08:15:33', '15:13:10', 'Retraso', NULL, NULL, NULL, NULL),
+(537, 305, '2026-04-01', '07:30:00', '07:11:58', '15:27:32', 'Puntual', NULL, NULL, NULL, NULL),
+(538, 309, '2026-04-01', '07:30:00', '07:00:17', '15:17:59', 'Puntual', NULL, NULL, NULL, NULL),
+(539, 313, '2026-04-01', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(540, 317, '2026-04-01', '07:30:00', '07:04:04', '15:23:36', 'Puntual', NULL, NULL, NULL, NULL),
+(541, 302, '2026-04-01', '07:30:00', '07:21:46', '15:00:26', 'Puntual', NULL, NULL, NULL, NULL),
+(542, 306, '2026-04-01', '07:30:00', '07:06:26', '15:27:13', 'Puntual', NULL, NULL, NULL, NULL),
+(543, 310, '2026-04-01', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(544, 314, '2026-04-01', '07:30:00', '07:05:27', '15:23:32', 'Puntual', NULL, NULL, NULL, NULL),
+(545, 318, '2026-04-01', '07:30:00', '07:24:34', '15:03:21', 'Puntual', NULL, NULL, NULL, NULL),
+(546, 303, '2026-04-01', '07:30:00', '08:17:33', '15:23:27', 'Retraso', NULL, NULL, NULL, NULL),
+(547, 307, '2026-04-01', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(548, 311, '2026-04-01', '07:30:00', '07:13:09', '15:17:36', 'Puntual', NULL, NULL, NULL, NULL),
+(549, 315, '2026-04-01', '07:30:00', '07:00:20', '15:00:07', 'Puntual', NULL, NULL, NULL, NULL),
+(550, 319, '2026-04-01', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(551, 304, '2026-04-01', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(552, 308, '2026-04-01', '07:30:00', '07:18:41', '15:09:00', 'Puntual', NULL, NULL, NULL, NULL),
+(553, 312, '2026-04-01', '07:30:00', '07:09:50', '15:05:44', 'Puntual', NULL, NULL, NULL, NULL),
+(554, 316, '2026-04-01', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(555, 320, '2026-04-01', '07:30:00', '07:05:04', '15:02:53', 'Puntual', NULL, NULL, NULL, NULL),
+(556, 144, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(557, 301, '2026-04-02', '07:30:00', '07:18:25', '15:14:12', 'Puntual', NULL, NULL, NULL, NULL),
+(558, 305, '2026-04-02', '07:30:00', '07:09:04', '15:10:22', 'Puntual', NULL, NULL, NULL, NULL),
+(559, 309, '2026-04-02', '07:30:00', '07:52:05', '15:26:08', 'Retraso', NULL, NULL, NULL, NULL),
+(560, 313, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(561, 317, '2026-04-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(562, 302, '2026-04-02', '07:30:00', '07:12:05', '15:08:18', 'Puntual', NULL, NULL, NULL, NULL),
+(563, 306, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(564, 310, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(565, 314, '2026-04-02', '07:30:00', '07:10:58', '15:00:42', 'Puntual', NULL, NULL, NULL, NULL),
+(566, 318, '2026-04-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(567, 303, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(568, 307, '2026-04-02', '07:30:00', '07:09:36', '15:06:43', 'Puntual', NULL, NULL, NULL, NULL),
+(569, 311, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(570, 315, '2026-04-02', '07:30:00', '07:22:47', '15:02:06', 'Puntual', NULL, NULL, NULL, NULL),
+(571, 319, '2026-04-02', '07:30:00', '08:24:05', '15:14:52', 'Retraso', NULL, NULL, NULL, NULL),
+(572, 304, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(573, 308, '2026-04-02', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(574, 312, '2026-04-02', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(575, 316, '2026-04-02', '07:30:00', '07:15:51', '15:18:32', 'Puntual', NULL, NULL, NULL, NULL),
+(576, 320, '2026-04-02', '07:30:00', '07:02:12', '15:26:17', 'Puntual', NULL, NULL, NULL, NULL),
+(577, 144, '2026-04-03', '07:30:00', '07:23:53', '15:12:46', 'Puntual', NULL, NULL, NULL, NULL),
+(578, 301, '2026-04-03', '07:30:00', '07:00:59', '15:12:13', 'Puntual', NULL, NULL, NULL, NULL),
+(579, 305, '2026-04-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(580, 309, '2026-04-03', '07:30:00', '07:02:31', '15:11:45', 'Puntual', NULL, NULL, NULL, NULL),
+(581, 313, '2026-04-03', '07:30:00', '07:49:35', '15:16:18', 'Retraso', NULL, NULL, NULL, NULL),
+(582, 317, '2026-04-03', '07:30:00', '07:10:47', '15:27:36', 'Puntual', NULL, NULL, NULL, NULL),
+(583, 302, '2026-04-03', '07:30:00', '07:19:14', '15:27:52', 'Puntual', NULL, NULL, NULL, NULL),
+(584, 306, '2026-04-03', '07:30:00', '07:22:35', '15:15:06', 'Puntual', NULL, NULL, NULL, NULL),
+(585, 310, '2026-04-03', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(586, 314, '2026-04-03', '07:30:00', '07:53:25', '15:11:09', 'Retraso', NULL, NULL, NULL, NULL),
+(587, 318, '2026-04-03', '07:30:00', '07:09:30', '15:00:04', 'Puntual', NULL, NULL, NULL, NULL),
+(588, 303, '2026-04-03', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(589, 307, '2026-04-03', '07:30:00', '07:04:08', '15:22:42', 'Puntual', NULL, NULL, NULL, NULL),
+(590, 311, '2026-04-03', '07:30:00', '07:04:21', '15:00:04', 'Puntual', NULL, NULL, NULL, NULL),
+(591, 315, '2026-04-03', '07:30:00', '07:11:15', '15:23:18', 'Puntual', NULL, NULL, NULL, NULL),
+(592, 319, '2026-04-03', '07:30:00', '08:00:00', '15:02:06', 'Retraso', NULL, NULL, NULL, NULL),
+(593, 304, '2026-04-03', '07:30:00', '07:13:22', '15:18:48', 'Puntual', NULL, NULL, NULL, NULL),
+(594, 308, '2026-04-03', '07:30:00', '08:19:46', '15:08:07', 'Retraso', NULL, NULL, NULL, NULL),
+(595, 312, '2026-04-03', '07:30:00', '07:09:15', '15:22:17', 'Puntual', NULL, NULL, NULL, NULL),
+(596, 316, '2026-04-03', '07:30:00', '08:20:21', '15:03:36', 'Retraso', NULL, NULL, NULL, NULL),
+(597, 320, '2026-04-03', '07:30:00', '07:21:22', '15:16:24', 'Puntual', NULL, NULL, NULL, NULL),
+(598, 144, '2026-04-06', '07:30:00', '07:05:06', '15:15:24', 'Puntual', NULL, NULL, NULL, NULL),
+(599, 301, '2026-04-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(600, 305, '2026-04-06', '07:30:00', '07:07:35', '15:24:33', 'Puntual', NULL, NULL, NULL, NULL),
+(601, 309, '2026-04-06', '07:30:00', '07:11:13', '15:21:05', 'Puntual', NULL, NULL, NULL, NULL),
+(602, 313, '2026-04-06', '07:30:00', '07:18:08', '15:03:50', 'Puntual', NULL, NULL, NULL, NULL),
+(603, 317, '2026-04-06', '07:30:00', '07:23:22', '15:08:32', 'Puntual', NULL, NULL, NULL, NULL),
+(604, 302, '2026-04-06', '07:30:00', '07:55:20', '15:08:57', 'Retraso', NULL, NULL, NULL, NULL),
+(605, 306, '2026-04-06', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(606, 310, '2026-04-06', '07:30:00', '07:05:01', '15:19:07', 'Puntual', NULL, NULL, NULL, NULL),
+(607, 314, '2026-04-06', '07:30:00', '07:45:19', '15:08:31', 'Retraso', NULL, NULL, NULL, NULL),
+(608, 318, '2026-04-06', '07:30:00', '07:03:34', '15:15:34', 'Puntual', NULL, NULL, NULL, NULL),
+(609, 303, '2026-04-06', '07:30:00', '07:06:48', '15:25:52', 'Puntual', NULL, NULL, NULL, NULL),
+(610, 307, '2026-04-06', '07:30:00', '07:22:21', '15:29:31', 'Puntual', NULL, NULL, NULL, NULL),
+(611, 311, '2026-04-06', '07:30:00', '07:05:40', '15:12:50', 'Puntual', NULL, NULL, NULL, NULL),
+(612, 315, '2026-04-06', '07:30:00', '07:00:22', '15:20:49', 'Puntual', NULL, NULL, NULL, NULL),
+(613, 319, '2026-04-06', '07:30:00', '07:01:21', '15:29:39', 'Puntual', NULL, NULL, NULL, NULL),
+(614, 304, '2026-04-06', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(615, 308, '2026-04-06', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(616, 312, '2026-04-06', '07:30:00', '07:20:39', '15:04:41', 'Puntual', NULL, NULL, NULL, NULL),
+(617, 316, '2026-04-06', '07:30:00', '07:01:16', '15:10:17', 'Puntual', NULL, NULL, NULL, NULL),
+(618, 320, '2026-04-06', '07:30:00', '08:20:20', '15:07:08', 'Retraso', NULL, NULL, NULL, NULL),
+(619, 144, '2026-04-07', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(620, 301, '2026-04-07', '07:30:00', '07:19:38', '15:16:40', 'Puntual', NULL, NULL, NULL, NULL),
+(621, 305, '2026-04-07', '07:30:00', '07:11:00', '15:28:04', 'Puntual', NULL, NULL, NULL, NULL),
+(622, 309, '2026-04-07', '07:30:00', '07:24:36', '15:25:24', 'Puntual', NULL, NULL, NULL, NULL),
+(623, 313, '2026-04-07', '07:30:00', '07:21:37', '15:14:25', 'Puntual', NULL, NULL, NULL, NULL),
+(624, 317, '2026-04-07', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(625, 302, '2026-04-07', '07:30:00', '08:11:29', '15:04:00', 'Retraso', NULL, NULL, NULL, NULL),
+(626, 306, '2026-04-07', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(627, 310, '2026-04-07', '07:30:00', '07:21:03', '15:26:28', 'Puntual', NULL, NULL, NULL, NULL),
+(628, 314, '2026-04-07', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(629, 318, '2026-04-07', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(630, 303, '2026-04-07', '07:30:00', '07:23:17', '15:26:42', 'Puntual', NULL, NULL, NULL, NULL),
+(631, 307, '2026-04-07', '07:30:00', '08:12:33', '15:02:44', 'Retraso', NULL, NULL, NULL, NULL),
+(632, 311, '2026-04-07', '07:30:00', '08:22:14', '15:08:17', 'Retraso', NULL, NULL, NULL, NULL),
+(633, 315, '2026-04-07', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(634, 319, '2026-04-07', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(635, 304, '2026-04-07', '07:30:00', '07:55:28', '15:06:34', 'Retraso', NULL, NULL, NULL, NULL),
+(636, 308, '2026-04-07', '07:30:00', '07:08:06', '15:13:02', 'Puntual', NULL, NULL, NULL, NULL),
+(637, 312, '2026-04-07', '07:30:00', '07:17:12', '15:25:25', 'Puntual', NULL, NULL, NULL, NULL),
+(638, 316, '2026-04-07', '07:30:00', '07:07:49', '15:01:33', 'Puntual', NULL, NULL, NULL, NULL),
+(639, 320, '2026-04-07', '07:30:00', '07:11:15', '15:08:37', 'Puntual', NULL, NULL, NULL, NULL),
+(640, 144, '2026-04-08', '07:30:00', '07:14:11', '15:17:23', 'Puntual', NULL, NULL, NULL, NULL),
+(641, 301, '2026-04-08', '07:30:00', '07:06:03', '15:18:39', 'Puntual', NULL, NULL, NULL, NULL),
+(642, 305, '2026-04-08', '07:30:00', '07:01:14', '15:02:58', 'Puntual', NULL, NULL, NULL, NULL),
+(643, 309, '2026-04-08', '07:30:00', '07:11:01', '15:04:49', 'Puntual', NULL, NULL, NULL, NULL),
+(644, 313, '2026-04-08', '07:30:00', '07:23:02', '15:04:58', 'Puntual', NULL, NULL, NULL, NULL),
+(645, 317, '2026-04-08', '07:30:00', '07:20:37', '15:27:58', 'Puntual', NULL, NULL, NULL, NULL),
+(646, 302, '2026-04-08', '07:30:00', '07:03:23', '15:03:35', 'Puntual', NULL, NULL, NULL, NULL),
+(647, 306, '2026-04-08', '07:30:00', '07:14:53', '15:12:08', 'Puntual', NULL, NULL, NULL, NULL),
+(648, 310, '2026-04-08', '07:30:00', '07:24:14', '15:04:07', 'Puntual', NULL, NULL, NULL, NULL),
+(649, 314, '2026-04-08', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(650, 318, '2026-04-08', '07:30:00', '07:01:34', '15:26:19', 'Puntual', NULL, NULL, NULL, NULL),
+(651, 303, '2026-04-08', '07:30:00', '07:08:56', '15:05:50', 'Puntual', NULL, NULL, NULL, NULL),
+(652, 307, '2026-04-08', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(653, 311, '2026-04-08', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(654, 315, '2026-04-08', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(655, 319, '2026-04-08', '07:30:00', '08:02:54', '15:05:40', 'Retraso', NULL, NULL, NULL, NULL),
+(656, 304, '2026-04-08', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(657, 308, '2026-04-08', '07:30:00', '07:17:40', '15:28:42', 'Puntual', NULL, NULL, NULL, NULL),
+(658, 312, '2026-04-08', '07:30:00', '08:05:17', '15:07:50', 'Retraso', NULL, NULL, NULL, NULL),
+(659, 316, '2026-04-08', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(660, 320, '2026-04-08', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(661, 144, '2026-04-09', '07:30:00', '07:08:00', '15:13:15', 'Puntual', NULL, NULL, NULL, NULL),
+(662, 301, '2026-04-09', '07:30:00', '07:22:42', '15:24:03', 'Puntual', NULL, NULL, NULL, NULL),
+(663, 305, '2026-04-09', '07:30:00', '07:00:29', '15:07:18', 'Puntual', NULL, NULL, NULL, NULL),
+(664, 309, '2026-04-09', '07:30:00', '07:01:37', '15:25:23', 'Puntual', NULL, NULL, NULL, NULL),
+(665, 313, '2026-04-09', '07:30:00', '07:16:10', '15:03:40', 'Puntual', NULL, NULL, NULL, NULL),
+(666, 317, '2026-04-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(667, 302, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(668, 306, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(669, 310, '2026-04-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(670, 314, '2026-04-09', '07:30:00', '07:54:50', '15:03:35', 'Retraso', NULL, NULL, NULL, NULL),
+(671, 318, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(672, 303, '2026-04-09', '07:30:00', '07:22:59', '15:16:32', 'Puntual', NULL, NULL, NULL, NULL),
+(673, 307, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(674, 311, '2026-04-09', '07:30:00', '07:17:41', '15:15:26', 'Puntual', NULL, NULL, NULL, NULL),
+(675, 315, '2026-04-09', '07:30:00', '07:17:52', '15:06:36', 'Puntual', NULL, NULL, NULL, NULL),
+(676, 319, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(677, 304, '2026-04-09', '07:30:00', '07:18:03', '15:07:45', 'Puntual', NULL, NULL, NULL, NULL),
+(678, 308, '2026-04-09', '07:30:00', '07:21:19', '15:26:39', 'Puntual', NULL, NULL, NULL, NULL),
+(679, 312, '2026-04-09', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(680, 316, '2026-04-09', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(681, 320, '2026-04-09', '07:30:00', '07:07:21', '15:04:15', 'Puntual', NULL, NULL, NULL, NULL),
+(682, 144, '2026-04-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(683, 301, '2026-04-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(684, 305, '2026-04-10', '07:30:00', '07:03:44', '15:17:34', 'Puntual', NULL, NULL, NULL, NULL),
+(685, 309, '2026-04-10', '07:30:00', '07:16:08', '15:23:34', 'Puntual', NULL, NULL, NULL, NULL),
+(686, 313, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(687, 317, '2026-04-10', '07:30:00', '07:46:47', '15:11:42', 'Retraso', NULL, NULL, NULL, NULL),
+(688, 302, '2026-04-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(689, 306, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(690, 310, '2026-04-10', '07:30:00', '07:04:43', '15:19:45', 'Puntual', NULL, NULL, NULL, NULL),
+(691, 314, '2026-04-10', '07:30:00', NULL, NULL, 'Falta', NULL, NULL, NULL, NULL),
+(692, 318, '2026-04-10', '07:30:00', '07:51:00', '15:20:19', 'Retraso', NULL, NULL, NULL, NULL),
+(693, 303, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(694, 307, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(695, 311, '2026-04-10', '07:30:00', '07:45:25', '15:12:38', 'Retraso', NULL, NULL, NULL, NULL),
+(696, 315, '2026-04-10', '07:30:00', '07:03:09', '15:11:53', 'Puntual', NULL, NULL, NULL, NULL),
+(697, 319, '2026-04-10', '07:30:00', '08:22:16', '15:09:55', 'Retraso', NULL, NULL, NULL, NULL),
+(698, 304, '2026-04-10', '07:30:00', '07:21:23', '15:23:05', 'Puntual', NULL, NULL, NULL, NULL),
+(699, 308, '2026-04-10', '07:30:00', '07:02:19', '15:18:42', 'Puntual', NULL, NULL, NULL, NULL),
+(700, 312, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(701, 316, '2026-04-10', '07:30:00', '07:03:11', '15:19:31', 'Puntual', NULL, NULL, NULL, NULL),
+(702, 320, '2026-04-10', '07:30:00', NULL, NULL, 'Salida Irregular', 'Cita Médica / Trámite Personal', NULL, 'Aprobada', 'El sistema cerró la jornada automáticamente por omisión de salida.');
 
 --
 -- Índices para tablas volcadas
@@ -279,55 +712,6 @@ ALTER TABLE `asistencias`
   ADD KEY `fk_asistencia_personal` (`id_personal`);
 
 --
--- Indices de la tabla `bitacora`
---
-ALTER TABLE `bitacora`
-  ADD PRIMARY KEY (`id_bitacora`),
-  ADD KEY `fk_bitacora_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `cargos`
---
-ALTER TABLE `cargos`
-  ADD PRIMARY KEY (`id_cargo`);
-
---
--- Indices de la tabla `configuracion`
---
-ALTER TABLE `configuracion`
-  ADD PRIMARY KEY (`id_config`);
-
---
--- Indices de la tabla `justificaciones`
---
-ALTER TABLE `justificaciones`
-  ADD PRIMARY KEY (`id_justificacion`),
-  ADD KEY `fk_justificacion_personal` (`id_personal`);
-
---
--- Indices de la tabla `personal`
---
-ALTER TABLE `personal`
-  ADD PRIMARY KEY (`id_personal`),
-  ADD UNIQUE KEY `cedula_unica` (`cedula`),
-  ADD KEY `fk_personal_cargo` (`id_cargo`),
-  ADD KEY `fk_personal_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`id_rol`);
-
---
--- Indices de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD PRIMARY KEY (`id_usuario`),
-  ADD UNIQUE KEY `usuario_unico` (`nombre_usuario`),
-  ADD KEY `fk_usuario_rol` (`id_rol`);
-
---
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -335,49 +719,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `asistencias`
 --
 ALTER TABLE `asistencias`
-  MODIFY `id_asistencia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
-
---
--- AUTO_INCREMENT de la tabla `bitacora`
---
-ALTER TABLE `bitacora`
-  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT de la tabla `cargos`
---
-ALTER TABLE `cargos`
-  MODIFY `id_cargo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT de la tabla `configuracion`
---
-ALTER TABLE `configuracion`
-  MODIFY `id_config` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT de la tabla `justificaciones`
---
-ALTER TABLE `justificaciones`
-  MODIFY `id_justificacion` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `personal`
---
-ALTER TABLE `personal`
-  MODIFY `id_personal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=321;
-
---
--- AUTO_INCREMENT de la tabla `roles`
---
-ALTER TABLE `roles`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=321;
+  MODIFY `id_asistencia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=703;
 
 --
 -- Restricciones para tablas volcadas
@@ -388,31 +730,6 @@ ALTER TABLE `usuarios`
 --
 ALTER TABLE `asistencias`
   ADD CONSTRAINT `fk_asistencia_personal` FOREIGN KEY (`id_personal`) REFERENCES `personal` (`id_personal`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `bitacora`
---
-ALTER TABLE `bitacora`
-  ADD CONSTRAINT `fk_bitacora_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `justificaciones`
---
-ALTER TABLE `justificaciones`
-  ADD CONSTRAINT `fk_justificacion_personal` FOREIGN KEY (`id_personal`) REFERENCES `personal` (`id_personal`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `personal`
---
-ALTER TABLE `personal`
-  ADD CONSTRAINT `fk_personal_cargo` FOREIGN KEY (`id_cargo`) REFERENCES `cargos` (`id_cargo`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_personal_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD CONSTRAINT `fk_usuario_rol` FOREIGN KEY (`id_rol`) REFERENCES `roles` (`id_rol`) ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

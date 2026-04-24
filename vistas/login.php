@@ -1,12 +1,21 @@
 <?php
 session_start();
-// --- NUEVO: Si ya está logueado, mandarlo al principal ---
+
+// Verificación de sesión activa
 if (isset($_SESSION['logueado']) && $_SESSION['logueado'] === true) {
     header("Location: principal.php");
     exit;
 }
+
+// Generación de Token CSRF para seguridad en formularios
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
 require_once '../configuracion/conexion.php';
 
+// Validación de existencia del primer usuario (Director)
 try {
     $sql_check = "SELECT COUNT(*) FROM usuarios WHERE id_rol = 1";
     $stmt_check = $conexion->query($sql_check);
@@ -14,7 +23,7 @@ try {
 
     if (!$existe_director) {
         $sql_cargos = "SELECT id_cargo, nombre_cargo FROM cargos WHERE nombre_cargo = 'Directora'";
-        $mensaje_alerta = "¡Atención! Serás registrado como el PRIMER USUARIO (Directora).";
+        $mensaje_alerta = "Atención: Registro del primer usuario del sistema (Directora).";
     } else {
         $sql_cargos = "SELECT id_cargo, nombre_cargo FROM cargos WHERE nombre_cargo NOT IN ('Directora', 'Subdirectora')";
         $mensaje_alerta = "";
@@ -53,6 +62,9 @@ $preguntas_seguridad = [
 
         <div class="contenedor-formulario contenedor-registro">
             <form action="../controladores/ControladorRegistro.php" method="POST" id="formularioRegistro" autocomplete="off" enctype="multipart/form-data">
+                
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                
                 <h1>Crear Cuenta</h1>
 
                 <div class="paso-registro activo" id="paso1">
@@ -65,14 +77,13 @@ $preguntas_seguridad = [
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             </div>
                         </label>
-                        <input type="file" name="foto_perfil" id="registro_foto" accept="image/jpeg, image/png" style="display: none;">
+                        <input type="file" name="foto_perfil" id="registro_foto" accept="image/jpeg, image/png" class="input-file-oculto">
                     </div>
 
-                    <input type="text" name="cedula" id="registro_cedula" placeholder="Cédula"
-                        maxlength="8"
-                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" autocomplete="nope"/>
+                    <input type="text" name="cedula" id="registro_cedula" placeholder="Cédula" autocomplete="off"
+                        maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
 
-                    <div style="display:flex; gap:5px; width:100%">
+                    <div class="contenedor-nombres-apellidos">
                         <input type="text" name="nombres" id="registro_nombres" placeholder="Nombres" autocomplete="off" />
                         <input type="text" name="apellidos" id="registro_apellidos" placeholder="Apellidos" autocomplete="off" />
                     </div>
@@ -81,7 +92,7 @@ $preguntas_seguridad = [
                      oninput="this.value = this.value.replace(/[^0-9]/g, '')" autocomplete="off"/>
 
                     <?php if (!empty($mensaje_alerta)): ?>
-                        <div style="background-color: #e3f2fd; color: #0d47a1; padding: 5px; font-size: 11px; margin-bottom: 5px; border-radius: 4px;">
+                        <div class="alerta-primer-usuario">
                             <?php echo $mensaje_alerta; ?>
                         </div>
                     <?php endif; ?>
@@ -101,21 +112,28 @@ $preguntas_seguridad = [
 
                 <div class="paso-registro" id="paso2">
                     <span>Paso 2: Datos de Usuario</span>
-                    <input type="text" name="nuevo_usuario" id="registro_usuario" placeholder="Usuario deseado" autocomplete="off" />
+                    
+                    <input type="text" name="nuevo_usuario" id="registro_usuario" placeholder="Usuario deseado (sin espacios)" autocomplete="off" />
+                    <span id="mensaje_usuario_ajax" class="estilo-mensaje-ajax"></span>
                     
                     <div class="contenedor-clave">
                         <input type="password" name="nueva_password" id="registro_clave1" placeholder="Contraseña (Mín. 6 carácteres)" autocomplete="new-password" />
                         <span class="icono-alternar" onclick="alternarVisibilidad('registro_clave1', this)">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar" viewBox="0 0 512 512" style="display:none;"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
                         </span>
                     </div>
+
+                    <div class="medidor-fuerza-contenedor">
+                        <div class="barra-fuerza" id="barra_fuerza"></div>
+                    </div>
+                    <span id="texto_fuerza" class="texto-fuerza">Seguridad: Ninguna</span>
 
                     <div class="contenedor-clave">
                         <input type="password" id="registro_clave2" placeholder="Confirmar Contraseña" autocomplete="new-password"/>
                         <span class="icono-alternar" onclick="alternarVisibilidad('registro_clave2', this)">
                            <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
-                           <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar" viewBox="0 0 512 512" style="display:none;"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
+                           <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
                         </span>
                     </div>
 
@@ -127,7 +145,7 @@ $preguntas_seguridad = [
 
                 <div class="paso-registro campos-compactos" id="paso3">
                     <span>Paso 3: Seguridad</span>
-                    <div style="width:100%; text-align:left; font-size:10px; color:#666;">Seleccione 3 preguntas DISTINTAS:</div>
+                    <div class="texto-instruccion-preguntas">Seleccione 3 preguntas DISTINTAS:</div>
 
                     <select name="pregunta_1" id="registro_pregunta_1">
                         <option value="" disabled selected>Pregunta 1</option>
@@ -164,17 +182,19 @@ $preguntas_seguridad = [
         <div class="contenedor-formulario contenedor-ingreso">
             <form action="../controladores/ControladorAcceso.php" method="POST" id="formularioLogin" autocomplete="off">
                 
-            <img src="../recursos/img/logo_ceis.jpg" alt="Escudo CEIS Julián Yánez" class="logo-login-flotante">
-            <h1>CEIS Julian Yánez</h1>
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+
+                <img src="../recursos/img/logo_ceis.png" alt="Escudo CEIS Julián Yánez" class="logo-login-flotante">
+                <h1>CEIS Julian Yánez</h1>
                 <span>Sistema de Asistencia</span>
 
                 <input type="text" name="nombre_usuario" id="login_usuario" placeholder="Usuario" autocomplete="off" />
                 
                 <div class="contenedor-clave">
-                    <input type="password" name="password" id="login_clave" placeholder="Contraseña" autocomplete="new-password"/>
+                    <input type="password" name="password" id="login_clave" placeholder="Contraseña" autocomplete="off"/>
                     <span class="icono-alternar" onclick="alternarVisibilidad('login_clave', this)">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar" viewBox="0 0 512 512" style="display:none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512">
                             <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
                             <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
                     </span>
@@ -203,7 +223,7 @@ $preguntas_seguridad = [
     </div>
 
     <script>
-        // === ELEMENTOS DEL DOM ===
+        // Referencias del DOM
         const btnIrRegistro = document.getElementById('botonIrRegistro');
         const btnIrLogin = document.getElementById('botonIrLogin');
         const contenedorPrincipal = document.getElementById('contenedorPrincipal');
@@ -212,7 +232,6 @@ $preguntas_seguridad = [
         const pasos = document.getElementsByClassName("paso-registro");
         const puntos = document.getElementsByClassName("punto");
         
-        // Elementos de Preguntas (Nombres descriptivos)
         const selectPregunta1 = document.getElementById('registro_pregunta_1');
         const selectPregunta2 = document.getElementById('registro_pregunta_2');
         const selectPregunta3 = document.getElementById('registro_pregunta_3');
@@ -220,7 +239,7 @@ $preguntas_seguridad = [
 
         let pasoActual = 0;
 
-        // === NUEVO: PREVISUALIZAR FOTO DE PERFIL ===
+        // Previsualización de Foto de Perfil
         document.getElementById('registro_foto').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -231,14 +250,14 @@ $preguntas_seguridad = [
             }
         });
 
-        // === NAVEGACIÓN ENTRE PANELES ===
+        // Control de navegación entre paneles
         btnIrRegistro.addEventListener('click', () => { contenedorPrincipal.classList.add("panel-derecho-activo"); });
         btnIrLogin.addEventListener('click', () => { contenedorPrincipal.classList.remove("panel-derecho-activo"); });
         
         function irARegistroMovil() { contenedorPrincipal.classList.add("modo-movil-registro"); }
         function irALoginMovil() { contenedorPrincipal.classList.remove("modo-movil-registro"); }
 
-        // === LÓGICA DE BLOQUEO DE PREGUNTAS ===
+        // Bloqueo dinámico de preguntas de seguridad seleccionadas
         function actualizarSelects() {
             const valoresSeleccionados = grupoSelects.map(s => s.value).filter(v => v !== "");
             grupoSelects.forEach(selectActual => {
@@ -252,17 +271,105 @@ $preguntas_seguridad = [
                 });
             });
         }
-
         grupoSelects.forEach(select => { select.addEventListener('change', actualizarSelects); });
 
-        // === FUNCIONES DE ERROR VISUAL ===
+        // Manejo de feedback visual en inputs
         function mostrarError(input) {
             input.classList.add('campo-error', 'animacion-vibrar');
             setTimeout(() => { input.classList.remove('animacion-vibrar'); }, 500);
         }
         function limpiarError(input) { input.classList.remove('campo-error'); }
 
-        // === CONTROL DE PASOS REGISTRO ===
+        // Validación AJAX de disponibilidad de nombre de usuario (AHORA EN MINÚSCULAS)
+        const inputUsuario = document.getElementById('registro_usuario');
+        const mensajeAjax = document.getElementById('mensaje_usuario_ajax');
+        inputUsuario.dataset.disponible = "false"; 
+
+        inputUsuario.addEventListener('keyup', function() {
+            // MEJORA: Forzar minúsculas y sin espacios
+            this.value = this.value.replace(/\s+/g, '').toLowerCase(); 
+            let usuarioTexto = this.value;
+
+            if (usuarioTexto.length >= 3) {
+                fetch('../controladores/validar_usuario.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'usuario=' + encodeURIComponent(usuarioTexto)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    mensajeAjax.classList.remove('mensaje-ajax-exito', 'mensaje-ajax-error');
+                    inputUsuario.classList.remove('campo-error', 'input-exito');
+
+                    if (data.existe) {
+                        mensajeAjax.textContent = '❌ Este usuario ya está en uso.';
+                        mensajeAjax.classList.add('mensaje-ajax-error');
+                        inputUsuario.classList.add('campo-error');
+                        inputUsuario.dataset.disponible = "false";
+                    } else {
+                        mensajeAjax.textContent = '✅ Usuario disponible.';
+                        mensajeAjax.classList.add('mensaje-ajax-exito');
+                        inputUsuario.classList.add('input-exito');
+                        inputUsuario.dataset.disponible = "true";
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+                mensajeAjax.textContent = '';
+                mensajeAjax.classList.remove('mensaje-ajax-exito', 'mensaje-ajax-error');
+                inputUsuario.classList.remove('campo-error', 'input-exito');
+                inputUsuario.dataset.disponible = "false"; 
+            }
+        });
+
+        // --- MEDIDOR DE FUERZA DE CONTRASEÑA ---
+        const inputClave1 = document.getElementById('registro_clave1');
+        const barraFuerza = document.getElementById('barra_fuerza');
+        const textoFuerza = document.getElementById('texto_fuerza');
+
+        inputClave1.addEventListener('input', function() {
+            const val = this.value;
+            
+            // Evaluadores booleanos
+            const tieneLetras = /[a-zA-Z]/.test(val);
+            const tieneNumeros = /[0-9]/.test(val);
+            const tieneSimbolos = /[^a-zA-Z0-9]/.test(val);
+
+            // IMPORTANTE: Limpiamos las clases y borramos el estilo en línea para evitar el bug
+            barraFuerza.className = 'barra-fuerza';
+            barraFuerza.style.width = ''; 
+
+            if (val.length === 0) {
+                // Estado inicial vacío
+                textoFuerza.textContent = 'Seguridad: Ninguna';
+                textoFuerza.style.color = '#666';
+            } else if (val.length < 6) {
+                // Menos de 6 caracteres siempre es mala
+                barraFuerza.classList.add('fuerza-mala');
+                textoFuerza.textContent = 'Seguridad: Mala (Mín. 6 caracteres)';
+                textoFuerza.style.color = '#cc0000';
+            } else {
+                // Tiene 6 o más caracteres, evaluamos el contenido
+                if ((tieneLetras && !tieneNumeros && !tieneSimbolos) || (!tieneLetras && tieneNumeros && !tieneSimbolos)) {
+                    // Solo tiene letras o solo tiene números
+                    barraFuerza.classList.add('fuerza-mala');
+                    textoFuerza.textContent = 'Seguridad: Mala (Agregue letras o números)';
+                    textoFuerza.style.color = '#cc0000';
+                } else if (tieneLetras && tieneNumeros && tieneSimbolos) {
+                    // Tiene los 3 tipos de caracteres (Letras + Números + Signos)
+                    barraFuerza.classList.add('fuerza-excelente');
+                    textoFuerza.textContent = 'Seguridad: Excelente';
+                    textoFuerza.style.color = '#1b5e20';
+                } else {
+                    // Tiene combinaciones de 2 (letras+números, letras+símbolos, números+símbolos)
+                    barraFuerza.classList.add('fuerza-buena');
+                    textoFuerza.textContent = 'Seguridad: Buena';
+                    textoFuerza.style.color = '#ff9800'; 
+                }
+            }
+        });
+
+        // Gestión de pasos del formulario de registro
         function cambiarPaso(n) {
             if (n === 1 && !validarPasoActual()) return false;
             
@@ -276,7 +383,6 @@ $preguntas_seguridad = [
         function validarPasoActual() {
             let esValido = true;
 
-            // PASO 1: DATOS PERSONALES
             if (pasoActual === 0) {
                 const cedula = document.getElementById("registro_cedula");
                 const nombres = document.getElementById("registro_nombres");
@@ -300,22 +406,34 @@ $preguntas_seguridad = [
                 }
             }
 
-            // PASO 2: USUARIO Y CLAVE
             if (pasoActual === 1) {
                 const usuario = document.getElementById("registro_usuario");
                 const clave1 = document.getElementById("registro_clave1");
                 const clave2 = document.getElementById("registro_clave2");
 
-                [usuario, clave1, clave2].forEach(limpiarError);
+                [clave1, clave2].forEach(limpiarError);
 
-                if (usuario.value.trim() === "") { mostrarError(usuario); esValido = false; }
+                if (usuario.value.trim() === "") { 
+                    mostrarError(usuario); 
+                    esValido = false; 
+                } else if (usuario.value.trim().length < 3) {
+                    mostrarError(usuario); 
+                    esValido = false;
+                    Swal.fire({ title: 'Usuario Corto', text: 'El nombre de usuario debe tener al menos 3 letras.', icon: 'warning', confirmButtonColor: '#cc0000', heightAuto: false });
+                } else if (usuario.dataset.disponible === "false") {
+                    mostrarError(usuario); 
+                    esValido = false;
+                    Swal.fire({ title: 'Usuario no disponible', text: 'Este nombre de usuario ya está ocupado. Por favor, elige otro antes de continuar.', icon: 'error', confirmButtonColor: '#cc0000', heightAuto: false });
+                }
+
                 if (clave1.value.trim() === "") { mostrarError(clave1); esValido = false; }
                 if (clave2.value.trim() === "") { mostrarError(clave2); esValido = false; }
 
                 if (!esValido) return false;
 
-                if (clave1.value.length < 6) {
-                    Swal.fire({ title: 'Contraseña Corta', text: 'Mínimo 6 caracteres.', icon: 'warning', confirmButtonColor: '#cc0000', heightAuto: false });
+                // Validación frontend de fuerza de contraseña
+                if (clave1.value.length < 6 || !/[A-Za-z]/.test(clave1.value) || !/[0-9]/.test(clave1.value)) {
+                    Swal.fire({ title: 'Contraseña Débil', text: 'La contraseña debe tener al menos 6 caracteres e incluir letras y números.', icon: 'warning', confirmButtonColor: '#cc0000', heightAuto: false });
                     mostrarError(clave1);
                     return false;
                 }
@@ -329,74 +447,60 @@ $preguntas_seguridad = [
             return esValido;
         }
 
-        // === VALIDACIÓN FINAL AL ENVIAR REGISTRO ===
+        // Validación final del envío (Paso 3)
         formularioRegistro.addEventListener('submit', function(e) {
-            e.preventDefault(); 
             let esValido = true;
+            let mensajeAlerta = 'Por favor, selecciona y responde las 3 preguntas de seguridad.'; 
             
-            const resp1 = document.getElementById('registro_respuesta_1');
-            const resp2 = document.getElementById('registro_respuesta_2');
-            const resp3 = document.getElementById('registro_respuesta_3');
-            
-            const selects = [selectPregunta1, selectPregunta2, selectPregunta3];
-            const respuestas = [resp1, resp2, resp3];
-            const campos = [...selects, ...respuestas];
-            
-            campos.forEach(limpiarError);
+            const p1 = document.getElementById("registro_pregunta_1");
+            const r1 = document.getElementById("registro_respuesta_1");
+            const p2 = document.getElementById("registro_pregunta_2");
+            const r2 = document.getElementById("registro_respuesta_2");
+            const p3 = document.getElementById("registro_pregunta_3");
+            const r3 = document.getElementById("registro_respuesta_3");
 
-            // 1. Validar que no estén vacíos
-            campos.forEach(input => {
-                if (input.value.trim() === "") {
-                    mostrarError(input);
-                    esValido = false;
-                }
-            });
+            [p1, r1, p2, r2, p3, r3].forEach(limpiarError);
 
-            if (!esValido) return false;
+            if (p1.value === "") { mostrarError(p1); esValido = false; }
+            if (p2.value === "") { mostrarError(p2); esValido = false; }
+            if (p3.value === "") { mostrarError(p3); esValido = false; }
 
-            // 2. NUEVO: Validar longitud de las respuestas (mínimo 3 caracteres)
-            let respuestaCorta = false;
-            respuestas.forEach(input => {
-                if (input.value.trim().length < 3) {
-                    mostrarError(input);
-                    respuestaCorta = true;
-                    esValido = false;
-                }
-            });
-
-            if (respuestaCorta) {
-                Swal.fire({
-                    title: 'Respuesta Corta',
-                    text: 'Las respuestas de seguridad deben tener al menos 3 caracteres.',
-                    icon: 'warning', 
-                    confirmButtonColor: '#cc0000', 
-                    heightAuto: false 
-                });
-                return false;
+            if (r1.value.trim() === "") { 
+                mostrarError(r1); esValido = false; 
+            } else if (r1.value.trim().length < 3) { 
+                mostrarError(r1); esValido = false; mensajeAlerta = 'Error de seguridad: Las respuestas deben tener al menos 3 caracteres.'; 
             }
 
-            // 3. Validar preguntas repetidas
-            const v1 = selectPregunta1.value;
-            const v2 = selectPregunta2.value;
-            const v3 = selectPregunta3.value;
-
-            if (v1 === v2 || v1 === v3 || v2 === v3) {
-                 Swal.fire({
-                    title: 'Preguntas Repetidas',
-                    text: 'Error inesperado: Has seleccionado preguntas idénticas.',
-                    icon: 'error', confirmButtonColor: '#003366', heightAuto: false 
-                });
-                return false;
+            if (r2.value.trim() === "") { 
+                mostrarError(r2); esValido = false; 
+            } else if (r2.value.trim().length < 3) { 
+                mostrarError(r2); esValido = false; mensajeAlerta = 'Error de seguridad: Las respuestas deben tener al menos 3 caracteres.'; 
             }
 
-            this.submit();
+            if (r3.value.trim() === "") { 
+                mostrarError(r3); esValido = false; 
+            } else if (r3.value.trim().length < 3) { 
+                mostrarError(r3); esValido = false; mensajeAlerta = 'Error de seguridad: Las respuestas deben tener al menos 3 caracteres.'; 
+            }
+
+            if (!esValido) {
+                e.preventDefault(); 
+                Swal.fire({ title: '¡Error!', text: mensajeAlerta, icon: 'warning', confirmButtonColor: '#cc0000', heightAuto: false });
+            } else {
+                const btnSubmit = e.target.querySelector('button[type="submit"]');
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Procesando...';
+            }
         });
 
-        // === VALIDACIÓN FORMULARIO LOGIN ===
+        // Validación frontend del Login
         formularioLogin.addEventListener('submit', function(e) {
             let usuario = document.getElementById('login_usuario');
             let clave = document.getElementById('login_clave');
             let esValido = true;
+
+            // Asegurarse de que el usuario envíe en minúsculas también desde el login
+            usuario.value = usuario.value.toLowerCase();
 
             [usuario, clave].forEach(limpiarError);
 
@@ -406,7 +510,7 @@ $preguntas_seguridad = [
             if (!esValido) e.preventDefault();
         });
 
-        // === FUNCIÓN MOSTRAR/OCULTAR CONTRASEÑA ===
+        // Utilidad: Mostrar/Ocultar contraseñas
         function alternarVisibilidad(idInput, contenedorIcono) {
             const input = document.getElementById(idInput);
             const iconoVer = contenedorIcono.querySelector('.icono-ver');
@@ -414,12 +518,12 @@ $preguntas_seguridad = [
 
             if (input.type === "password") {
                 input.type = "text";
-                iconoVer.style.display = 'none';
-                iconoOcultar.style.display = 'block'; 
+                iconoVer.classList.add('oculto');
+                iconoOcultar.classList.remove('oculto');
             } else {
                 input.type = "password";
-                iconoVer.style.display = 'block';
-                iconoOcultar.style.display = 'none';
+                iconoVer.classList.remove('oculto');
+                iconoOcultar.classList.add('oculto');
             }
         }
     </script>
@@ -443,6 +547,16 @@ $preguntas_seguridad = [
             });
         </script>
     <?php unset($_SESSION['registro_exito']); endif; ?>
+
+    <?php if (isset($_SESSION['recuperacion_exito'])): ?>
+        <script>
+            Swal.fire({
+                title: '¡Contraseña Actualizada!', 
+                text: 'Tu contraseña ha sido restablecida con éxito. Ya puedes ingresar al sistema.',
+                icon: 'success', confirmButtonText: 'Aceptar', confirmButtonColor: '#003366', heightAuto: false 
+            });
+        </script>
+    <?php unset($_SESSION['recuperacion_exito']); endif; ?>
 
 </body>
 </html>

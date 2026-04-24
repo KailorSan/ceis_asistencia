@@ -4,7 +4,7 @@
 // =======================================================
 require_once '../configuracion/seguridad.php'; 
 require_once '../configuracion/conexion.php';  
-require_once '../controladores/ControladorBitacora.php'; // Controlador de la Bitácora
+require_once '../controladores/ControladorBitacora.php';
 
 if ($_SESSION['id_rol'] != 1) {
     header("Location: principal.php");
@@ -14,7 +14,7 @@ if ($_SESSION['id_rol'] != 1) {
 $nombre = $_SESSION['usuario'];
 $rol = $_SESSION['rol'];
 
-// -- LÓGICA PARA LÍMITES DIARIOS (CON BITÁCORA JSON) --
+// -- LÓGICA PARA LÍMITES DIARIOS --
 date_default_timezone_set('America/Caracas');
 $fecha_hoy = date('d-m-Y');
 $carpeta_respaldos = '../respaldos/';
@@ -36,13 +36,12 @@ if (file_exists($archivo_limites)) {
 $limite_generar = 4;
 $limite_subir = 2;
 $limite_restaurar = 2;
-
 $restantes_generar = max(0, $limite_generar - $limites['generados']);
 $restantes_subir = max(0, $limite_subir - $limites['subidos']);
 $restantes_restaurar = max(0, $limite_restaurar - $limites['restaurados']);
-
 $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 ?>
+
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>

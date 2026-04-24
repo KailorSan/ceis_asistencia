@@ -7,6 +7,7 @@ $rol = $_SESSION['rol'];
 $id_rol = $_SESSION['id_rol'];
 $id_usuario = $_SESSION['id_usuario'];
 
+// Consulta de mis datos. Se agrega LEFT JOIN con asistencias filtrado por CURDATE() para el indicador visual.
 $stmt_mi_id = $conexion->prepare("SELECT p.id_personal, p.foto_perfil, p.nombres, p.apellidos, c.nombre_cargo, 
                                          a.hora_entrada AS asistio_hoy
                                   FROM personal p 
@@ -22,8 +23,26 @@ $es_admin = ($id_rol == 1 || $id_rol == 2);
 $lista_personal = [];
 $cargos_activos_en_grid = [];
 
+// Variables para los Widgets del Director
+$ausentes_hoy = 0;
+$justificaciones_pendientes = 0;
+$hora_entrada_sys = '07:00:00';
+$tolerancia_sys = 15;
+
 if ($es_admin) {
     try {
+        // 1. Obtener configuración general para el contador
+        $stmt_config = $conexion->query("SELECT hora_entrada_general, minutos_tolerancia FROM configuracion LIMIT 1");
+        if ($config_sys = $stmt_config->fetch(PDO::FETCH_ASSOC)) {
+            $hora_entrada_sys = $config_sys['hora_entrada_general'];
+            $tolerancia_sys = $config_sys['minutos_tolerancia'];
+        }
+
+        // 2. Obtener Justificaciones pendientes
+        $stmt_just = $conexion->query("SELECT COUNT(*) FROM asistencias WHERE estado_justificacion = 'Pendiente'");
+        $justificaciones_pendientes = $stmt_just->fetchColumn();
+
+        // 3. Consulta del personal
         $sql = "SELECT p.id_personal, p.cedula, p.nombres, p.apellidos, p.foto_perfil, p.id_cargo, c.nombre_cargo,
                        a.hora_entrada AS asistio_hoy
                 FROM personal p
@@ -40,6 +59,14 @@ if ($es_admin) {
 
         $stmt_cargos = $conexion->query("SELECT id_cargo, nombre_cargo FROM cargos ORDER BY id_cargo ASC");
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
+
+        // 4. Calcular Ausentes
+        $total_personal = count($lista_personal);
+        $presentes_hoy = 0;
+        foreach($lista_personal as $p) {
+            if(!empty($p['asistio_hoy'])) $presentes_hoy++;
+        }
+        $ausentes_hoy = $total_personal - $presentes_hoy;
 
     } catch (PDOException $e) {}
 }
@@ -76,21 +103,20 @@ if ($es_admin) {
                     </div>
                 </div>
 
-                <div class="grid-perfiles" style="margin-block-end: 1rem;">
-                    <div class="tarjeta-perfil" style="max-inline-size: 320px;"> 
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-block-end: 2rem; align-items: stretch; justify-content: center;">
+                    
+                    <div class="tarjeta-perfil" style="flex: 0 0 auto; width: 100%; max-inline-size: 320px; margin: 0 auto;"> 
                         <div class="banner-tarjeta" style="block-size: 70px;"></div>
-
                         <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
                             <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($mis_datos['foto_perfil']); ?>" alt="Mi Foto">
                             <?php 
                                 if (!empty($mis_datos['asistio_hoy'])) {
                                     echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($mis_datos['asistio_hoy'])) . ')"></span>';
                                 } else {
-                                    echo '<span class="indicador-estatus estatus-ausente" title="Aún no he llegado"></span>';
+                                    echo '<span class="indicador-estatus estatus-ausente" title="Aún no has marcado entrada hoy"></span>';
                                 }
                             ?>
                         </div>
-
                         <div class="info-perfil" style="padding-block-start: 10px;">
                             <h3 class="nombre-empleado"><?php echo htmlspecialchars($mis_datos['nombres'] . ' ' . $mis_datos['apellidos']); ?></h3>
                             <span class="cargo-empleado"><?php echo htmlspecialchars($mis_datos['nombre_cargo']); ?></span>
@@ -103,22 +129,63 @@ if ($es_admin) {
                             </div>
                         </div>
                     </div>
-                </div>
 
+                    <div style="flex: 1 1 350px; max-inline-size: 500px; display: flex; flex-direction: column; justify-content: center; background: var(--navbar-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); padding: 1.5rem 2rem; position: relative; overflow: hidden; border-left: 5px solid var(--primary-color); margin: 0 auto;">
+                        <svg style="position: absolute; right: -10px; bottom: 10px; width: 150px; height: 150px; color: var(--primary-color); opacity: 0.05; z-index: 0; pointer-events: none;" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M13 7h-2v5.414l3.293 3.293 1.414-1.414L13 11.586z"/></svg>
+
+                        <div style="position: relative; z-index: 1;">
+                            <p id="reloj-saludo" style="color: var(--text-color); font-weight: 600; font-size: 1.05rem; margin-bottom: 2px;">Cargando reloj...</p>
+                            <h2 id="reloj-hora" style="font-size: clamp(2.2rem, 3.5vw, 3.4rem); font-weight: 800; color: var(--primary-color); letter-spacing: -2px; line-height: 1; margin-bottom: 8px; font-variant-numeric: tabular-nums;">--:--:--</h2>
+                            <p style="color: var(--text-color); font-weight: 500; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <span id="reloj-fecha">Cargando fecha...</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="flex: 0 1 320px; width: 100%; display: flex; flex-direction: column; gap: 12px; justify-content: space-between; margin: 0 auto;">
+                        
+                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #10b981; flex: 1;">
+                            <div>
+                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Estado del Turno</span>
+                                <div id="texto-estatus-turno" style="font-size: 1.1rem; font-weight: 700; margin-top: 2px;">Calculando...</div>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #10b981; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+
+                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #f59e0b; flex: 1;">
+                            <div>
+                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Personal Ausente</span>
+                                <div style="font-size: 1.3rem; font-weight: 900; color: #f59e0b; margin-top: 2px;"><?php echo $ausentes_hoy; ?> <span style="font-size:0.9rem; color:var(--text-color);">/ <?php echo $total_personal; ?></span></div>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #f59e0b; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        </div>
+
+                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #ef4444; flex: 1;">
+                            <div>
+                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Justif. Pendientes</span>
+                                <div style="font-size: 1.3rem; font-weight: 900; color: #ef4444; margin-top: 2px;"><?php echo $justificaciones_pendientes; ?></div>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #ef4444; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+
+                    </div>
+
+                </div>
                 <div class="separador-personal" style="margin-block-end: 20px;">Asistencia del Personal</div>
 
-                <div class="contenedor-filtros-globales" style="justify-content: center; margin-block-end: 25px; padding: 15px;">
-                    <div class="contenedor-busqueda-elegante" style="margin: 0; inline-size: 100%; max-inline-size: 450px;">
+                <div class="contenedor-filtros-globales" style="justify-content: center; margin-inline: auto; max-inline-size: 500px; margin-block-end: 25px; padding: 15px;">
+                    <div class="contenedor-busqueda-elegante" style="margin: 0; inline-size: 100%;">
                       <input type="text" id="buscador-universal" class="campo-busqueda-elegante" placeholder="Buscar por nombre o cargo...">
                         <svg class="icono-busqueda" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                 </div>
 
                 <div class="botones-filtro-cargo" style="margin-block-end: 30px;">
-                    <button class="btn-filtro activo" onclick="aplicarFiltroUniversal('todos', this)">Todos</button>
+                    <button class="btn-filtro activo" onclick="aplicarFiltroUniversal('todos', this, true)">Todos</button>
                     <?php foreach($cargos as $c): ?>
                         <?php if(in_array($c['id_cargo'], $cargos_activos_en_grid)): ?>
-                            <button class="btn-filtro" onclick="aplicarFiltroUniversal(<?php echo $c['id_cargo']; ?>, this)">
+                            <button class="btn-filtro" onclick="aplicarFiltroUniversal(<?php echo $c['id_cargo']; ?>, this, true)">
                                 <?php echo htmlspecialchars($c['nombre_cargo']); ?>
                             </button>
                         <?php endif; ?>
@@ -129,18 +196,16 @@ if ($es_admin) {
                     <?php foreach ($lista_personal as $emp): ?>
                         <div class="tarjeta-perfil item-filtrable" data-cargo="<?php echo $emp['id_cargo']; ?>">
                             <div class="banner-tarjeta" style="block-size: 70px;"></div>
-
                             <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
                                 <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($emp['foto_perfil']); ?>" alt="Foto">
                                 <?php 
                                     if (!empty($emp['asistio_hoy'])) {
-                                        echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($emp['asistio_hoy'])) . ')"></span>';
+                                        echo '<span class="indicador-estatus estatus-presente" title="Asistió hoy (' . date('h:i A', strtotime($emp['asistio_hoy'])) . ')"></span>';
                                     } else {
-                                        echo '<span class="indicador-estatus estatus-ausente" title="Aún no ha llegado o ausente"></span>';
+                                        echo '<span class="indicador-estatus estatus-ausente" title="Aún no has marcado entrada hoy"></span>';
                                     }
                                 ?>
                             </div>
-
                             <div class="info-perfil" style="padding-block-start: 10px;">
                                 <h3 class="nombre-empleado"><?php echo htmlspecialchars($emp['nombres'] . ' ' . $emp['apellidos']); ?></h3>
                                 <span class="cargo-empleado"><?php echo htmlspecialchars($emp['nombre_cargo']); ?></span>
@@ -154,6 +219,13 @@ if ($es_admin) {
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div id="contenedor-ver-mas" style="text-align: center; margin-block-start: 10px; margin-block-end: 30px; display: none;">
+                    <button id="btn-ver-mas" class="btn-guardar" style="background-color: var(--primary-color); border-radius: 25px; padding: 0.8rem 2rem; font-size: 0.95rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 20px; block-size: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        Cargar más personal
+                    </button>
                 </div>
 
             <?php else: ?>
@@ -194,16 +266,93 @@ if ($es_admin) {
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script>
+        // ==========================================
+        // LÓGICA DEL RELOJ Y ESTADO DEL TURNO
+        // ==========================================
+        const configHoraEntrada = "<?php echo htmlspecialchars($hora_entrada_sys); ?>";
+        const configTolerancia = <?php echo (int)$tolerancia_sys; ?>;
+
+        function actualizarReloj() {
+            const elHora = document.getElementById('reloj-hora');
+            if (!elHora) return;
+
+            const ahora = new Date();
+            let horas = ahora.getHours();
+            const minutos = ahora.getMinutes().toString().padStart(2, '0');
+            const ampm = horas >= 12 ? 'PM' : 'AM';
+
+            let saludo = 'Buenas noches';
+            if (horas >= 5 && horas < 12) saludo = 'Buenos días';
+            else if (horas >= 12 && horas < 18) saludo = 'Buenas tardes';
+
+            horas = horas % 12;
+            horas = horas ? horas : 12; 
+
+            const horaStr = `${horas.toString().padStart(2, '0')}:${minutos}<span style="color: var(--text-color); font-size: 1.8rem; font-weight: 600; margin-left: 8px;">${ampm}</span>`;
+            
+            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const fechaStr = `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
+
+            elHora.innerHTML = horaStr;
+            document.getElementById('reloj-fecha').textContent = fechaStr;
+            
+            const nombreDirector = "<?php echo isset($mis_datos['nombres']) ? explode(' ', htmlspecialchars($mis_datos['nombres']))[0] : 'Director'; ?>";
+            document.getElementById('reloj-saludo').textContent = `${saludo}, ${nombreDirector}.`;
+
+            // === LÓGICA DE TOLERANCIA (Mini Tarjeta 1) ===
+            const horaEntradaParts = configHoraEntrada.split(':');
+            let fechaEntrada = new Date();
+            fechaEntrada.setHours(parseInt(horaEntradaParts[0]), parseInt(horaEntradaParts[1]), 0, 0);
+            
+            let fechaTolerancia = new Date(fechaEntrada.getTime() + (configTolerancia * 60000));
+            let estadoTurno = document.getElementById('texto-estatus-turno');
+            
+            if(estadoTurno) {
+                if (ahora < fechaEntrada) {
+                    estadoTurno.innerHTML = `<span style="color: #3b82f6;">Aún no inicia</span>`;
+                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#3b82f6';
+                    estadoTurno.parentElement.nextElementSibling.style.color = '#3b82f6';
+                } else if (ahora >= fechaEntrada && ahora <= fechaTolerancia) {
+                    let diffMs = fechaTolerancia - ahora;
+                    let diffMins = Math.floor(diffMs / 60000);
+                    estadoTurno.innerHTML = `<span style="color: #10b981;">Quedan ${diffMins} min</span>`;
+                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#10b981';
+                    estadoTurno.parentElement.nextElementSibling.style.color = '#10b981';
+                } else {
+                    estadoTurno.innerHTML = `<span style="color: #ef4444;">Turno cerrado</span>`;
+                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#ef4444';
+                    estadoTurno.parentElement.nextElementSibling.style.color = '#ef4444';
+                }
+            }
+        }
+
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
+
+        // ==========================================
+        // SISTEMA DE FILTRADO Y PAGINACIÓN INFINITA
+        // ==========================================
         const inputBuscadorUniv = document.getElementById('buscador-universal');
         let cargoActivoUniv = 'todos'; 
         
-        function aplicarFiltroUniversal(idCargo = null, botonSeleccionado = null) {
+        const itemsPorCarga = 8;
+        let limiteActual = itemsPorCarga; 
+        
+        function aplicarFiltroUniversal(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
+            
+            if (reiniciarPaginacion) {
+                limiteActual = itemsPorCarga;
+            }
+
             if (idCargo !== null) {
                 cargoActivoUniv = idCargo;
                 document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
                 if(botonSeleccionado) botonSeleccionado.classList.add('activo');
             }
             const textoBusqueda = inputBuscadorUniv ? inputBuscadorUniv.value.toLowerCase().trim() : '';
+            
+            let coincidentes = 0;
             
             document.querySelectorAll('.item-filtrable').forEach(item => {
                 const coincideCargo = (cargoActivoUniv === 'todos') || (item.getAttribute('data-cargo') == cargoActivoUniv);
@@ -215,16 +364,59 @@ if ($es_admin) {
                 
                 if (coincideCargo && coincideTexto) {
                     item.classList.remove('oculto-por-filtro');
+                    coincidentes++;
+                    
+                    if (coincidentes > limiteActual) {
+                        item.classList.add('oculto-por-paginacion');
+                        item.classList.remove('animacion-aparecer');
+                    } else {
+                        if (item.classList.contains('oculto-por-paginacion')) {
+                            item.classList.remove('oculto-por-paginacion');
+                            void item.offsetWidth; 
+                            item.classList.add('animacion-aparecer');
+                        } 
+                        else if (reiniciarPaginacion) {
+                            item.classList.remove('animacion-aparecer');
+                            void item.offsetWidth; 
+                            item.classList.add('animacion-aparecer');
+                        }
+                    }
                 } else {
                     item.classList.add('oculto-por-filtro');
+                    item.classList.remove('oculto-por-paginacion');
+                    item.classList.remove('animacion-aparecer');
                 }
             });
+
+            const contenedorVerMas = document.getElementById('contenedor-ver-mas');
+            if (contenedorVerMas) {
+                if (coincidentes > limiteActual) {
+                    contenedorVerMas.style.display = 'block';
+                } else {
+                    contenedorVerMas.style.display = 'none';
+                }
+            }
         }
 
         if (inputBuscadorUniv) {
-            inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal());
+            inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal(null, null, true));
         }
 
+        const btnVerMas = document.getElementById('btn-ver-mas');
+        if (btnVerMas) {
+            btnVerMas.addEventListener('click', () => {
+                limiteActual += itemsPorCarga;
+                aplicarFiltroUniversal(cargoActivoUniv, document.querySelector('.btn-filtro.activo'), false); 
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            aplicarFiltroUniversal(null, null, true);
+        });
+
+        // ==========================================
+        // RESTO DEL CÓDIGO (TEMA Y CALENDARIO)
+        // ==========================================
         const btnCambiarTema = document.getElementById('btnCambiarTema');
         if(btnCambiarTema) {
             btnCambiarTema.addEventListener('click', function(e) {
@@ -314,7 +506,7 @@ if ($es_admin) {
                 html: `
                     <p style="margin-block-end:15px; font-weight:bold; color:var(--primary-color); font-size:1.1rem;">Fecha: ${fechaVisual}</p>
                     
-                    <div style="text-align: start; margin-block-end: 5px;">
+                    <div style="text-align: start; margin-bottom: 5px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Estado Principal:</label>
                     </div>
                     <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:5px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
@@ -333,7 +525,7 @@ if ($es_admin) {
                     </div>
 
                     <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px dashed var(--primary-color);">
-                        <div style="text-align: start; margin-block-end: 5px;">
+                        <div style="text-align: start; margin-bottom: 5px;">
                             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Segunda Incidencia:</label>
                         </div>
                         <select id="swal-estado-secundario" style="inline-size:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">

@@ -2,7 +2,6 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-// ¡VITAL! Configurar la zona horaria a Venezuela
 date_default_timezone_set('America/Caracas');
 
 $nombre = $_SESSION['usuario'];

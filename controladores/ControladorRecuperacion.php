@@ -18,7 +18,6 @@ if (isset($_POST['accion']) && $_POST['accion'] == 'buscar_usuario') {
     $usuario = trim($_POST['nombre_usuario']);
 
     try {
-        // Se agregó 'password' al SELECT para guardarlo temporalmente y validarlo después
         $sql = "SELECT id_usuario, password, pregunta_1, pregunta_2, pregunta_3, 
                        respuesta_1, respuesta_2, respuesta_3 
                 FROM usuarios WHERE nombre_usuario = :u AND estado = 'Activo'";
@@ -29,7 +28,7 @@ if (isset($_POST['accion']) && $_POST['accion'] == 'buscar_usuario') {
         if ($datos) {
             $_SESSION['recup_temp'] = [
                 'id_usuario' => $datos['id_usuario'],
-                'hash_actual' => $datos['password'], // Guardamos el hash de la contraseña actual
+                'hash_actual' => $datos['password'], 
                 'preguntas_texto' => [
                     1 => $diccionario_preguntas[$datos['pregunta_1']],
                     2 => $diccionario_preguntas[$datos['pregunta_2']],
@@ -88,7 +87,7 @@ if (isset($_POST['accion']) && $_POST['accion'] == 'cambiar_clave') {
     // 1. Verificamos que las contraseñas coincidan entre sí
     if ($p1 !== $p2) {
         $_SESSION['error_recup'] = "Las contraseñas no coinciden.";
-        header("Location: ../vistas/recuperar_contraseña.php"); // Corregido el nombre del archivo
+        header("Location: ../vistas/recuperar_contraseña.php");
         exit;
     }
 
@@ -100,7 +99,6 @@ if (isset($_POST['accion']) && $_POST['accion'] == 'cambiar_clave') {
         exit;
     }
 
-    // Si todo está bien, actualizamos
     $nuevo_hash = password_hash($p1, PASSWORD_DEFAULT);
     $id_user = $_SESSION['recup_temp']['id_usuario'];
 
@@ -108,16 +106,19 @@ if (isset($_POST['accion']) && $_POST['accion'] == 'cambiar_clave') {
         $stmt = $conexion->prepare("UPDATE usuarios SET password = :p WHERE id_usuario = :id");
         $stmt->execute([':p' => $nuevo_hash, ':id' => $id_user]);
 
-        // Destruimos la sesión temporal de recuperación para limpiar datos sensibles
+        // Destruimos la sesión temporal de recuperación e iniciamos una limpia
         session_destroy();
         session_start();
-        $_SESSION['registro_exito'] = "Contraseña restablecida exitosamente.";
+        
+        // ¡LA CORRECCIÓN ESTÁ AQUÍ! Ahora envía la señal correcta para el SweetAlert.
+        $_SESSION['recuperacion_exito'] = true; 
+        
         header("Location: ../vistas/login.php");
         exit;
 
     } catch (PDOException $e) {
         $_SESSION['error_recup'] = "Error al actualizar: " . $e->getMessage();
-        header("Location: ../vistas/recuperar_contraseña.php"); // Corregido el nombre del archivo
+        header("Location: ../vistas/recuperar_contraseña.php");
         exit;
     }
 }

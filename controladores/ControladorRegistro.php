@@ -7,6 +7,13 @@ date_default_timezone_set('America/Caracas');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // --- PROTECCIÓN CSRF ---
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['error_login'] = "Error de seguridad (CSRF). Por favor, recargue la página y vuelva a intentarlo.";
+        header("Location: ../vistas/login.php");
+        exit;
+    }
+
     // Recibir datos con seguridad
     $cedula = trim($_POST['cedula'] ?? '');
     $nombres = trim($_POST['nombres'] ?? '');
@@ -14,8 +21,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $telefono = trim($_POST['telefono'] ?? '');
     $id_cargo = $_POST['id_cargo'] ?? '';
 
-    // Recibir datos de usuario
-    $nuevo_usuario = trim($_POST['nuevo_usuario'] ?? '');
+    // Recibir datos de usuario y aplicar sanitización estricta para espacios y minúsculas
+    $nuevo_usuario = strtolower(preg_replace('/\s+/', '', trim($_POST['nuevo_usuario'] ?? '')));
     $nueva_password = $_POST['nueva_password'] ?? '';
 
     // Recibir preguntas
@@ -36,15 +43,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
     
-    if (strlen($nueva_password) < 6) {
-        $_SESSION['error_login'] = "La contraseña debe tener al menos 6 caracteres.";
+    // VALIDACIÓN BACKEND DE FUERZA DE CONTRASEÑA
+    if (strlen($nueva_password) < 6 || !preg_match('/[A-Za-z]/', $nueva_password) || !preg_match('/[0-9]/', $nueva_password)) {
+        $_SESSION['error_login'] = "La contraseña es muy débil. Debe tener al menos 6 caracteres e incluir letras y números.";
         header("Location: ../vistas/login.php");
         exit;
     }
 
-    // NUEVA VALIDACIÓN: Mínimo 3 caracteres por respuesta
+    // Mínimo 3 caracteres por respuesta
     if (mb_strlen($respuesta_1, 'UTF-8') < 3 || mb_strlen($respuesta_2, 'UTF-8') < 3 || mb_strlen($respuesta_3, 'UTF-8') < 3) {
         $_SESSION['error_login'] = "Error de seguridad: Las respuestas deben tener al menos 3 caracteres.";
+        header("Location: ../vistas/login.php");
+        exit;
+    }
+
+    // --- PROTECCIÓN ANTI-FUERZA BRUTA ---
+    if (!isset($_SESSION['intentos_registro'])) {
+        $_SESSION['intentos_registro'] = 0;
+        $_SESSION['ultimo_intento_reg'] = time();
+    }
+    
+    if ($_SESSION['intentos_registro'] >= 5) {
+        $tiempo_transcurrido = time() - $_SESSION['ultimo_intento_reg'];
+        if ($tiempo_transcurrido < 180) { 
+            $_SESSION['error_login'] = "Demasiados intentos. Por favor, espera 3 minutos antes de intentar de nuevo.";
+            header("Location: ../vistas/login.php");
+            exit;
+        } else {
+            $_SESSION['intentos_registro'] = 0; 
+        }
+    }
+    
+    $_SESSION['intentos_registro']++;
+    $_SESSION['ultimo_intento_reg'] = time();
+
+    // --- VALIDACIÓN DE USUARIO DUPLICADO ---
+    $sql_check_user = "SELECT COUNT(*) FROM usuarios WHERE nombre_usuario = :usuario_check";
+    $stmt_check_user = $conexion->prepare($sql_check_user);
+    $stmt_check_user->execute([':usuario_check' => $nuevo_usuario]);
+    
+    if ($stmt_check_user->fetchColumn() > 0) {
+        $_SESSION['error_login'] = 'El usuario "' . htmlspecialchars($nuevo_usuario) . '" ya está en uso. Por favor, elige otro.';
         header("Location: ../vistas/login.php");
         exit;
     }
@@ -120,6 +159,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ]);
 
         $conexion->commit();
+        // Limpiamos los intentos al tener éxito
+        unset($_SESSION['intentos_registro']);
         $_SESSION['registro_exito'] = true;
         header("Location: ../vistas/login.php");
         exit;

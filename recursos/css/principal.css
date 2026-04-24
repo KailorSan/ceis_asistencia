@@ -106,6 +106,20 @@ body {
     display: none !important;
 }
 
+.oculto-por-paginacion {
+    display: none !important;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
 /* =========================================
    4. ANIMACIONES (KEYFRAMES)
    ========================================= */
@@ -122,6 +136,15 @@ body {
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
     70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes fadeInPaginacion {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.animacion-aparecer {
+    animation: fadeInPaginacion 0.45s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
 
 /* =========================================
@@ -713,7 +736,7 @@ body {
 .modal-contenido {
     background: var(--navbar-bg);
     border-radius: var(--border-radius);
-    padding: 2.5rem;
+    padding: 2.0rem;
     inline-size: 90%;
     max-inline-size: 450px;
     box-shadow: var(--shadow-md);
@@ -721,6 +744,18 @@ body {
     transition: transform 0.3s ease;
     border-block-start: 5px solid var(--primary-color);
     display: none;
+    max-block-size: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar interno del modal */
+.modal-contenido::-webkit-scrollbar {
+    inline-size: 6px;
+}
+.modal-contenido::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
 }
 
 .modal-overlay.activo .modal-contenido.activo {
@@ -1286,7 +1321,7 @@ body {
     background-color: var(--white);
     position: relative;
     z-index: 2;
-    overflow: hidden;
+    overflow: visible; /* Permite ver el indicador y su pulso */
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
@@ -1294,6 +1329,7 @@ body {
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
+    border-radius: 50%; /* Mantiene la imagen redonda */
 }
 
 .info-perfil {
@@ -1589,6 +1625,59 @@ body {
 }
 
 /* =========================================
+   INDICADOR DE ESTATUS DIARIO (REDISEÑO)
+   ========================================= */
+.indicador-estatus {
+    position: absolute;
+    inset-block-end: 4px;
+    inset-inline-end: 4px; 
+    inline-size: 16px;
+    block-size: 16px;
+    border-radius: 50%;
+    border: 3px solid var(--navbar-bg); 
+    z-index: 15;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.estatus-presente {
+    background-color: #10b981; 
+}
+
+.estatus-presente::after {
+    content: '';
+    position: absolute;
+    inset: -3px; 
+    border-radius: 50%;
+    border: 2px solid #10b981;
+    animation: palpitar-estatus 2s infinite;
+    opacity: 0;
+}
+
+.estatus-ausente {
+    background-color: #ef4444; 
+}
+
+@keyframes palpitar-estatus {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* --- Grilla para Modal de Edición de Usuario --- */
+.grid-edicion {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 950px) {
+    .grid-edicion {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+/* =========================================
    10. DISEÑO RESPONSIVO (APP MÓVIL)
    ========================================= */
 @media (max-width: 768px) {
@@ -1728,43 +1817,58 @@ body {
         padding-block-start: 10px;
     }
 
+    /* Ajustes del Indicador Estatus en Móvil */
+    .indicador-estatus {
+        inline-size: 14px; 
+        block-size: 14px;
+        inset-block-end: 2px;
+        inset-inline-end: 2px;
+    }
+
+    /* Ajustes Específicos para Modal de Edición en Móvil */
+    .modal-contenido {
+        padding: 1.5rem 1rem;
+        max-block-size: 90vh;
+        inline-size: 95%;
+    }
+    
+    .grid-edicion {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .btn-eliminar-usuario {
+        margin-block-start: 0;
+    }
+
     /* =========================================================
        REVISIÓN: RESPONSIVO PARA EL MODAL BITÁCORA (AUDITORÍA)
        ========================================================= */
-    /* Hacemos que el modal ocupe toda la pantalla en móvil */
     #modalBitacora > div {
         inline-size: 100% !important;
         block-size: 100% !important;
         border-radius: 0 !important;
     }
 
-    /* Contenedor principal del modal pasa a formato columna */
     #modalBitacora > div > div:nth-child(2) {
         flex-direction: column !important;
     }
 
-    /* Sidebar de Pestañas (Tabs) horizontal y deslizable */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(1) {
         inline-size: 100% !important;
         block-size: auto !important;
         flex-direction: row !important;
-        
-        /* CAMBIO VITAL: Permitir scroll horizontal */
         overflow-x: auto !important; 
         overflow-y: hidden !important;
-        
         padding: 10px !important;
         border-inline-end: none !important;
         border-block-end: 1px solid var(--border-color) !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
-        
-        /* Scrollbar táctil para móviles */
         -webkit-overflow-scrolling: touch; 
         gap: 10px;
     }
 
-    /* Mostrar una barra de scroll sutil para que el usuario sepa que puede moverlo */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(1)::-webkit-scrollbar {
         block-size: 4px;
         display: block !important;
@@ -1775,19 +1879,17 @@ body {
         border-radius: 10px;
     }
 
-    /* Ocultar el título "Filtrar por módulo" en el sidebar móvil para ganar espacio */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(1) > h3 {
         display: none !important;
     }
 
-    /* Botones de las Pestañas (Tabs) */
     .btn-tab-bitacora {
         inline-size: auto !important;
         padding: 12px 20px !important;
-        flex-shrink: 0 !important; /* Evita que los botones se achiquen */
+        flex-shrink: 0 !important; 
         border-inline-start: none !important;
         border-block-end: 3px solid transparent !important;
-        display: inline-flex !important; /* Alineación correcta */
+        display: inline-flex !important; 
         align-items: center;
     }
 
@@ -1796,7 +1898,6 @@ body {
         border-block-end: 3px solid var(--primary-color) !important;
     }
 
-    /* Ajustes del contenedor del Buscador y Selects (Filtros superiores) */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(2) {
         padding: 15px 10px !important;
     }
@@ -1805,11 +1906,9 @@ body {
         gap: 15px !important;
         padding: 15px !important;
     }
-    /* Buscador ocupa 100% */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) {
         max-inline-size: 100% !important;
     }
-    /* Contenedor de selects (fechas) envuelve los elementos (wrap) */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) {
         flex-wrap: wrap !important;
         justify-content: space-between !important;
@@ -1820,16 +1919,13 @@ body {
         font-size: 0.85rem !important;
     }
 
-    /* Ajustes del contenedor de la Tabla para que tenga scroll horizontal */
     #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) {
         overflow-x: auto !important;
         padding-inline-end: 0 !important;
     }
-    /* Le damos un ancho mínimo a la tabla para evitar que las celdas se aplasten */
     #modalBitacora table {
         min-inline-size: 700px !important;
     }
-    /* Reducimos un poco el padding de las celdas de la tabla */
     #modalBitacora .fila-bitacora td {
         padding: 12px 10px !important;
         font-size: 0.85rem !important;

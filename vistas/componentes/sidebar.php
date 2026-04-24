@@ -2,7 +2,7 @@
     
     <div class="logo-sidebar">
         <div class="contenedor-logo-neon">
-            <img src="../recursos/img/logo_ceis.jpg" alt="Escudo CEIS Julian Yánez" class="img-escudo-neon">
+            <img src="../recursos/img/logo_ceis.png" alt="Escudo CEIS Julian Yánez" class="img-escudo-neon">
         </div>
     </div>
 

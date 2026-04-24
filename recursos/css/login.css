@@ -34,21 +34,24 @@
     --gris-borde: #ddd;
 }
 
-/* Mantenemos el border-box global para no dañar el layout responsivo de la página */
 * { box-sizing: border-box; }
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
 
 body { 
     background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-    background-attachment: fixed; /* ¡ESTO EVITA EL CORTE BLANCO! */
+    background-attachment: fixed; 
     background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
     font-family: 'Montserrat', sans-serif;
-    min-block-size: 100vh; /* Permite que crezca si el contenido es más alto */
-    margin: 0;
-    padding: 20px; /* Margen de seguridad para móviles */
+    min-block-size: 100vh; 
+    padding: 20px; 
 }
 
 /* =========================================
@@ -57,13 +60,11 @@ body {
 h1 { font-weight: 800; margin: 0; color: var(--azul-ceis); }
 p { font-size: 14px; margin: 20px 0 30px; line-height: 1.5; }
 
-/* ¡ARREGLO DEFINITIVO AQUÍ! Limitamos el tamaño de los span SOLO a los contenedores propios para NO romper las proporciones en SweetAlert2 */
 .contenedor-principal span, .tarjeta-recuperacion span { font-size: 12px; }
 
 a { color: var(--gris-texto); font-size: 14px; text-decoration: none; margin: 15px 0; transition: 0.3s; }
 a:hover { color: var(--azul-ceis); font-weight: bold; }
 
-/* Botones Generales (Se aplica también a SweetAlert para que coincida con tu diseño) */
 button {
     border-radius: 20px;
     border: 1px solid var(--azul-ceis);
@@ -82,14 +83,12 @@ button:active { transform: scale(0.95); }
 button:focus { outline: none; }
 button:hover { background-color: #002244; }
 
-/* Botón Transparente (Panel Login) */
 button.boton-transparente { background-color: transparent; border-color: var(--blanco); border-width: 2px; }
 
 /* =========================================
    3. INPUTS Y FORMULARIOS
    ========================================= */
 
-/* Contenedor Foto de Perfil */
 .contenedor-foto-perfil {
     display: flex; 
     flex-direction: column; 
@@ -219,6 +218,10 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
 .punto { block-size: 8px; inline-size: 8px; background-color: #bbb; border-radius: 50%; display: inline-block; }
 .punto.activo { background-color: var(--azul-ceis); inline-size: 20px; border-radius: 10px; transition: 0.3s; }
 
+.btn-cambio-movil {
+    display: none;
+}
+
 /* =========================================
    5. TARJETA RECUPERACIÓN
    ========================================= */
@@ -316,9 +319,7 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
     block-size: auto;
     display: block;
     margin: 0 auto 15px auto; 
-    mix-blend-mode: multiply; 
-    filter: contrast(1.15) brightness(1.08); 
-    clip-path: inset(10px 2px 2px 2px); 
+    
     animation: flotar 3.5s ease-in-out infinite;
 }
 
@@ -359,11 +360,34 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
 /* =========================================
    8. MEDIA QUERIES (RESPONSIVE)
    ========================================= */
-@media (max-width: 768px) {
+@media (max-width: 575.98px) {
     /* Login */
-    .contenedor-principal { inline-size: 100%; min-block-size: auto; flex-direction: column; box-shadow: none; border-radius: 0; }
+    .contenedor-principal { 
+        inline-size: 100%; 
+        min-block-size: auto; 
+        flex-direction: column; 
+        box-shadow: none; 
+        border-radius: 20; 
+    }
     .contenedor-capa { display: none; }
-    .contenedor-ingreso, .contenedor-registro { inline-size: 100%; position: relative; opacity: 1; inset-inline-start: 0; block-size: auto; padding: 20px 0; }
+    
+    /* Agregamos transform: none !important para anular el efecto del escritorio */
+    .contenedor-ingreso, .contenedor-registro { 
+        inline-size: 100%; 
+        position: relative; 
+        opacity: 1; 
+        inset-inline-start: 0; 
+        block-size: auto; 
+        padding: 20px 0; 
+        transform: none !important; 
+    }
+    
+    /* Aseguramos que la clase panel-derecho-activo no desplace nada en móvil */
+    .contenedor-principal.panel-derecho-activo .contenedor-registro,
+    .contenedor-principal.panel-derecho-activo .contenedor-ingreso {
+        transform: none !important;
+    }
+
     .contenedor-registro { display: none; }
     .contenedor-principal.modo-movil-registro .contenedor-registro { display: flex; }
     .contenedor-principal.modo-movil-registro .contenedor-ingreso { display: none; }
@@ -375,6 +399,97 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
     .tarjeta-recuperacion { padding: 30px 20px; }
 }
 
-@media (min-width: 769px) { 
-    .btn-cambio-movil { display: none; } 
+/* =========================================
+   9. CLASES EXTRAÍDAS DE LOGIN.PHP
+   ========================================= */
+/* Ocultar elementos generales por JS */
+.oculto {
+    display: none !important;
 }
+
+/* Ocultar input file original */
+.input-file-oculto {
+    display: none;
+}
+
+/* Contenedor de nombres y apellidos */
+.contenedor-nombres-apellidos {
+    display: flex; 
+    gap: 5px; 
+    inline-size: 100%;
+}
+
+/* Alerta de primer usuario (Directora) */
+.alerta-primer-usuario {
+    background-color: #e3f2fd; 
+    color: #0d47a1; 
+    padding: 5px; 
+    font-size: 11px; 
+    margin-block-end: 5px; 
+    border-radius: 4px;
+}
+
+/* Mensaje AJAX de validación de usuario */
+.estilo-mensaje-ajax {
+    font-size: 11px; 
+    margin-block-start: -8px; 
+    margin-block-end: 10px; 
+    display: block; 
+    text-align: start; 
+    font-weight: bold;
+}
+
+/* Texto de instrucción para las preguntas de seguridad */
+.texto-instruccion-preguntas {
+    inline-size: 100%; 
+    text-align: start; 
+    font-size: 10px; 
+    color: #666;
+}
+
+/* Estado de éxito y error (JS AJAX) */
+.mensaje-ajax-exito {
+    color: green;
+}
+
+.mensaje-ajax-error {
+    color: #cc0000;
+}
+
+.input-exito {
+    border-color: green !important;
+}
+
+/* =========================================
+   10. MEDIDOR DE FUERZA DE CONTRASEÑA
+   ========================================= */
+.medidor-fuerza-contenedor {
+    block-size: 6px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+    margin-block-start: -5px;
+    margin-block-end: 5px;
+    overflow: hidden;
+    inline-size: 100%;
+}
+
+.barra-fuerza {
+    block-size: 100%;
+    inline-size: 0%;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+.texto-fuerza {
+    font-size: 11px;
+    display: block;
+    text-align: start;
+    margin-block-end: 15px;
+    font-weight: 700;
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+/* Clases dinámicas adaptadas a la nueva lógica */
+.fuerza-mala { inline-size: 33.33%; background-color: var(--rojo-ceis); }
+.fuerza-buena { inline-size: 66.66%; background-color: #ff9800; } /* Naranja/Amarillo */
+.fuerza-excelente { inline-size: 100%; background-color: #1b5e20; } /* Verde oscuro */

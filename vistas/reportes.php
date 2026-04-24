@@ -115,30 +115,97 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         .btn-filtro:hover { border-color: var(--primary-color); }
         .btn-filtro.activo { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px -1px rgba(64, 111, 243, 0.4); }
         
-        /* === CORRECCIÓN DE LA CUADRÍCULA (3x2 PERFECTO) === */
+        /* === CUADRÍCULA DE RESUMEN (VISTA ESCRITORIO) === */
         .grid-resumen { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); /* Fuerza 3 columnas exactamente */
-            gap: 15px; 
-            margin-block-start: 20px; 
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px; 
+            margin-block-start: 15px; 
         }
-        @media (max-inline-size: 600px) {
-            .grid-resumen { grid-template-columns: repeat(2, 1fr); } /* 2 columnas en móviles */
-        }
-        /* =================================================== */
 
-        .caja-resumen { padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.85rem;}
+        .caja-resumen { 
+            padding: 10px; 
+            border-radius: 8px; 
+            text-align: center; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 0.8rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+        }
+        
         .caja-verde { background: linear-gradient(135deg, #10b981, #059669); }
         .caja-naranja { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .caja-roja { background: linear-gradient(135deg, #ef4444, #dc2626); }
         .caja-azul { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
         .caja-rojo-oscuro { background: linear-gradient(135deg, #991b1b, #7f1d1d); } 
         .caja-gris { background: linear-gradient(135deg, #64748b, #475569); }
-        .numero-resumen { font-size: 1.8rem; display: block; margin-block-start: 5px; }
-        .contenedor-grafico { inline-size: 100%; max-inline-size: 280px; margin: 20px auto; display: none; }
+        
+        .numero-resumen { 
+            font-size: 1.5rem; 
+            display: block; 
+            margin-block-start: 4px; 
+        }
 
+        .contenedor-grafico { 
+            inline-size: 100%; 
+            max-inline-size: 220px; 
+            margin: 10px auto; 
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* === RESPONSIVE EXTREMO PARA MÓVILES === */
+        @media (max-width: 600px) {
+            #modalContenidoResumen {
+                width: 88% !important; 
+                max-width: 320px !important; 
+                padding: 1rem !important; 
+                margin: auto;
+            }
+            
+            .modal-header { margin-block-end: 0.5rem; }
+            .modal-header h2 { font-size: 1.15rem; } 
+            .btn-cerrar-modal svg { width: 22px; height: 22px; } 
+            
+            #resumen-nombre { font-size: 1.05rem; margin-block-end: 2px; }
+            #resumen-cargo { font-size: 0.8rem; }
+            #resumen-periodo { font-size: 0.75rem; margin-block-start: 2px; }
+
+            .contenedor-grafico {
+                width: 100%;
+                max-width: 170px !important; 
+                height: 200px !important; 
+                margin: 5px auto 10px auto !important; 
+            }
+
+            .grid-resumen { 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 6px; 
+                margin-block-start: 5px;
+            }
+
+            .caja-resumen {
+                width: 100%; 
+                padding: 6px 4px; 
+                font-size: 0.65rem; 
+                line-height: 1.2; 
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+            }
+
+            .numero-resumen {
+                font-size: 1.1rem; 
+                margin-block-start: 3px; 
+            }
+        }
+
+        /* === DIRECTORIO PERSONAL === */
         #directorio-personal .tarjeta-perfil { display: flex; flex-direction: column; block-size: 100%; }
-        #directorio-personal .tarjeta-perfil.oculto { display: none !important; }
         #directorio-personal .info-perfil { display: flex; flex-direction: column; flex-grow: 1; padding-block-end: 15px; }
         #directorio-personal .acciones-perfil { margin-block-start: auto; display: flex; flex-direction: column; gap: 8px; }
         #directorio-personal .nombre-empleado { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-block-size: 2.4em; margin-block-end: 5px; }
@@ -202,9 +269,9 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
             <?php if ($es_directivo): ?>
                 <div class="botones-filtro-cargo" id="contenedor-filtros">
-                    <button class="btn-filtro activo" onclick="aplicarFiltrosCombinados('todos', this)">Todos</button>
+                    <button class="btn-filtro activo" onclick="aplicarFiltrosCombinados('todos', this, true)">Todos</button>
                     <?php foreach($cargos as $c): ?>
-                        <button class="btn-filtro" onclick="aplicarFiltrosCombinados(<?php echo $c['id_cargo']; ?>, this)">
+                        <button class="btn-filtro" onclick="aplicarFiltrosCombinados(<?php echo $c['id_cargo']; ?>, this, true)">
                             <?php echo htmlspecialchars($c['nombre_cargo']); ?>
                         </button>
                     <?php endforeach; ?>
@@ -213,7 +280,8 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="grid-perfiles" id="directorio-personal">
                 <?php foreach ($lista_personal as $emp): ?>
-                    <div class="tarjeta-perfil" data-cargo="<?php echo $emp['id_cargo']; ?>">
+                    <!-- Se agregó la clase item-filtrable para estandarizar con CSS de paginación -->
+                    <div class="tarjeta-perfil item-filtrable" data-cargo="<?php echo $emp['id_cargo']; ?>">
                         <div class="banner-tarjeta" style="block-size: 70px;"></div>
                         <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
                             <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($emp['foto_perfil']); ?>" alt="Foto">
@@ -236,11 +304,22 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 <?php endforeach; ?>
             </div>
+
+            <!-- CONTENEDOR DEL BOTÓN VER MÁS -->
+            <?php if ($es_directivo): ?>
+            <div id="contenedor-ver-mas-reportes" style="text-align: center; margin-block-start: 10px; margin-block-end: 30px; display: none;">
+                <button id="btn-ver-mas-reportes" class="btn-guardar" style="background-color: var(--primary-color); border-radius: 25px; padding: 0.8rem 2rem; font-size: 0.95rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 20px; block-size: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    Cargar más personal
+                </button>
+            </div>
+            <?php endif; ?>
+
         </main>
     </div>
 
     <div class="modal-overlay" id="modalOverlayResumen">
-        <div class="modal-contenido" id="modalContenidoResumen" style="max-inline-size: 700px; padding: 2rem;">
+        <div class="modal-contenido" id="modalContenidoResumen" style="max-inline-size: 500px; padding: 1.5rem;">
             <div class="modal-header">
                 <h2>Resumen de Asistencia</h2>
                 <button class="btn-cerrar-modal" onclick="cerrarResumen()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
@@ -307,28 +386,87 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             });
         }
 
+        // ==========================================
+        // SISTEMA DE FILTRADO Y PAGINACIÓN INFINITA
+        // ==========================================
         const inputBuscador = document.getElementById('buscador-empleados');
         let cargoActivo = 'todos'; 
         
-        if (inputBuscador) {
-            function aplicarFiltrosCombinados(idCargo = null, botonSeleccionado = null) {
+        const itemsPorCarga = 8;
+        let limiteActual = itemsPorCarga;
+
+        if (esDirectivo) {
+            function aplicarFiltrosCombinados(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
+                if (reiniciarPaginacion) {
+                    limiteActual = itemsPorCarga;
+                }
+
                 if (idCargo !== null) {
                     cargoActivo = idCargo;
                     document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
-                    botonSeleccionado.classList.add('activo');
+                    if(botonSeleccionado) botonSeleccionado.classList.add('activo');
                 }
-                const textoBusqueda = inputBuscador.value.toLowerCase().trim();
-                document.querySelectorAll('.tarjeta-perfil').forEach(tarjeta => {
+                
+                const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
+                let coincidentes = 0;
+
+                document.querySelectorAll('.item-filtrable').forEach(tarjeta => {
                     const coincideCargo = cargoActivo === 'todos' || tarjeta.getAttribute('data-cargo') == cargoActivo;
                     const nombre = tarjeta.querySelector('.nombre-empleado').innerText.toLowerCase();
                     const cargo = tarjeta.querySelector('.cargo-empleado').innerText.toLowerCase();
                     const coincideTexto = nombre.includes(textoBusqueda) || cargo.includes(textoBusqueda);
                     
-                    if (coincideCargo && coincideTexto) tarjeta.classList.remove('oculto');
-                    else tarjeta.classList.add('oculto');
+                    if (coincideCargo && coincideTexto) {
+                        tarjeta.classList.remove('oculto-por-filtro');
+                        coincidentes++;
+                        
+                        if (coincidentes > limiteActual) {
+                            tarjeta.classList.add('oculto-por-paginacion');
+                            tarjeta.classList.remove('animacion-aparecer');
+                        } else {
+                            if (tarjeta.classList.contains('oculto-por-paginacion')) {
+                                tarjeta.classList.remove('oculto-por-paginacion');
+                                void tarjeta.offsetWidth; 
+                                tarjeta.classList.add('animacion-aparecer');
+                            } else if (reiniciarPaginacion) {
+                                tarjeta.classList.remove('animacion-aparecer');
+                                void tarjeta.offsetWidth; 
+                                tarjeta.classList.add('animacion-aparecer');
+                            }
+                        }
+                    } else {
+                        tarjeta.classList.add('oculto-por-filtro');
+                        tarjeta.classList.remove('oculto-por-paginacion');
+                        tarjeta.classList.remove('animacion-aparecer');
+                    }
+                });
+
+                const contenedorVerMas = document.getElementById('contenedor-ver-mas-reportes');
+                if (contenedorVerMas) {
+                    if (coincidentes > limiteActual) {
+                        contenedorVerMas.style.display = 'block';
+                    } else {
+                        contenedorVerMas.style.display = 'none';
+                    }
+                }
+            }
+
+            if (inputBuscador) {
+                inputBuscador.addEventListener('input', () => aplicarFiltrosCombinados(null, null, true));
+            }
+
+            const btnVerMas = document.getElementById('btn-ver-mas-reportes');
+            if (btnVerMas) {
+                btnVerMas.addEventListener('click', () => {
+                    limiteActual += itemsPorCarga;
+                    aplicarFiltrosCombinados(cargoActivo, document.querySelector('.btn-filtro.activo'), false); 
                 });
             }
-            inputBuscador.addEventListener('input', () => aplicarFiltrosCombinados());
+
+            // Aplicar el límite visual la primera vez que se carga la página
+            document.addEventListener('DOMContentLoaded', () => {
+                aplicarFiltrosCombinados(null, null, true);
+            });
         }
 
         let chartInstancia = null;
@@ -364,7 +502,8 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                     
                     document.getElementById('cargando-resumen').style.display = 'none';
                     document.getElementById('datos-resumen').style.display = 'grid';
-                    document.getElementById('contenedor-grafico-resumen').style.display = 'block';
+                    
+                    document.getElementById('contenedor-grafico-resumen').style.display = 'flex';
 
                     if(chartInstancia) { chartInstancia.destroy(); } 
                     const ctx = document.getElementById('miGraficoDona').getContext('2d');

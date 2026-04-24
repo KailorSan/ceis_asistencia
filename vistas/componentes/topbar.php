@@ -1,6 +1,6 @@
 <?php
 require_once '../controladores/ControladorNotificaciones.php';
-// Obtenemos las notificaciones del usuario actual
+
 $notificaciones = [];
 if (isset($_SESSION['id_usuario'])) {
     $notificaciones = ControladorNotificaciones::obtenerNoLeidas($conexion, $_SESSION['id_usuario']);
@@ -18,16 +18,17 @@ $cantidad_notificaciones = count($notificaciones);
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
-                    <?php if ($cantidad_notificaciones > 0): ?>
-                        <span class="badge-notificacion" id="badgeNotificacion"><?php echo $cantidad_notificaciones; ?></span>
-                    <?php endif; ?>
+                    
+                    <span class="badge-notificacion" id="badgeNotificacion" style="display: <?php echo $cantidad_notificaciones > 0 ? 'flex' : 'none'; ?>;">
+                        <?php echo $cantidad_notificaciones; ?>
+                    </span>
                 </button>
                 
                 <div class="dropdown-notificaciones" id="dropdownNotificaciones">
                     <div class="dropdown-header">
                         <h4>Notificaciones</h4>
                     </div>
-                    <div class="dropdown-body">
+                    <div class="dropdown-body" id="dropdownBodyNotif">
                         <?php if ($cantidad_notificaciones > 0): ?>
                             <?php foreach ($notificaciones as $notif): 
                                 $clase = ($notif['tipo'] == 'Exito') ? 'notif-exito' : (($notif['tipo'] == 'Alerta') ? 'notif-alerta' : 'notif-info');
@@ -77,18 +78,20 @@ $cantidad_notificaciones = count($notificaciones);
     const badgeNotificacion = document.getElementById('badgeNotificacion');
 
     if(btnNotificaciones) {
+        // Lógica al abrir el menú de notificaciones
         btnNotificaciones.addEventListener('click', function(e) {
             e.stopPropagation();
             dropdownNotificaciones.classList.toggle('activo');
             
-            if (dropdownNotificaciones.classList.contains('activo') && badgeNotificacion) {
+            if (dropdownNotificaciones.classList.contains('activo') && badgeNotificacion.style.display !== 'none') {
                 fetch('../controladores/ControladorNotificaciones.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'accion=marcar_leidas'
                 }).then(response => response.text()).then(data => {
                     if(data.trim() === 'ok') {
-                        badgeNotificacion.style.display = 'none'; 
+                        badgeNotificacion.style.display = 'none';
+                        badgeNotificacion.textContent = '0'; // Reseteamos el contador
                     }
                 });
             }
@@ -100,6 +103,54 @@ $cantidad_notificaciones = count($notificaciones);
             }
         });
     }
+
+    // ==========================================
+    // SISTEMA DE TIEMPO REAL (AJAX POLLING)
+    // ==========================================
+    function buscarNuevasNotificaciones() {
+        // Agregamos un timestamp dinámico para que la URL siempre sea distinta
+        // y le decimos explícitamente al navegador que NO use el caché ('no-store')
+        const urlFesca = '../controladores/ControladorContarNotificaciones.php?t=' + new Date().getTime();
+        
+        fetch(urlFesca, { cache: 'no-store' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let cantActual = parseInt(badgeNotificacion.textContent) || 0;
+                    
+                    if (data.cantidad > 0) {
+                        badgeNotificacion.textContent = data.cantidad > 99 ? '+99' : data.cantidad;
+                        badgeNotificacion.style.display = 'flex';
+
+                        // Si la cantidad subió (entró una notificación nueva)
+                        if (data.cantidad > cantActual) {
+                            // Vibrar la campana
+                            btnNotificaciones.classList.add('animacion-vibrar');
+                            setTimeout(() => btnNotificaciones.classList.remove('animacion-vibrar'), 500);
+
+                            // Si el menú desplegable decía "No tienes notificaciones", inyectamos un aviso
+                            const dropdownBody = document.getElementById('dropdownBodyNotif');
+                            if (dropdownBody && dropdownBody.querySelector('.sin-notificaciones')) {
+                                dropdownBody.innerHTML = `
+                                    <div style="padding: 15px; text-align: center;">
+                                        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-color); margin-block-end: 10px;">¡Tienes notificaciones nuevas!</p>
+                                        <button onclick="window.location.reload()" style="background-color: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; inline-size: 100%;">Refrescar para verlas</button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    } else {
+                        // Si desde el backend viene 0, ocultamos el badge
+                        badgeNotificacion.style.display = 'none';
+                        badgeNotificacion.textContent = '0';
+                    }
+                }
+            })
+            .catch(error => console.error('Error silencioso en polling:', error));
+    }
+
+    setInterval(buscarNuevasNotificaciones, 2000);
+    // ==========================================
 
     function abrirNotificacion(mensaje, tipo, fecha) {
         let iconoAlerta = 'info';

@@ -3,9 +3,33 @@ session_start();
 require_once '../configuracion/conexion.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    // --- PROTECCIÓN CSRF ---
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $_SESSION['error_login'] = "Error de seguridad (CSRF). Por favor, recargue la página y vuelva a intentarlo.";
+        header("Location: ../vistas/login.php");
+        exit;
+    }
     
-    // 1. Recibir datos con seguridad (si no existen, asignamos un string vacío '')
-    $usuario = trim($_POST['nombre_usuario'] ?? '');
+    // --- PROTECCIÓN ANTI-FUERZA BRUTA EN LOGIN ---
+    if (!isset($_SESSION['intentos_login'])) {
+        $_SESSION['intentos_login'] = 0;
+        $_SESSION['ultimo_intento_login'] = time();
+    }
+    
+    if ($_SESSION['intentos_login'] >= 5) {
+        $tiempo_transcurrido = time() - $_SESSION['ultimo_intento_login'];
+        if ($tiempo_transcurrido < 180) { // 3 minutos
+            $_SESSION['error_login'] = "Por seguridad, el sistema se ha bloqueado. Espera 3 minutos antes de intentar acceder nuevamente.";
+            header("Location: ../vistas/login.php");
+            exit;
+        } else {
+            $_SESSION['intentos_login'] = 0; // Reiniciar tras pasar los 3 min
+        }
+    }
+    
+    // 1. Recibir datos con seguridad (y forzamos minúsculas por si acaso burlan JS)
+    $usuario = strtolower(trim($_POST['nombre_usuario'] ?? ''));
     $password = trim($_POST['password'] ?? '');
 
     // 2. EL ESCUDO BACKEND: Validar que no estén vacíos
@@ -40,7 +64,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Verificamos que la contraseña coincida con el hash de la base de datos
             if (password_verify($password, $resultado['password'])) {
                 
-                // Regenerar el ID de sesión para prevenir ataques de Session Fixation (¡Excelente práctica que ya tenías!)
+                // Limpiamos los intentos de fuerza bruta
+                unset($_SESSION['intentos_login']);
+
+                // Regenerar el ID de sesión para prevenir ataques de Session Fixation
                 session_regenerate_id(true);
 
                 // Guardamos los datos en la sesión
@@ -54,19 +81,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
 
             } else {
+                $_SESSION['intentos_login']++;
+                $_SESSION['ultimo_intento_login'] = time();
                 $_SESSION['error_login'] = "La contraseña es incorrecta.";
                 header("Location: ../vistas/login.php");
                 exit;
             }
 
         } else {
+            $_SESSION['intentos_login']++;
+            $_SESSION['ultimo_intento_login'] = time();
             $_SESSION['error_login'] = "El usuario no existe.";
             header("Location: ../vistas/login.php");
             exit;
         }
 
     } catch (PDOException $e) {
-        // En caso de que se caiga la base de datos
         $_SESSION['error_login'] = "Error del sistema: " . $e->getMessage();
         header("Location: ../vistas/login.php");
         exit;
