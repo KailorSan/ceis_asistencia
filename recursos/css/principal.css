@@ -1126,6 +1126,236 @@ input[type=number] {
     block-size: 28px;
 }
 
+/* --- NOTIFICACIONES TOAST ELEGANTES --- */
+.toast-notificacion {
+    position: fixed;
+    inset-block-start: 20px;
+    inset-inline-end: -400px; /* Oculto fuera de la pantalla */
+    inline-size: 350px;
+    background: var(--bg-light);
+    border-inline-start: 5px solid;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    padding: 15px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    z-index: 9999;
+    transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Efecto rebote */
+}
+
+.toast-notificacion.mostrar {
+    inset-inline-end: 20px;
+}
+
+.toast-notificacion.success { border-color: #10b981; }
+.toast-notificacion.error { border-color: #ef4444; }
+
+.toast-icono {
+    font-size: 1.5rem;
+    margin-block-start: 2px;
+}
+.toast-success-icon { color: #10b981; }
+.toast-error-icon { color: #ef4444; }
+
+.toast-contenido h4 {
+    margin: 0 0 5px 0;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.toast-contenido p {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+/* --- VALIDACIONES INLINE (FORMULARIO) --- */
+.error-inline {
+    color: #ef4444;
+    font-size: 0.8rem;
+    margin-block-start: 5px;
+    display: none; /* Oculto por defecto */
+    animation: fadeIn 0.3s ease;
+}
+
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+ /* --- ESTILOS DE NOTIFICACIÓN TOAST --- */
+        .toast-notificacion {
+            position: fixed;
+            inset-block-start: 20px;
+            inset-inline-end: -400px;
+            inline-size: 350px;
+            background: var(--navbar-bg);
+            border-inline-start: 5px solid;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            padding: 15px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            z-index: 10000;
+            transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .toast-notificacion.mostrar { inset-inline-end: 20px; }
+        .toast-notificacion.success { border-color: #10b981; }
+        .toast-notificacion.error { border-color: #ef4444; }
+        .toast-icono { font-size: 1.5rem; margin-block-start: 2px; }
+        .toast-success-icon { color: #10b981; }
+        .toast-error-icon { color: #ef4444; }
+        .toast-contenido h4 { margin: 0 0 5px 0; color: var(--text-color); font-size: 1rem; }
+        .toast-contenido p { margin: 0; color: var(--text-color); font-size: 0.85rem; opacity: 0.8; }
+
+        /* --- ESTILOS DE VALIDACIÓN INLINE --- */
+        .error-inline {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-block-start: 5px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+            font-weight: 600;
+        }
+        .input-error {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.05) !important;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ESTILOS PARA LOS 3 GRÁFICOS --- */
+
+.grid-graficos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-block-start: 25px;
+}
+
+.tarjeta-grafico {
+    background: var(--navbar-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--bg-light);
+}
+
+.tarjeta-grafico h3 {
+    color: var(--text-color);
+    margin-block-end: 15px;
+    font-size: 1.05rem;
+    text-align: center;
+}
+
+.contenedor-canvas {
+    position: relative;
+    block-size: 220px;
+    inline-size: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* =========================================
+   MENSAJES, ESTADOS Y BANNER DE PAUSA
+   ========================================= */
+.mensaje-fin-semana {
+    color: #3b82f6;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    inline-size: 100%;
+}
+
+.mensaje-fin-semana span {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: var(--text-color);
+}
+
+.mensaje-jornada-completada {
+    color: #10b981;
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.banner-pausa {
+    background: var(--navbar-bg);
+    padding: 20px;
+    border-radius: 12px;
+    margin-block-start: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    border: 1px solid var(--bg-light);
+    flex-wrap: wrap;
+}
+
+.banner-pausa-icono {
+    color: #94a3b8;
+    flex-shrink: 0;
+    inline-size: 42px;
+    block-size: 42px;
+}
+
+.banner-pausa-texto {
+    text-align: start;
+}
+
+.banner-pausa-texto h3 {
+    color: var(--text-color);
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+}
+
+.banner-pausa-texto p {
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* =========================================
+   ESTILOS ESPECÍFICOS DEL MODAL
+   ========================================= */
+.grupo-input-modal {
+    margin-block-end: 15px;
+}
+
+.grupo-input-modal.ultimo {
+    margin-block-end: 25px;
+}
+
+.select-justificacion {
+    inline-size: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid var(--bg-light);
+    border-radius: 10px;
+    background-color: var(--bg-light);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    outline: none;
+}
+
 /* --- Módulo: Calendario y Asistencia Mensual --- */
 .separador-personal {
     display: flex;

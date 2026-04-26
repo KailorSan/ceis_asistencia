@@ -42,6 +42,7 @@ input[type="password"]::-ms-clear {
 }
 
 body { 
+    margin: 0; /* Solución al Scroll: Elimina el margen por defecto del navegador */
     background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
     background-attachment: fixed; 
     background-size: cover;
@@ -180,7 +181,8 @@ option:disabled { color: #999; background-color: #f0f0f0; font-style: italic; }
 .contenedor-principal {
     background-color: #fff; border-radius: 10px;
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    position: relative; overflow: hidden; inline-size: 850px; max-inline-size: 100%; min-block-size: 580px;
+    position: relative; overflow: hidden; inline-size: 850px; max-inline-size: 100%; 
+    min-block-size: 540px; /* Reducido para evitar el scroll en laptops pequeñas */
 }
 .contenedor-formulario { position: absolute; inset-block-start: 0; block-size: 100%; transition: all 0.6s ease-in-out; }
 .contenedor-ingreso { inset-inline-start: 0; inline-size: 50%; z-index: 2; }
@@ -315,7 +317,7 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
 }
 
 .logo-login-flotante {
-    inline-size: 180px;     
+    inline-size: 140px; /* Tamaño reducido para ajustar a la nueva altura */
     block-size: auto;
     display: block;
     margin: 0 auto 15px auto; 
@@ -346,8 +348,7 @@ form { background-color: var(--blanco); display: flex; align-items: center; just
 .swal2-title { font-size: 1.6em !important; }
 .swal2-container { z-index: 20000 !important; }
 
-/* ¡NUEVO!: FIX EXTREMO PARA LOS ICONOS DE SWEETALERT */
-/* 1. Evitamos que cualquier pseudoelemento de SweetAlert se contamine con el border-box global */
+/* FIX EXTREMO PARA LOS ICONOS DE SWEETALERT */
 .swal2-icon, 
 .swal2-icon *, 
 .swal2-icon::before, 
