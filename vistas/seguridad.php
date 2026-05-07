@@ -68,9 +68,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
         <main class="contenido">
             
-            <div style="margin-block-end: 25px display: flex; justify-content: flex-start;">
-                <button type="button" class="btn-guardar" style="padding: 10px 25px; font-size: 1.05rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(64, 111, 243, 0.3); display: flex; align-items: center; gap: 10px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="abrirModalBitacora()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="wrapper-btn-bitacora" style="margin-block-end: 20px;">
+                <button type="button" class="btn-guardar btn-bitacora-seg" style="padding: 7px 16px; font-size: 0.85rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(64, 111, 243, 0.3); display: inline-flex; align-items: center; gap: 7px; width: fit-content; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="abrirModalBitacora()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Ver Registro de Auditoría
@@ -80,13 +80,13 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-block-end: 25px; flex-wrap: wrap; gap: 15px;">
                 
                 <div style="flex: 1; min-inline-size: 250px;">
-                    <h1 style="margin-block-end: 5px;">Gestión de Base de Datos</h1>
+                    <h1 style="margin-block-start: 5px; margin-block-end: 5px;">Gestión de Base de Datos</h1>
                     <p style="margin: 0; font-size: 0.95rem; color: var(--text-color);">Administra los respaldos del sistema CEIS.</p>
                 </div>
                 
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div class="contenedor-contadores" style="display: flex; gap: 12px; flex-wrap: wrap;">
                     
-                    <div style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_generar > 0 ? '#10b981' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
+                    <div class="card-contador" style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_generar > 0 ? '#10b981' : '#ef4444'; ?>; border-color: <?php echo $restantes_generar > 0 ? '#10b981' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
                         <div style="color: <?php echo $restantes_generar > 0 ? '#10b981' : '#ef4444'; ?>;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                         </div>
@@ -96,7 +96,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                         </div>
                     </div>
 
-                    <div style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_subir > 0 ? '#f59e0b' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
+                    <div class="card-contador" style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_subir > 0 ? '#f59e0b' : '#ef4444'; ?>; border-color: <?php echo $restantes_subir > 0 ? '#f59e0b' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
                         <div style="color: <?php echo $restantes_subir > 0 ? '#f59e0b' : '#ef4444'; ?>;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         </div>
@@ -106,7 +106,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                         </div>
                     </div>
 
-                    <div style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_restaurar > 0 ? '#8b5cf6' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
+                    <div class="card-contador" style="background: var(--navbar-bg); padding: 8px 15px; border-radius: 10px; box-shadow: var(--shadow-sm); border-inline-start: 4px solid <?php echo $restantes_restaurar > 0 ? '#8b5cf6' : '#ef4444'; ?>; border-color: <?php echo $restantes_restaurar > 0 ? '#8b5cf6' : '#ef4444'; ?>; display: flex; align-items: center; gap: 10px;">
                         <div style="color: <?php echo $restantes_restaurar > 0 ? '#8b5cf6' : '#ef4444'; ?>;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         </div>
@@ -121,21 +121,21 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
             <div class="grid-seguridad">
                 
-                <div class="panel-seguridad" style="padding: 2rem;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-block-end: 15px;">
+                <div class="panel-seguridad" style="padding: 1.2rem;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-block-end: 10px;">
                         <svg style="inline-size: 28px; block-size: 28px; color: var(--primary-color);" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
                         <h2 style="color: var(--primary-color); margin:0; font-size: 1.4rem;">Crear Respaldo</h2>
                     </div>
-                    <p style="font-size: 0.9rem; margin-block-end: 20px;">Selecciona el método de generación o sube una copia externa.</p>
+                    <p style="font-size: 0.85rem; margin-block-end: 12px;">Selecciona el método de generación o sube una copia externa.</p>
 
-                    <div class="botones-generar" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="botones-generar" style="display: flex; flex-direction: column; gap: 7px;">
                         
-                        <button type="button" class="btn-guardar btn-completo" style="padding: 12px; font-size: 0.95rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('local', <?php echo $restantes_generar; ?>)">
+                        <button type="button" class="btn-guardar btn-completo" style="padding: 8px; font-size: 0.82rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('local', <?php echo $restantes_generar; ?>)">
                             <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                             <?php echo $restantes_generar > 0 ? 'Generar y Guardar en Historial' : 'Límite de generación alcanzado'; ?>
                         </button>
 
-                        <button type="button" class="btn-cancelar btn-completo" style="padding: 12px; font-size: 0.95rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('descargar', <?php echo $restantes_generar; ?>)">
+                        <button type="button" class="btn-cancelar btn-completo" style="padding: 8px; font-size: 0.82rem; <?php echo $restantes_generar == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>" onclick="generarRespaldo('descargar', <?php echo $restantes_generar; ?>)">
                             <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             <?php echo $restantes_generar > 0 ? 'Generar y Descargar Inmediata' : 'Límite de generación alcanzado'; ?>
                         </button>
@@ -146,7 +146,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             <input type="hidden" name="accion" value="subir_externo">
                             <div class="contenedor-archivo">
                                 <input type="file" name="archivo_sql" id="archivo_sql" accept=".sql" class="input-file-oculto" onchange="document.getElementById('form-subir').submit();" <?php echo $restantes_subir == 0 ? 'disabled' : ''; ?>>
-                                <label for="archivo_sql" class="btn-subir-archivo" style="justify-content: center; padding: 12px; font-size: 0.95rem; <?php echo $restantes_subir == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
+                                <label for="archivo_sql" class="btn-subir-archivo" style="justify-content: center; padding: 8px; font-size: 0.82rem; <?php echo $restantes_subir == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
                                     <svg style="inline-size: 20px; block-size: 20px; margin-inline-end: 8px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                     <span><?php echo $restantes_subir > 0 ? 'Cargar .SQL Externo' : 'Límite de cargas alcanzado'; ?></span>
                                 </label>
@@ -229,15 +229,15 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
         <div id="modalBitacora" style="display: none; position: fixed; inset-block-start: 0; inset-inline-start: 0; inline-size: 100vw; block-size: 100vh; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
             
-            <div style="background: var(--bg-color); inline-size: 95%; block-size: 95%; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: zoomIn 0.3s ease-out;">
+            <div class="modal-bitacora-contenedor" style="background: var(--bg-color); inline-size: 88%; block-size: 88%; max-inline-size: 1300px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: zoomIn 0.3s ease-out;">
                 
-                <div style="padding: 15px 30px; background: var(--navbar-bg); border-block-end: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 2;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div style="background: rgba(64, 111, 243, 0.1); padding: 10px; border-radius: 10px; color: var(--primary-color);">
+                <div class="modal-bitacora-header" style="padding: 14px 25px; background: var(--navbar-bg); border-block-end: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 2; flex-shrink: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <div class="modal-bitacora-header-icon" style="background: rgba(64, 111, 243, 0.1); padding: 10px; border-radius: 10px; color: var(--primary-color); flex-shrink: 0;">
                             <svg style="inline-size: 28px; block-size: 28px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                        <div>
-                            <h2 style="margin: 0; color: var(--text-color); font-size: 1.4rem;">Registro Inexpugnable (Bitácora)</h2>
+                        <div style="min-width: 0;">
+                            <h2 class="modal-bitacora-titulo" style="margin: 0; color: var(--text-color); font-size: 1.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Registro de Actividad</h2>
                         </div>
                     </div>
                     
@@ -246,9 +246,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                     </button>
                 </div>
 
-                <div style="display: flex; flex: 1; overflow: hidden;">
+                <div class="modal-bitacora-body" style="display: flex; flex: 1; overflow: hidden;">
                     
-                    <div style="inline-size: 260px; background: var(--navbar-bg); border-inline-end: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto;">
+                    <div class="modal-bitacora-sidebar" style="inline-size: 220px; flex-shrink: 0; background: var(--navbar-bg); border-inline-end: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto;">
                         <h3 style="padding: 0 25px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-color); opacity: 0.5; margin-block-end: 15px; letter-spacing: 1px;">Filtrar por Módulo</h3>
                         
                         <button class="btn-tab-bitacora activo" onclick="cambiarTabBitacora(this, 'Todos')">
@@ -282,9 +282,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                         </button>
                     </div>
 
-                    <div style="flex: 1; padding: 25px 30px; background: var(--bg-light); display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="modal-bitacora-main" style="flex: 1; padding: 20px 25px; background: var(--bg-light); display: flex; flex-direction: column; overflow: hidden; min-inline-size: 0;">
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-block-end: 20px; flex-wrap: wrap; gap: 15px; background: var(--navbar-bg); padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                        <div class="modal-bitacora-filtros" style="display: flex; justify-content: space-between; align-items: center; margin-block-end: 15px; flex-wrap: wrap; gap: 12px; background: var(--navbar-bg); padding: 12px 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
                             
                             <div style="position: relative; flex: 1; min-inline-size: 250px; max-inline-size: 400px;">
                                 <svg style="position: absolute; inset-inline-start: 15px; inset-block-start: 50%; transform: translateY(-50%); color: var(--text-color); opacity: 0.5; inline-size: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -319,7 +319,7 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             </div>
                         </div>
 
-                        <div style="flex: 1; overflow-y: auto; padding-inline-end: 5px;">
+                        <div class="modal-bitacora-tabla-wrap" style="flex: 1; overflow-y: auto; padding-inline-end: 5px;">
                             <table style="inline-size: 100%; border-collapse: separate; border-spacing: 0 10px;">
                                 <thead>
                                     <tr style="text-align: start; color: var(--text-color); font-size: 0.85rem; text-transform: uppercase; opacity: 0.7;">
@@ -400,6 +400,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     
     <script>
+        // Token CSRF generado por el servidor — solo lectura desde JS
+        const CSRF_TOKEN = "<?php echo $_SESSION['csrf_token']; ?>";
+
         const btnCambiarTema = document.getElementById('btnCambiarTema');
         const html = document.documentElement;
         if(btnCambiarTema) {
@@ -453,41 +456,109 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                 return;
             }
 
+            // ── PASO 1: advertencia crítica con doble confirmación ──
             Swal.fire({
-                title: '¡ADVERTENCIA CRÍTICA!',
-                html: "Estás a punto de restaurar la base de datos.<br><br><b>Por favor, ingrese su contraseña para confirmar:</b>",
+                title: '⚠️ ADVERTENCIA CRÍTICA',
+                html: `<p style="margin:0 0 10px;">Esta operación <strong>reemplazará toda la base de datos</strong> con el respaldo seleccionado.</p>
+                       <p style="margin:0; color:#ef4444; font-size:0.9rem;">Esta acción <u>no se puede deshacer</u>. Asegúrate de que el archivo es correcto.</p>`,
                 icon: 'warning',
-                input: 'password',
-                inputAttributes: { autocapitalize: 'off', autocorrect: 'off', placeholder: 'Escribe tu contraseña...' },
-                showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b',
-                confirmButtonText: 'CONFIRMAR RESTAURACIÓN', cancelButtonText: 'Cancelar',
-                preConfirm: (password) => {
-                    if (!password) { Swal.showValidationMessage('La contraseña es obligatoria.'); }
-                    return password;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Entiendo, continuar',
+                cancelButtonText: 'Cancelar'
+            }).then((paso1) => {
+                if (!paso1.isConfirmed) return;
+
+                // ── PASO 2: pedir contraseña con validaciones ──
+                Swal.fire({
+                    title: 'Confirma tu identidad',
+                    html: `<p style="margin:0 0 15px; font-size:0.9rem;">Ingresa tu contraseña de administrador para autorizar la restauración del archivo:<br>
+                           <code style="font-size:0.8rem; background:rgba(0,0,0,0.1); padding:3px 8px; border-radius:5px;">${nombreArchivo}</code></p>`,
+                    icon: 'warning',
+                    input: 'password',
+                    inputAttributes: {
+                        autocomplete: 'off',
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                        spellcheck: 'false',
+                        'data-form-type': 'other',
+                        'data-lpignore': 'true',
+                        'data-1p-ignore': '',
+                        minlength: '6',
+                        placeholder: 'Introduce tu contraseña'
+                    },
+                    didOpen: () => {
+                        const inp = Swal.getInput();
+                        if (inp) {
+                            inp.setAttribute('autocomplete', 'off');
+                            inp.setAttribute('name', 'pwd_' + Math.random().toString(36).slice(2)); // nombre aleatorio evita que el navegador lo reconozca
+                            inp.setAttribute('readonly', 'true');
+                            // Quitar readonly tras un tick para que el usuario pueda escribir,
+                            // pero el navegador ya no pre-rellena porque el campo llegó como readonly
+                            setTimeout(() => inp.removeAttribute('readonly'), 100);
+                        }
+                    },
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'CONFIRMAR RESTAURACIÓN',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: (password) => {
+                        // Validaciones de frontend
+                        if (!password) {
+                            Swal.showValidationMessage('⛔ La contraseña es obligatoria.');
+                            return false;
+                        }
+                        if (password.length < 6) {
+                            Swal.showValidationMessage('⛔ La contraseña debe tener al menos 6 caracteres.');
+                            return false;
+                        }
+                        if (password.length > 128) {
+                            Swal.showValidationMessage('⛔ Contraseña demasiado larga.');
+                            return false;
+                        }
+                        // Sin caracteres de control
+                        if (/[\x00-\x1F\x7F]/.test(password)) {
+                            Swal.showValidationMessage('⛔ La contraseña contiene caracteres no válidos.');
+                            return false;
+                        }
+                        return password;
+                    }
+                }).then((paso2) => {
+                    if (!paso2.isConfirmed) return;
+
+                    // ── Envío seguro vía POST con token CSRF ──
                     const form = document.createElement('form');
-                    form.method = 'POST'; form.action = '../controladores/ControladorSeguridad.php';
+                    form.method = 'POST';
+                    form.action = '../controladores/ControladorSeguridad.php';
 
-                    const inputAccion = document.createElement('input');
-                    inputAccion.type = 'hidden'; inputAccion.name = 'accion'; inputAccion.value = 'restaurar';
-                    
-                    const inputArchivo = document.createElement('input');
-                    inputArchivo.type = 'hidden'; inputArchivo.name = 'archivo'; inputArchivo.value = nombreArchivo;
-                    
-                    const inputPass = document.createElement('input');
-                    inputPass.type = 'hidden'; inputPass.name = 'password_admin'; inputPass.value = result.value;
+                    const campos = {
+                        accion: 'restaurar',
+                        archivo: nombreArchivo,
+                        password_admin: paso2.value,
+                        csrf_token: CSRF_TOKEN          // ← token CSRF incluido
+                    };
 
-                    form.appendChild(inputAccion); form.appendChild(inputArchivo); form.appendChild(inputPass);
+                    Object.entries(campos).forEach(([name, value]) => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = name;
+                        input.value = value;
+                        form.appendChild(input);
+                    });
+
                     document.body.appendChild(form);
 
                     Swal.fire({
-                        title: 'Restaurando...', text: 'Verificando seguridad e importando base de datos.',
-                        allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }
+                        title: 'Restaurando...',
+                        text: 'Verificando credenciales e importando base de datos.',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
                     });
+
                     form.submit();
-                }
+                });
             });
         }
 

@@ -17,7 +17,7 @@ $paso = $_SESSION['paso_recuperacion'];
 <body class="modo-recuperacion">
 
 <div class="tarjeta-recuperacion">
-    <img src="../recursos/img/logo_ceis.jpg" alt="Logo CEIS" class="logo-login-flotante">
+    <img src="../recursos/img/logo_ceis.png" alt="Logo CEIS" class="logo-login-flotante">
     
     <!-- Paso 1: Búsqueda de Usuario -->
     <?php if ($paso == 1): ?>

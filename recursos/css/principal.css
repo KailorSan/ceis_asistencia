@@ -64,7 +64,8 @@ body {
     color: var(--text-color);
     display: flex;
     inline-size: 100vw;
-    block-size: 100vh;
+    block-size: 100vh;       /* fallback navegadores sin dvh */
+    block-size: 100dvh;      /* se ajusta cuando barra Win aparece/desaparece */
     overflow: hidden;
     transition: background-color 0.3s ease;
 }
@@ -152,7 +153,8 @@ input[type=number] {
    ========================================= */
 .contenedor-principal {
     flex-grow: 1;
-    block-size: 100vh;
+    block-size: 100vh;       /* fallback */
+    block-size: 100dvh;      /* dinámico: reacciona a barra Win auto-oculta */
     overflow-y: auto;
     padding: 1.8rem 4rem;
     background-color: var(--bg-light);
@@ -647,6 +649,12 @@ input[type=number] {
     min-block-size: 120px;
 }
 
+/* Textarea más compacto dentro del modal */
+.grupo-input-modal .input-con-icono textarea {
+    min-block-size: 80px;
+    font-size: 1rem;
+}
+
 .input-con-icono textarea:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -718,56 +726,90 @@ input[type=number] {
 [data-theme="dark"] .btn-subir-archivo { border-color: var(--primary-color); background-color: #1e293b; }
 
 /* --- MODALES Y SWEETALERT --- */
+/* ── Separador: modal-overlay va integrado en el bloque de abajo ── */
+
+/* ── MODAL OVERLAY ───────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
     inset: 0;
     z-index: 2000;
     background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
+    visibility: hidden;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-.modal-overlay.activo { display: flex; opacity: 1; }
+.modal-overlay.activo {
+    visibility: visible;
+    opacity: 1;
+}
 
+.modal-overlay.cerrando {
+    opacity: 0;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+/* ── MODAL CONTENIDO ─────────────────────────────────────────── */
+/* Inactivo: completamente fuera del flujo */
 .modal-contenido {
+    display: none;
+}
+
+/* Activo: entra al flujo y anima */
+.modal-contenido.activo {
+    display: block;
     background: var(--navbar-bg);
     border-radius: var(--border-radius);
-    padding: 2.0rem;
+    padding: 1.4rem 1.6rem;
     inline-size: 90%;
     max-inline-size: 450px;
     box-shadow: var(--shadow-md);
-    transform: translateY(-20px);
-    transition: transform 0.3s ease;
     border-block-start: 5px solid var(--primary-color);
-    display: none;
-    max-block-size: 85vh;
+    max-block-size: 88dvh;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Animación de entrada */
+    animation: modalEntrada 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Salida animada via clase */
+.modal-contenido.cerrando {
+    animation: modalSalida 0.2s ease forwards;
+}
+
+@keyframes modalEntrada {
+    from { transform: translateY(28px) scale(0.97); opacity: 0; }
+    to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+@keyframes modalSalida {
+    from { transform: translateY(0)    scale(1);    opacity: 1; }
+    to   { transform: translateY(18px) scale(0.97); opacity: 0; }
 }
 
 /* Scrollbar interno del modal */
-.modal-contenido::-webkit-scrollbar {
-    inline-size: 6px;
-}
+.modal-contenido::-webkit-scrollbar { inline-size: 5px; inline-size: 5px; }
+.modal-contenido::-webkit-scrollbar-track { background: transparent; }
 .modal-contenido::-webkit-scrollbar-thumb {
     background: var(--primary-color);
     border-radius: 10px;
 }
 
-.modal-overlay.activo .modal-contenido.activo {
-    display: block;
-    transform: translateY(0);
-}
-
+/* Header sticky: siempre visible al hacer scroll interno */
 .modal-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    background: var(--navbar-bg);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-block-end: 1.5rem;
+    margin-block-end: 0.8rem;
+    padding-block-end: 8px;
 }
 
 .modal-header h2 {
@@ -816,7 +858,8 @@ input[type=number] {
    ========================================= */
 .barra-lateral {
     inline-size: 115px;
-    block-size: 100vh;
+    block-size: 100vh;       /* fallback */
+    block-size: 100dvh;      /* dinámico */
     background: var(--navbar-bg);
     display: flex;
     flex-direction: column;
@@ -1292,6 +1335,16 @@ input[type=number] {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    text-align: center;
+    align-self: center;
+    max-inline-size: 100%;
+    line-height: 1.2;
+}
+
+.mensaje-jornada-completada svg {
+    flex-shrink: 0;
+    min-inline-size: 32px;
+    block-size: auto;
 }
 
 .banner-pausa {
@@ -1336,11 +1389,11 @@ input[type=number] {
    ESTILOS ESPECÍFICOS DEL MODAL
    ========================================= */
 .grupo-input-modal {
-    margin-block-end: 15px;
+    margin-block-end: 10px;
 }
 
 .grupo-input-modal.ultimo {
-    margin-block-end: 25px;
+    margin-block-end: 16px;
 }
 
 .select-justificacion {
@@ -1490,6 +1543,194 @@ input[type=number] {
     color: #7f1d1d;
 }
 
+/*=============================================
+  MÓDULO DE ASISTENCIA - WIDGETS
+=============================================*/
+.contenedor-widgets-asistencia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-block-end: 2rem;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.perfil-widget-min {
+    flex: 0 0 auto;
+    inline-size: 100%;
+    max-inline-size: 320px;
+    margin: 0 auto;
+}
+
+/* Panel del Fin de Semana (Más angosto) */
+.fin-semana-widget {
+    flex: 1 1 auto;
+    max-inline-size: 750px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: var(--navbar-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem 2rem;
+    border: 2px solid #94a3b8;
+    text-align: center;
+    margin: 0 auto;
+    min-block-size: 215px;
+}
+
+.fin-semana-icono {
+    inline-size: 60px;
+    block-size: 60px;
+    color: #94a3b8;
+    margin-block-end: 15px;
+    opacity: 0.7;
+}
+
+.fin-semana-titulo {
+    color: var(--text-color);
+    font-weight: 800;
+    font-size: 1.6rem;
+    margin-block-end: 5px;
+}
+
+.fin-semana-texto {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Panel del Reloj Activo */
+.reloj-widget {
+    flex: 1 1 350px;
+    max-inline-size: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--navbar-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    border-inline-start: 5px solid var(--primary-color);
+    margin: 0 auto;
+}
+
+.reloj-bg-icon {
+    position: absolute;
+    inset-inline-end: -10px;
+    inset-block-end: 10px;
+    inline-size: 150px;
+    block-size: 150px;
+    color: var(--primary-color);
+    opacity: 0.05;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.reloj-contenido {
+    position: relative;
+    z-index: 1;
+}
+
+.reloj-saludo {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-block-end: 2px;
+}
+
+.reloj-hora {
+    font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+    font-weight: 800;
+    color: var(--primary-color);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-block-end: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+.reloj-hora span {
+    color: var(--text-color); 
+    font-size: 1.8rem; 
+    font-weight: 600; 
+    margin-inline-start: 8px;
+}
+
+.reloj-fecha {
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Tarjetas de Estadísticas */
+.stats-widget {
+    flex: 0 1 320px;
+    inline-size: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: space-between;
+    margin: 0 auto;
+}
+
+.stat-tarjeta {
+    background: var(--navbar-bg);
+    border-radius: 12px;
+    padding: 12px 15px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    border-inline-start: 4px solid transparent;
+}
+
+.stat-tarjeta.verde { border-inline-start-color: #10b981; }
+.stat-tarjeta.naranja { border-inline-start-color: #f59e0b; }
+.stat-tarjeta.rojo { border-inline-start-color: #ef4444; }
+
+.stat-info span {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-color);
+    text-transform: uppercase;
+}
+
+.stat-valor {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-block-start: 2px;
+}
+
+.stat-valor.naranja { color: #f59e0b; }
+.stat-valor.rojo { color: #ef4444; }
+
+.stat-valor span.limite {
+    font-size: 0.9rem; 
+    color: var(--text-color);
+}
+
+.stat-icono {
+    inline-size: 28px;
+    block-size: 28px;
+    opacity: 0.8;
+}
+
+.stat-icono.verde { color: #10b981; }
+.stat-icono.naranja { color: #f59e0b; }
+.stat-icono.rojo { color: #ef4444; }
+
+
+
 /* --- Módulo: Gestión de Personal --- */
 .cabecera-personal {
     display: flex;
@@ -1622,8 +1863,16 @@ input[type=number] {
     font-weight: bold;
 }
 
-.btn-editar-horario:hover { background-color: var(--primary-color); color: white; }
-.btn-editar-horario svg { inline-size: 18px; block-size: 18px; }
+.btn-editar-horario:hover { 
+    background-color: var(--primary-color); 
+    color: white; 
+}
+.btn-editar-horario svg {
+    inline-size: 18px;
+    block-size: 18px;
+    flex-shrink: 0;
+    color: inherit; /* ✅ FIX: hereda el color del botón padre para que stroke="currentColor" funcione correctamente */
+}
 
 .btn-editar-usuario {
     background-color: var(--bg-light);
@@ -1632,7 +1881,12 @@ input[type=number] {
 }
 
 .btn-editar-usuario:hover { background-color: #64748b; color: white; }
-.btn-editar-usuario svg { inline-size: 18px; block-size: 18px; }
+.btn-editar-usuario svg { 
+    inline-size: 18px;
+    block-size: 18px; 
+    flex-shrink: 0;
+    color: inherit; /* ✅ FIX: hereda el color del botón padre */
+}
 
 /* --- Módulo: Bandeja de Justificaciones --- */
 .grid-justificaciones {
@@ -1677,6 +1931,8 @@ input[type=number] {
     padding: 12px;
     border-radius: 8px;
     color: var(--text-color);
+    overflow-wrap: break-word; 
+    word-break: break-word;
 }
 
 .tj-acciones {
@@ -1708,8 +1964,14 @@ input[type=number] {
 /* --- Módulo: Seguridad y Respaldos --- */
 .grid-seguridad {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    grid-template-columns: 320px 1fr;
     gap: 25px;
+}
+
+@media (max-width: 860px) {
+    .grid-seguridad {
+        grid-template-columns: 1fr;
+    }
 }
 
 .panel-seguridad {
@@ -1906,7 +2168,6 @@ input[type=number] {
     }
 }
 
-
 /* =========================================
    10. DISEÑO RESPONSIVO (APP MÓVIL)
    ========================================= */
@@ -2067,97 +2328,1274 @@ input[type=number] {
         gap: 15px;
     }
     
+    /* Botón bitácora: centrado, sin estirarse
+       Necesita !important específico porque .btn-guardar tiene inline-size: 100% arriba */
+    .btn-bitacora-seg {
+        width: fit-content !important;
+        inline-size: fit-content !important;
+        display: inline-flex !important;
+        margin-inline: auto !important;
+    }
+
+    /* Wrapper del botón: centrado */
+    .wrapper-btn-bitacora {
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    /* Contadores: fila horizontal de 3 columnas iguales */
+    .contenedor-contadores {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    /* Cada card: columna centrada — ícono arriba, número, etiqueta abajo */
+    .card-contador {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 8px 4px !important;
+        gap: 3px !important;
+        border-inline-start: none !important;
+        border-block-start: 3px solid !important;
+        border-color: inherit !important;
+        min-width: 0 !important;
+    }
+
+    .card-contador svg {
+        width: 18px !important;
+        height: 18px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .card-contador h4 {
+        font-size: 0.6rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .card-contador strong {
+        font-size: 1rem !important;
+        line-height: 1 !important;
+    }
+
+    .card-contador strong span {
+        display: none !important; /* Ocultar "Restantes" en móvil, queda implícito */
+    }
+
     .btn-eliminar-usuario {
         margin-block-start: 0;
     }
 
     /* =========================================================
-       REVISIÓN: RESPONSIVO PARA EL MODAL BITÁCORA (AUDITORÍA)
+       MODAL BITÁCORA - RESPONSIVO MÓVIL (≤768px)
+       Sidebar lateral → barra horizontal scrolleable arriba
        ========================================================= */
-    #modalBitacora > div {
-        inline-size: 100% !important;
-        block-size: 100% !important;
+
+    /* El modal ocupa toda la pantalla */
+    .modal-bitacora-contenedor {
+        width: 100% !important;
+        height: 100% !important;
         border-radius: 0 !important;
+        max-width: 100% !important;
     }
 
-    #modalBitacora > div > div:nth-child(2) {
+    /* Header: icono más pequeño, título en una línea */
+    .modal-bitacora-header {
+        padding: 10px 15px !important;
+    }
+
+    .modal-bitacora-titulo {
+        font-size: 1rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .modal-bitacora-header-icon {
+        padding: 6px !important;
+    }
+
+    .modal-bitacora-header-icon svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* Body: columna — sidebar arriba, contenido abajo */
+    .modal-bitacora-body {
         flex-direction: column !important;
+        overflow: hidden !important;
     }
 
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(1) {
-        inline-size: 100% !important;
-        block-size: auto !important;
+    /* ── SCROLL HORIZONTAL DE TABS (fix iOS + Android) ─────────
+       touch-action + overflow-x: scroll (no auto) + will-change
+       son los tres que hacen que el gesto horizontal funcione
+       en WebKit/Safari móvil sin interferir con el scroll vertical
+       de la tabla que está debajo.
+    ─────────────────────────────────────────────────────────────── */
+    .modal-bitacora-sidebar {
+        width: 100% !important;
+        height: auto !important;
         flex-direction: row !important;
-        overflow-x: auto !important; 
+        overflow-x: scroll !important;          /* scroll, no auto */
         overflow-y: hidden !important;
-        padding: 10px !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;         /* solo gesto horizontal */
+        will-change: scroll-position;           /* hint al compositor */
+        padding: 0 !important;
         border-inline-end: none !important;
         border-block-end: 1px solid var(--border-color) !important;
         flex-wrap: nowrap !important;
-        white-space: nowrap !important;
-        -webkit-overflow-scrolling: touch; 
-        gap: 10px;
+        flex-shrink: 0 !important;
+        gap: 0 !important;
+        /* Ocultar scrollbar visualmente pero mantener funcionalidad */
+        scrollbar-width: none !important;
     }
 
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(1)::-webkit-scrollbar {
-        block-size: 4px;
-        display: block !important;
-    }
-
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(1)::-webkit-scrollbar-thumb {
-        background: var(--primary-color);
-        border-radius: 10px;
-    }
-
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(1) > h3 {
+    .modal-bitacora-sidebar::-webkit-scrollbar {
         display: none !important;
     }
 
+    .modal-bitacora-sidebar h3 { display: none !important; }
+
+    /* Botones de tab: no se encogen, no rompen texto */
     .btn-tab-bitacora {
-        inline-size: auto !important;
-        padding: 12px 20px !important;
-        flex-shrink: 0 !important; 
+        width: auto !important;
+        min-width: max-content !important;  /* clave: no se encoge ni rompe */
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        padding: 12px 16px !important;
         border-inline-start: none !important;
+        border-bottom: 3px solid transparent !important;
         border-block-end: 3px solid transparent !important;
-        display: inline-flex !important; 
-        align-items: center;
+        font-size: 0.83rem !important;
+        gap: 6px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .btn-tab-bitacora svg {
+        width: 16px !important;
+        height: 16px !important;
+        flex-shrink: 0 !important;
     }
 
     .btn-tab-bitacora.activo {
         border-inline-start: none !important;
+        border-bottom: 3px solid var(--primary-color) !important;
         border-block-end: 3px solid var(--primary-color) !important;
     }
 
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(2) {
-        padding: 15px 10px !important;
-    }
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) {
+    /* Área de contenido principal */
+    .modal-bitacora-main {
+        padding: 10px 10px !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+        display: flex !important;
         flex-direction: column !important;
-        gap: 15px !important;
-        padding: 15px !important;
+        min-height: 0 !important;
     }
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) {
+
+    /* Filtros en columna */
+    .modal-bitacora-filtros {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding: 10px !important;
+        margin-block-end: 10px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .modal-bitacora-filtros > div:first-child {
+        max-inline-size: 100% !important;
+        min-inline-size: unset !important;
+        width: 100% !important;
+    }
+
+    .modal-bitacora-filtros > div:first-child input {
+        font-size: 0.85rem !important;
+        padding: 8px 15px 8px 38px !important;
+    }
+
+    /* Fila de selects + botón Filtrar */
+    .modal-bitacora-filtros > div:last-child {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+        align-items: center !important;
+    }
+
+    /* Ocultar ícono calendario en móvil */
+    .modal-bitacora-filtros > div:last-child > svg {
+        display: none !important;
+    }
+
+    .select-filtro-bitacora {
+        flex: 1 !important;
+        padding: 7px 4px !important;
+        font-size: 0.8rem !important;
+        min-width: 0 !important;
+        border-radius: 8px !important;
+    }
+
+    /* Botón Filtrar compacto */
+    .modal-bitacora-filtros > div:last-child > button {
+        padding: 7px 12px !important;
+        font-size: 0.8rem !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Tabla: scroll horizontal, sin desbordamiento */
+    .modal-bitacora-tabla-wrap {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-inline-end: 0 !important;
+        min-height: 0 !important;
+    }
+
+    #modalBitacora table {
+        min-width: 520px !important;
+        min-inline-size: 520px !important;
+    }
+
+    #modalBitacora .fila-bitacora td {
+        padding: 10px 8px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Ocultar columna "Detalles" en móvil para que quepa mejor */
+    #modalBitacora table thead tr th:last-child,
+    #modalBitacora .fila-bitacora td:last-child {
+        display: none !important;
+    }
+
+    /* Ocultar avatar, mostrar solo nombre */
+    #modalBitacora .fila-bitacora td img {
+        display: none !important;
+    }
+}
+
+/* =========================================
+   MODAL BITÁCORA - RESPONSIVO TABLET (769px–1100px)
+   Sidebar se reduce, tabla se vuelve scrolleable horizontal
+   ========================================= */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .modal-bitacora-contenedor {
+        inline-size: 96% !important;
+        block-size: 92% !important;
+    }
+
+    .modal-bitacora-sidebar {
+        inline-size: 180px !important;
+    }
+
+    .btn-tab-bitacora {
+        padding: 12px 16px !important;
+        font-size: 0.85rem !important;
+        gap: 8px !important;
+    }
+
+    .btn-tab-bitacora svg {
+        inline-size: 17px !important;
+        block-size: 17px !important;
+    }
+
+    .modal-bitacora-filtros {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .modal-bitacora-filtros > div:first-child {
         max-inline-size: 100% !important;
     }
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) {
-        flex-wrap: wrap !important;
-        justify-content: space-between !important;
-    }
+
     .select-filtro-bitacora {
-        flex-grow: 1;
         padding: 8px 10px !important;
         font-size: 0.85rem !important;
     }
 
-    #modalBitacora > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) {
+    .modal-bitacora-tabla-wrap {
         overflow-x: auto !important;
-        padding-inline-end: 0 !important;
     }
+
     #modalBitacora table {
-        min-inline-size: 700px !important;
+        min-inline-size: 620px !important;
     }
-    #modalBitacora .fila-bitacora td {
-        padding: 12px 10px !important;
-        font-size: 0.85rem !important;
+}
+
+/* =========================================
+   11. VISTA: CONFIGURACIÓN DE ASISTENCIAS
+   -----------------------------------------
+   Estilos exclusivos de ConfiguracionAsistencia.php.
+   No afectan a ningún otro módulo del proyecto.
+
+   Variables del proyecto utilizadas:
+     --navbar-bg     → fondo del panel y modal
+     --bg-light      → fondo de tarjetas individuales
+     --text-color    → texto y etiquetas
+     --primary-color → acento, bordes activos, botones
+     --border-radius → radio de borde global
+     --shadow-sm     → sombra global del panel
+   ========================================= */
+
+/* ── LAYOUT PRINCIPAL ────────────────────────────────────────
+   Dos columnas: panel de plantillas (fijo) | formulario.
+   align-items: center centra el formulario verticalmente.
+   overflow: hidden garantiza que la página no haga scroll.
+─────────────────────────────────────────────────────────────── */
+.contenido-configuracion {
+    display: grid;
+    grid-template-columns: 265px 1fr;
+    gap: 24px;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* ── PANEL CONTENEDOR DE PLANTILLAS ─────────────────────────
+   Fondo: --navbar-bg (igual que sidebar y topbar).
+   Altura fija calculada: viewport - topbar - título - padding.
+   Tres zonas internas: cabecera fija / lista scrolleable / pie fijo.
+─────────────────────────────────────────────────────────────── */
+.panel-plantillas {
+    background: var(--navbar-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    block-size: calc(100vh - 310px);
+    max-block-size: 420px;
+    min-block-size: 260px;
+    overflow: hidden;
+}
+
+/* Cabecera fija: título + contador "X / 4" */
+.panel-plantillas-cabecera {
+    padding: 12px 14px 10px;
+    border-block-end: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+[data-theme="light"] .panel-plantillas-cabecera {
+    border-block-end-color: rgba(0,0,0,0.07);
+}
+
+.titulo-panel {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-color);
+}
+
+/* Pastilla "X / 4" */
+.contador-plantillas {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-color);
+    background: rgba(255,255,255,0.07);
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+[data-theme="light"] .contador-plantillas {
+    background: rgba(0,0,0,0.06);
+}
+
+/* ── ZONA SCROLLEABLE ────────────────────────────────────────
+   flex:1 ocupa todo el espacio entre cabecera y pie.
+   Hereda la scrollbar global definida en la sección 3.
+─────────────────────────────────────────────────────────────── */
+.panel-plantillas-lista {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px 10px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Pie fijo: botón "Guardar como plantilla" */
+.panel-plantillas-pie {
+    padding: 8px 10px 10px;
+    border-block-start: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+
+[data-theme="light"] .panel-plantillas-pie {
+    border-block-start-color: rgba(0,0,0,0.07);
+}
+
+/* Estado vacío: sin plantillas creadas aún */
+.estado-vacio-plantillas {
+    font-size: 0.77rem;
+    color: var(--text-color);
+    line-height: 1.6;
+    text-align: center;
+    padding: 16px 6px;
+    opacity: 0.7;
+}
+
+/* ── TARJETAS INDIVIDUALES ───────────────────────────────────
+   Fondo: --bg-light (contraste leve respecto al panel).
+   Compactas para caber holgadamente con scroll interno.
+─────────────────────────────────────────────────────────────── */
+.tarjeta-preestablecida {
+    background: var(--bg-light);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px 12px 9px;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.2s, box-shadow 0.2s, opacity 0.3s, transform 0.3s;
+}
+
+[data-theme="light"] .tarjeta-preestablecida {
+    border-color: rgba(0,0,0,0.07);
+}
+
+/* Tarjeta cuya configuración está actualmente aplicada */
+.tarjeta-preestablecida.es-activa {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15);
+}
+
+[data-theme="light"] .tarjeta-preestablecida.es-activa {
+    box-shadow: 0 0 0 2px rgba(64, 111, 243, 0.12);
+}
+
+/* Línea de acento superior en la tarjeta activa */
+.tarjeta-preestablecida.es-activa::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 14px;
+    inset-inline-end: 14px;
+    block-size: 2px;
+    background: var(--primary-color);
+    border-radius: 0 0 3px 3px;
+}
+
+/* Cabecera de tarjeta: nombre editable + botón X */
+.cabecera-tarjeta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    margin-block-end: 4px;
+}
+
+/* Nombre — doble clic activa la edición inline */
+.nombre-preestablecida {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color);
+    cursor: text;
+    border-block-end: 1px dashed transparent;
+    transition: border-color 0.2s;
+    padding-block-end: 1px;
+    line-height: 1.4;
+    flex: 1;
+    word-break: break-word;
+}
+
+.nombre-preestablecida:hover {
+    border-block-end-color: var(--text-color);
+    opacity: 0.7;
+}
+
+/* Input que sustituye al span al editar el nombre */
+.input-nombre-editable {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color);
+    border: none;
+    border-block-end: 2px solid var(--primary-color);
+    background: transparent;
+    outline: none;
+    inline-size: 100%;
+    padding: 0 0 1px;
+    line-height: 1.4;
+    flex: 1;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Botón X eliminar tarjeta */
+.btn-eliminar-tarjeta {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    opacity: 0.5;
+    padding: 2px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, opacity 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-eliminar-tarjeta:hover {
+    color: #ef4444;
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Badge "Aplicada al sistema" */
+.badge-activa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(167, 139, 250, 0.12);
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-block-end: 5px;
+}
+
+[data-theme="light"] .badge-activa {
+    background: rgba(64, 111, 243, 0.1);
+}
+
+/* Separador interno de la tarjeta */
+.separador-tarjeta {
+    border: none;
+    border-block-start: 1px solid rgba(255,255,255,0.06);
+    margin: 5px 0;
+}
+
+[data-theme="light"] .separador-tarjeta {
+    border-block-start-color: rgba(0,0,0,0.07);
+}
+
+/* Tabla compacta con los datos del horario */
+.tabla-horario {
+    inline-size: 100%;
+    font-size: 0.73rem;
+    border-collapse: collapse;
+}
+
+.tabla-horario td { padding: 1.5px 0; }
+.tabla-horario .etiqueta { color: var(--text-color); opacity: 0.7; }
+.tabla-horario .valor {
+    text-align: end;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Botón "Aplicar al formulario" */
+.btn-aplicar-preestablecida {
+    margin-block-start: 8px;
+    inline-size: 100%;
+    padding: 5px 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(167, 139, 250, 0.08);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+[data-theme="light"] .btn-aplicar-preestablecida {
+    background: rgba(64, 111, 243, 0.06);
+    border-color: rgba(64, 111, 243, 0.2);
+}
+
+.btn-aplicar-preestablecida:hover {
+    background: rgba(167, 139, 250, 0.16);
+    border-color: rgba(167, 139, 250, 0.5);
+}
+
+[data-theme="light"] .btn-aplicar-preestablecida:hover {
+    background: rgba(64, 111, 243, 0.13);
+    border-color: rgba(64, 111, 243, 0.4);
+}
+
+/* ── BOTÓN "GUARDAR COMO PLANTILLA" (pie del panel) ─────────
+   Horizontal, ocupa todo el ancho, borde punteado.
+─────────────────────────────────────────────────────────────── */
+.tarjeta-agregar-nueva {
+    inline-size: 100%;
+    border: 1.5px dashed rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    background: transparent;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    color: var(--text-color);
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: 'Montserrat', sans-serif;
+}
+
+[data-theme="light"] .tarjeta-agregar-nueva {
+    border-color: rgba(0,0,0,0.15);
+}
+
+.tarjeta-agregar-nueva:hover {
+    border-color: var(--primary-color);
+    background: rgba(167, 139, 250, 0.05);
+    color: var(--primary-color);
+}
+
+[data-theme="light"] .tarjeta-agregar-nueva:hover {
+    background: rgba(64, 111, 243, 0.04);
+}
+
+/* Círculo con el símbolo + */
+.icono-mas {
+    inline-size: 22px;
+    block-size: 22px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.tarjeta-agregar-nueva:hover .icono-mas { transform: scale(1.1); }
+
+/* Aviso de límite alcanzado (reemplaza al botón) */
+.aviso-limite {
+    font-size: 0.72rem;
+    color: var(--text-color);
+    opacity: 0.6;
+    text-align: center;
+    padding: 8px 0 2px;
+    display: none;
+}
+
+.aviso-limite.visible { display: block; }
+
+/* Formulario principal: centrado verticalmente respecto al panel */
+.tarjeta-formulario-config {
+    align-self: center;
+}
+
+/* ── MODAL DE PLANTILLAS (solo activo en móvil) ─────────────
+   Overlay que cubre toda la pantalla. El panel sube desde
+   abajo con animación (bottom sheet pattern).
+   En escritorio todos estos estilos son inactivos.
+─────────────────────────────────────────────────────────────── */
+
+/* Overlay oscuro: oculto por defecto, activado por JS */
+.modal-plantillas-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    /* padding-bottom = altura navbar móvil (70px).
+       Empuja el panel hacia arriba para que la navbar
+       no tape la última tarjeta. */
+    padding-block-end: 70px;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 900;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+}
+
+.modal-plantillas-overlay.abierto {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Panel del modal: sube desde abajo con animación */
+.modal-plantillas-overlay .panel-plantillas {
+    display: flex !important;
+    inline-size: 100%;
+    max-inline-size: 480px;
+    block-size: auto;
+    /* 100vh - navbar (70px) - margen superior (20px) */
+    max-block-size: calc(100vh - 90px);
+    min-block-size: 0;
+    border-radius: 20px 20px 0 0;
+    padding-block-start: 10px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+    background: var(--navbar-bg) !important;
+}
+
+.modal-plantillas-overlay.abierto .panel-plantillas {
+    transform: translateY(0);
+}
+
+/* Pastilla de arrastre (drag handle) */
+.tirador-modal {
+    inline-size: 40px;
+    block-size: 4px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 2px;
+    margin: 0 auto 8px;
+    flex-shrink: 0;
+}
+
+[data-theme="light"] .tirador-modal {
+    background: rgba(0,0,0,0.14);
+}
+
+/* Tarjetas dentro del modal: forzar variables del proyecto */
+.modal-plantillas-overlay .tarjeta-preestablecida {
+    background: var(--bg-light) !important;
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+[data-theme="light"] .modal-plantillas-overlay .tarjeta-preestablecida {
+    border-color: rgba(0,0,0,0.07) !important;
+}
+
+.modal-plantillas-overlay .panel-plantillas-cabecera,
+.modal-plantillas-overlay .panel-plantillas-pie {
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+[data-theme="light"] .modal-plantillas-overlay .panel-plantillas-cabecera,
+[data-theme="light"] .modal-plantillas-overlay .panel-plantillas-pie {
+    border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── BOTÓN FLOTANTE: abre el modal en móvil ─────────────────
+   Fijo en esquina inferior derecha, sobre la navbar (70px).
+   Oculto en escritorio — solo visible via @media abajo.
+─────────────────────────────────────────────────────────────── */
+.btn-flotante-plantillas {
+    position: fixed;
+    inset-block-end: 86px;
+    inset-inline-end: 20px;
+    z-index: 800;
+    inline-size: 52px;
+    block-size: 52px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: none; /* El @media lo activa como flex en móvil */
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    color: #fff;
+}
+
+.btn-flotante-plantillas:active {
+    transform: scale(0.92);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Badge con el número de plantillas guardadas */
+.badge-flotante {
+    position: absolute;
+    inset-block-start: -3px;
+    inset-inline-end: -3px;
+    inline-size: 18px;
+    block-size: 18px;
+    border-radius: 50%;
+    background: var(--navbar-bg);
+    color: var(--primary-color);
+    font-size: 0.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--primary-color);
+    line-height: 1;
+}
+
+/* ── RESPONSIVE: móvil (< 860px) ────────────────────────────
+   El panel desaparece del flujo y se convierte en modal.
+   El formulario ocupa toda la columna.
+   La página puede hacer scroll normalmente en móvil.
+─────────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+
+    .contenido-configuracion {
+        grid-template-columns: 1fr;
+        max-block-size: none;
+        align-items: start;
+    }
+
+    /* Panel oculto del flujo — aparece solo como modal */
+    .panel-plantillas {
+        display: none;
+    }
+
+    .tarjeta-formulario-config {
+        align-self: auto;
+    }
+
+    /* Activar overlay y botón flotante en móvil */
+    .modal-plantillas-overlay {
+        display: flex !important;
+        /* Inactivo visualmente hasta que JS añada .abierto */
+    }
+
+    .btn-flotante-plantillas {
+        display: flex;
+    }
+}
+/* =========================================
+   12. VISTA: PERFIL DE USUARIO
+   -----------------------------------------
+   Layout dos columnas (foto | campos).
+   Scroll SOLO en .perfil-col-campos.
+   Inputs compactos sin afectar otras vistas.
+
+   Usa 100dvh en la cadena flex para que el
+   panel reaccione correctamente tanto si la
+   barra de tareas de Windows está visible
+   como si está auto-oculta.
+   ========================================= */
+
+/* ── Contenedor principal: modo perfil ─────
+   overflow-y:hidden bloquea scroll de página.
+   padding-block reducido = más espacio para el panel. */
+.contenedor-principal:has(.contenido-perfil) {
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+    block-size: 100vh;       /* fallback */
+    block-size: 100dvh;      /* reacciona a barra Win auto-oculta */
+    padding-block-start: 0.8rem;
+    padding-block-end: 3rem;
+}
+
+/* ── Zona de contenido ──────────────────────
+   flex:1 + min-block-size:0 = ocupa exactamente
+   el espacio que queda bajo la barra-superior. */
+.contenido-perfil {
+    flex: 1;
+    min-block-size: 0;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+/* ── Panel externo ──────────────────────────*/
+.perfil-panel {
+    background: var(--navbar-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border-block-start: 4px solid var(--primary-color);
+    inline-size: 100%;
+    min-block-size: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Formulario: dos columnas ───────────────*/
+.perfil-form {
+    display: flex;
+    flex: 1;
+    min-block-size: 0;
+    overflow: hidden;
+}
+
+/* ── Columna izquierda: foto ────────────────*/
+.perfil-col-foto {
+    inline-size: 165px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 1rem 0.9rem;
+    border-inline-end: 1px solid var(--bg-light);
+}
+
+.perfil-avatar {
+    inline-size: 82px;
+    block-size: 82px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.perfil-btn-foto {
+    justify-content: center;
+    padding: 5px 8px;
+    font-size: 0.76rem;
+    inline-size: 100%;
+}
+
+/* ── Columna derecha: campos ────────────────
+   Scroll interno solo aquí. */
+.perfil-col-campos {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.9rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.perfil-col-campos::-webkit-scrollbar       { inline-size: 5px; }
+.perfil-col-campos::-webkit-scrollbar-track { background: transparent; }
+.perfil-col-campos::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+/* ── Grid compacto ──────────────────────────*/
+.perfil-col-campos .grid-formulario { gap: 7px 18px; }
+.perfil-col-campos .grupo-input     { gap: 2px; }
+
+.perfil-col-campos .grupo-input label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* ── Inputs compactos ───────────────────────
+   Sobreescriben padding:12px / font-size:1.1rem global
+   SOLO dentro de .perfil-col-campos. */
+.perfil-col-campos .input-con-icono input,
+.perfil-col-campos .input-con-icono input[type="password"],
+.perfil-col-campos .input-con-icono input[type="text"] {
+    padding: 6px 10px 6px 32px;
+    font-size: 0.84rem;
+    border-radius: 7px;
+}
+
+.perfil-col-campos .input-con-icono svg {
+    inline-size: 14px;
+    block-size: 14px;
+    inset-inline-start: 10px;
+}
+
+/* ── Botón guardar compacto ─────────────────*/
+.perfil-col-campos .botones-accion-formulario {
+    margin-block-start: 10px;
+    padding-block-start: 8px;
+}
+
+.perfil-col-campos .btn-guardar {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.86rem;
+}
+
+.perfil-col-campos .btn-guardar svg {
+    inline-size: 15px;
+    block-size: 15px;
+}
+
+/* ── Títulos de sección ─────────────────────*/
+.perfil-seccion-titulo {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0 0 4px 0;
+    padding-block-end: 4px;
+    border-block-end: 1px dashed var(--bg-light);
+}
+
+.perfil-seccion-sep {
+    margin-block-start: 7px;
+    padding-block-start: 7px;
+    border-block-start: 1px dashed var(--bg-light);
+}
+
+.perfil-seccion-advertencia { color: #f59e0b; }
+
+.perfil-label-opcional {
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: var(--text-color);
+    font-style: italic;
+    margin-inline-start: 4px;
+}
+
+/* ── Select (preguntas de seguridad) ────────*/
+.perfil-select {
+    inline-size: 100%;
+    padding: 6px 10px;
+    border: 2px solid var(--bg-light);
+    border-radius: 7px;
+    background-color: var(--bg-light);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.perfil-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(64, 111, 243, 0.2);
+}
+
+[data-theme="dark"] .perfil-select { border-color: #334155; }
+
+/* ── Input respuesta ────────────────────────*/
+.perfil-input-respuesta {
+    inline-size: 100%;
+    padding: 5px 10px;
+    margin-block-start: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--bg-light);
+    background-color: var(--bg-light);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.perfil-input-respuesta:focus               { border-color: var(--primary-color); }
+[data-theme="dark"] .perfil-input-respuesta { border-color: #334155; }
+
+/* ── Medidor de fuerza ──────────────────────*/
+.perfil-col-campos .medidor-fuerza-contenedor {
+    margin-block-start: 2px;
+    block-size: 3px;
+    border-radius: 4px;
+    background: var(--bg-light);
+    overflow: hidden;
+}
+
+.perfil-col-campos .barra-fuerza {
+    block-size: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+/* Ancho y color de relleno segun nivel de fuerza */
+.perfil-col-campos .barra-fuerza.fuerza-mala      { inline-size: 33%;  background-color: #cc0000; }
+.perfil-col-campos .barra-fuerza.fuerza-buena     { inline-size: 66%;  background-color: #ff9800; }
+.perfil-col-campos .barra-fuerza.fuerza-excelente { inline-size: 100%; background-color: #10b981; }
+
+/* ── Bloque confirmar identidad ─────────────
+   max-inline-size: no cubre todo el ancho. */
+.perfil-bloque-confirmar {
+    margin-block-start: 7px;
+    align-self: flex-start;
+    inline-size: fit-content;
+    max-inline-size: 460px;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    padding: 9px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+/* ── Input respuesta / confirmación ───────── */
+.perfil-confirmar-input { 
+    inline-size: 320px; /* Fija el tamaño en PC para dar forma al contenedor */
+}
+
+.perfil-confirmar-titulo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ef4444;
+    margin: 0;
+}
+
+.perfil-confirmar-titulo svg {
+    inline-size: 13px;
+    block-size: 13px;
+    flex-shrink: 0;
+}
+
+.perfil-confirmar-input { max-inline-size: 320px; }
+
+/* ── Mensajes inline ────────────────────────*/
+.perfil-msg-ajax {
+    font-size: 0.68rem;
+    font-weight: 600;
+    margin-block-start: 1px;
+    display: block;
+    min-block-size: 0.8rem;
+}
+
+.perfil-msg-exito { color: #10b981; }
+.perfil-msg-error { color: #ef4444; }
+
+/* ── Texto fuerza contraseña ────────────────*/
+.perfil-texto-fuerza {
+    font-size: 0.68rem;
+    display: block;
+    margin-block-start: 1px;
+}
+
+.perfil-fuerza-mala      { color: #cc0000; }
+.perfil-fuerza-buena     { color: #ff9800; }
+.perfil-fuerza-excelente { color: #1b5e20; }
+
+/* =========================================
+   RESPONSIVE DEL PERFIL — por rangos de pantalla
+   =========================================
+   · ≥ 1400px  Pantallas grandes / 2K / 4K
+   · 1100–1399px HD estándar (1920×1080)  ← valores base
+   · 900–1099px  Portátiles 13-15" / HD bajo
+   · 769–899px   Tablets landscape
+   · ≤ 768px     Móvil — scroll de página libre
+   ========================================= */
+
+/* ── ≥ 1400px: pantallas grandes ────────────*/
+@media (min-width: 1400px) {
+    .perfil-col-foto { inline-size: 185px; padding: 1.2rem; }
+    .perfil-avatar   { inline-size: 95px; block-size: 95px; }
+    .perfil-col-campos { padding: 1.1rem 1.8rem; }
+    .perfil-col-campos .grid-formulario { gap: 9px 22px; }
+    .perfil-col-campos .input-con-icono input,
+    .perfil-col-campos .input-con-icono input[type="password"],
+    .perfil-col-campos .input-con-icono input[type="text"] {
+        padding: 7px 10px 7px 34px;
+        font-size: 0.87rem;
+    }
+    .perfil-col-campos .grupo-input label { font-size: 0.76rem; }
+}
+
+/* ── 900–1099px: portátiles pequeños ────────*/
+@media (min-width: 769px) and (max-width: 1099px) {
+    .contenedor-principal:has(.contenido-perfil) {
+        padding-block-start: 0.7rem;
+        padding-block-end: 0.7rem;
+        padding-inline: 1.5rem;
+    }
+    .perfil-col-foto    { inline-size: 145px; padding: 0.8rem; }
+    .perfil-avatar      { inline-size: 72px; block-size: 72px; }
+    .perfil-btn-foto    { font-size: 0.7rem; }
+    .perfil-col-campos  { padding: 0.75rem 1.1rem; }
+    .perfil-col-campos .grid-formulario { gap: 6px 14px; }
+    .perfil-col-campos .input-con-icono input,
+    .perfil-col-campos .input-con-icono input[type="password"],
+    .perfil-col-campos .input-con-icono input[type="text"] {
+        padding: 5px 8px 5px 28px;
+        font-size: 0.8rem;
+    }
+    .perfil-col-campos .input-con-icono svg {
+        inline-size: 13px;
+        block-size: 13px;
+        inset-inline-start: 8px;
+    }
+    .perfil-col-campos .grupo-input label { font-size: 0.7rem; }
+    .perfil-seccion-titulo                { font-size: 0.74rem; }
+    .perfil-bloque-confirmar              { max-inline-size: 400px; padding: 7px 11px; }
+    .perfil-col-campos .btn-guardar       { padding: 0.45rem 1rem; font-size: 0.82rem; }
+}
+
+/* ── 769–899px: tablets landscape ───────────*/
+@media (min-width: 769px) and (max-width: 899px) {
+    .contenedor-principal:has(.contenido-perfil) {
+        padding-inline: 1rem;
+        padding-block-start: 0.6rem;
+        padding-block-end: 0.6rem;
+    }
+    .perfil-col-foto   { inline-size: 130px; padding: 0.7rem; }
+    .perfil-avatar     { inline-size: 65px; block-size: 65px; }
+    .perfil-col-campos { padding: 0.65rem 0.9rem; }
+    .perfil-bloque-confirmar { max-inline-size: 100%; align-self: auto; }
+}
+
+/* ── ≤ 768px: móvil ─────────────────────────
+   Una columna. Scroll de página libre. */
+@media (max-width: 768px) {
+
+    .contenedor-principal:has(.contenido-perfil) {
+        overflow-y: auto;
+        display: block;
+        block-size: auto;
+        padding-block-end: 5rem;
+    }
+
+    .contenido-perfil {
+        flex: none;
+        block-size: auto;
+        overflow: visible;
+    }
+
+    .perfil-panel  { overflow: visible; border-radius: 12px; }
+
+    .perfil-form {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    .perfil-col-foto {
+        inline-size: 100%;
+        border-inline-end: none;
+        border-block-end: 1px solid var(--bg-light);
+        padding: 1.2rem 1rem;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 16px;
+    }
+
+    .perfil-avatar { inline-size: 70px; block-size: 70px; }
+
+    .perfil-col-campos {
+        overflow-y: visible;
+        padding: 1rem;
+    }
+
+    .perfil-col-campos .grid-formulario { gap: 10px 14px; }
+
+    .perfil-col-campos .input-con-icono input,
+    .perfil-col-campos .input-con-icono input[type="password"],
+    .perfil-col-campos .input-con-icono input[type="text"] {
+        padding: 9px 10px 9px 36px;
+        font-size: 0.9rem;
+    }
+
+    .perfil-col-campos .input-con-icono svg {
+        inline-size: 16px;
+        block-size: 16px;
+        inset-inline-start: 12px;
+    }
+
+    .perfil-bloque-confirmar {
+        max-inline-size: 100%;
+        align-self: auto;
+    }
+
+    .perfil-confirmar-input { max-inline-size: 100%; }
+
+    .perfil-col-campos .btn-guardar {
+        padding: 0.65rem 1.4rem;
+        font-size: 0.9rem;
+        inline-size: 100%;
+        justify-content: center;
     }
 }

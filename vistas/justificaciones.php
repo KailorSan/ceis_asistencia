@@ -9,7 +9,7 @@ if ($_SESSION['id_rol'] != 1 && $_SESSION['id_rol'] != 2) {
 }
 
 $nombre = $_SESSION['usuario'];
-$rol = $_SESSION['rol'];
+$rol    = $_SESSION['rol'];
 
 try {
     $sql = "SELECT a.id_asistencia, a.fecha, a.estado, a.motivo_justificacion, a.archivo_evidencia,
@@ -19,7 +19,7 @@ try {
             INNER JOIN cargos c ON p.id_cargo = c.id_cargo 
             WHERE a.estado_justificacion = 'Pendiente' 
             ORDER BY a.fecha DESC";
-    $stmt = $conexion->query($sql);
+    $stmt     = $conexion->query($sql);
     $pendientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $pendientes = [];
@@ -90,10 +90,9 @@ try {
 
             <div class="grid-justificaciones">
                 <?php foreach ($pendientes as $req): 
-                    // EXTRAEMOS EL TIPO DE INCIDENCIA Y ESTADO BASE PARA LA ALERTA DINÁMICA
                     $estado_base = trim(str_replace(['(Pendiente)', ' (Pendiente)'], '', $req['estado']));
                     
-                    $tipo_incidencia = 'Inasistencia'; // Por defecto
+                    $tipo_incidencia = 'Inasistencia';
                     if (strpos($req['motivo_justificacion'], '[Llegada Tardía]') !== false) {
                         $tipo_incidencia = 'Llegada Tardía';
                     } elseif (strpos($req['motivo_justificacion'], '[Salida Temprana]') !== false) {
@@ -173,7 +172,19 @@ try {
             });
         }
 
-        // FUNCIÓN PROCESAR CON ENCADENAMIENTO DE MODALES
+        // =====================================================================
+        // CORRECCIÓN ADVERTENCIA: Motivo de rechazo ahora viaja por POST (fetch)
+        // en lugar de GET en la URL. Esto evita que el motivo quede expuesto en:
+        //   - La barra de direcciones del navegador
+        //   - El historial del navegador
+        //   - Los logs del servidor web (access.log)
+        //
+        // CÓMO FUNCIONA AHORA:
+        //   1. El modal recoge el motivo del Director.
+        //   2. Se envía mediante fetch() con method POST al controlador.
+        //   3. El controlador procesa y redirige a justificaciones.php.
+        //   4. Las alertas de resultado siguen funcionando igual (vía sesión).
+        // =====================================================================
         function procesar(id, accion, tipo, estado_base) {
             let textoAlerta = '';
             
@@ -211,13 +222,16 @@ try {
             }).then((result) => {
                 if (result.isConfirmed) {
                     
-                    // SI ES RECHAZAR, DISPARAMOS EL SEGUNDO MODAL PIDIENDO EL MOTIVO
                     if (accion === 'rechazar') {
                         Swal.fire({
                             title: 'Motivo del Rechazo',
                             text: 'Por favor, indica a continuación por qué se rechaza esta justificación:',
                             input: 'textarea',
                             inputPlaceholder: 'Escribe el motivo aquí...',
+                            inputAttributes: {
+                                maxlength: '250',
+                                'aria-label': 'Motivo del rechazo'
+                            },
                             showCancelButton: true,
                             confirmButtonColor: '#ef4444',
                             cancelButtonColor: '#64748b',
@@ -232,17 +246,31 @@ try {
                             }
                         }).then((motivoResult) => {
                             if (motivoResult.isConfirmed) {
-                                // Codificamos el texto para enviarlo por URL de forma segura
-                                let motivoUrl = encodeURIComponent(motivoResult.value);
-                                window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion + '&motivo_rechazo=' + motivoUrl;
+                                // CAMBIO: Enviamos el motivo por POST usando fetch()
+                                // en lugar de window.location.href con parámetros GET.
+                                const formData = new FormData();
+                                formData.append('id',             id);
+                                formData.append('accion',         accion);
+                                formData.append('motivo_rechazo', motivoResult.value);
+
+                                fetch('../controladores/ControladorProcesarJustificacion.php', {
+                                    method: 'POST',
+                                    body: formData
+                                }).then(() => {
+                                    // El controlador guarda la alerta en sesión y redirige;
+                                    // recargamos la página para que PHP muestre esa alerta.
+                                    window.location.href = '../vistas/justificaciones.php';
+                                }).catch(() => {
+                                    Swal.fire('Error', 'No se pudo conectar con el servidor. Intenta de nuevo.', 'error');
+                                });
                             }
                         });
                     } else {
-                        // SI ES APROBAR, PROCEDE NORMALMENTE
+                        // Las aprobaciones siguen por GET (sin datos sensibles en la URL)
                         window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion;
                     }
                 }
-            })
+            });
         }
     </script>
 

@@ -4,9 +4,9 @@ require_once '../configuracion/conexion.php';
 
 date_default_timezone_set('America/Caracas');
 
-$nombre = $_SESSION['usuario'];
-$rol = $_SESSION['rol'];
-$id_rol = $_SESSION['id_rol'];
+$nombre    = $_SESSION['usuario'];
+$rol       = $_SESSION['rol'];
+$id_rol    = $_SESSION['id_rol'];
 $id_usuario = $_SESSION['id_usuario'];
 
 $titulo_tarjeta_1 = "Cargando..."; $valor_tarjeta_1 = 0;
@@ -15,13 +15,20 @@ $titulo_tarjeta_3 = "Cargando..."; $valor_tarjeta_3 = 0;
 
 try {
     $hora_actual_sec = date('H:i:s');
-    $stmt_conf_limit = $conexion->query("SELECT hora_entrada_general, hora_salida_general FROM configuracion WHERE id_config = 1");
-    $conf_limit = $stmt_conf_limit->fetch(PDO::FETCH_ASSOC);
+    $dia_semana_hoy  = date('N');
+    $stmt_conf_global = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
+    $config_global    = $stmt_conf_global->fetch(PDO::FETCH_ASSOC) ?: [
+        'hora_entrada_general' => '07:00:00',
+        'hora_salida_general'  => '13:00:00',
+        'minutos_tolerancia'   => 15
+    ];
 
-    if ($conf_limit) {
-        $dia_semana_hoy = date('N'); 
-        
-        if ($dia_semana_hoy <= 5) {
+    if ($dia_semana_hoy <= 5) {
+
+        $clave_flag_faltas = 'auto_faltas_ejecutado_' . date('Y-m-d');
+
+        if (empty($_SESSION[$clave_flag_faltas])) {
+
             $sql_ausentes = "SELECT p.id_personal, p.hora_entrada_personalizada, p.hora_salida_personalizada 
                              FROM personal p
                              INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
@@ -31,14 +38,16 @@ try {
             $ausentes = $conexion->query($sql_ausentes)->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($ausentes as $aus) {
-                $h_entrada_p = !empty($aus['hora_entrada_personalizada']) ? $aus['hora_entrada_personalizada'] : $conf_limit['hora_entrada_general'];
-                $h_salida_p = !empty($aus['hora_salida_personalizada']) ? $aus['hora_salida_personalizada'] : $conf_limit['hora_salida_general'];
+                $h_entrada_p = !empty($aus['hora_entrada_personalizada']) ? $aus['hora_entrada_personalizada'] : $config_global['hora_entrada_general'];
+                $h_salida_p  = !empty($aus['hora_salida_personalizada'])  ? $aus['hora_salida_personalizada']  : $config_global['hora_salida_general'];
 
                 if ($hora_actual_sec > $h_salida_p) {
                     $ins_falta = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, estado) VALUES (?, CURDATE(), ?, 'Falta')");
                     $ins_falta->execute([$aus['id_personal'], $h_entrada_p]);
                 }
             }
+
+            $_SESSION[$clave_flag_faltas] = true;
         }
 
         $sql_incompletos = "SELECT a.id_asistencia, a.estado, a.fecha, p.hora_salida_personalizada 
@@ -53,12 +62,12 @@ try {
         $fecha_hoy_comparar = date('Y-m-d');
 
         foreach ($incompletos as $inc) {
-            $h_salida_p = !empty($inc['hora_salida_personalizada']) ? $inc['hora_salida_personalizada'] : $conf_limit['hora_salida_general'];
+            $h_salida_p    = !empty($inc['hora_salida_personalizada']) ? $inc['hora_salida_personalizada'] : $config_global['hora_salida_general'];
             $limite_salida = date('H:i:s', strtotime("+60 minutes", strtotime($h_salida_p)));
 
             if ($inc['fecha'] < $fecha_hoy_comparar || ($inc['fecha'] == $fecha_hoy_comparar && $hora_actual_sec > $limite_salida)) {
                 $estado_actual = $inc['estado'];
-                $nuevo_estado = 'Salida Irregular';
+                $nuevo_estado  = 'Salida Irregular';
                 
                 if (strpos($estado_actual, 'Retraso') !== false) {
                     $nuevo_estado = 'Retraso y Salida Irregular';
@@ -74,28 +83,28 @@ try {
 
     $stmt_emp = $conexion->prepare("SELECT id_personal, hora_entrada_personalizada, hora_salida_personalizada FROM personal WHERE id_usuario = :id_user");
     $stmt_emp->execute([':id_user' => $id_usuario]);
-    $empleado = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+    $empleado   = $stmt_emp->fetch(PDO::FETCH_ASSOC);
     $id_personal = $empleado ? $empleado['id_personal'] : null;
 
-    $stmt_conf = $conexion->query("SELECT hora_entrada_general, hora_salida_general, minutos_tolerancia FROM configuracion WHERE id_config = 1");
-    $config = $stmt_conf->fetch(PDO::FETCH_ASSOC) ?: ['hora_entrada_general' => '07:00:00', 'hora_salida_general' => '13:00:00', 'minutos_tolerancia' => 15];
+    // Reutilizamos $config_global (no hay segunda query a configuracion)
+    $config = $config_global;
 
-    $asistencia_hoy = false;
-    $ya_salio = false;
-    $hora_entrada_registrada = "";
-    $ya_justifico_entrada = false;
-    $ya_justifico_salida = false;
+    $asistencia_hoy           = false;
+    $ya_salio                 = false;
+    $hora_entrada_registrada  = "";
+    $ya_justifico_entrada     = false;
+    $ya_justifico_salida      = false;
 
-    $es_fin_semana = (date('N') >= 6); 
+    $es_fin_semana = ($dia_semana_hoy >= 6);
 
-    $hora_esperada = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
-    $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada'] : $config['hora_salida_general'];
-    $tolerancia = $config['minutos_tolerancia'];
+    $hora_esperada       = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
+    $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada']  : $config['hora_salida_general'];
+    $tolerancia          = $config['minutos_tolerancia'];
 
-    $hora_actual = date('H:i:s');
+    $hora_actual   = date('H:i:s');
     $limite_entrada = date('H:i:s', strtotime("+$tolerancia minutes", strtotime($hora_esperada)));
     
-    $es_tarde = (strtotime($hora_actual) > strtotime($limite_entrada));
+    $es_tarde           = (strtotime($hora_actual) > strtotime($limite_entrada));
     $es_temprano_salida = (strtotime($hora_actual) < strtotime($hora_salida_esperada));
 
     if ($id_personal) {
@@ -105,7 +114,7 @@ try {
 
         if ($registro_hoy) {
             if ($registro_hoy['hora_entrada'] !== null) {
-                $asistencia_hoy = true;
+                $asistencia_hoy          = true;
                 $hora_entrada_registrada = $registro_hoy['hora_entrada'];
                 if ($registro_hoy['hora_salida'] !== null) {
                     $ya_salio = true; 
@@ -131,15 +140,37 @@ try {
         $titulo_tarjeta_2 = "Asistencias Hoy";
         $stmt2 = $conexion->query("SELECT COUNT(*) FROM asistencias WHERE fecha = CURDATE() AND hora_entrada IS NOT NULL");
         $valor_tarjeta_2 = $stmt2->fetchColumn();
-        
-        $titulo_tarjeta_3 = "Inasistencias Hoy";
-        $valor_tarjeta_3 = $valor_tarjeta_1 - $valor_tarjeta_2; 
-        if ($valor_tarjeta_3 < 0) $valor_tarjeta_3 = 0; 
 
-        // Métricas Director
-        $stmt_retrasos = $conexion->query("SELECT COUNT(*) FROM asistencias WHERE fecha = CURDATE() AND estado LIKE '%Retraso%'");
-        $retrasos_hoy = $stmt_retrasos->fetchColumn();
-        $puntuales_hoy = $valor_tarjeta_2 - $retrasos_hoy;
+        $titulo_tarjeta_3 = "Inasistencias Hoy";
+        $stmt_total_activos = $conexion->query(
+            "SELECT COUNT(*) FROM personal p 
+             INNER JOIN usuarios u ON p.id_usuario = u.id_usuario 
+             WHERE u.estado = 'Activo' AND p.fecha_ingreso <= CURDATE()"
+        );
+        $total_activos_hoy = (int) $stmt_total_activos->fetchColumn();
+
+        $stmt_no_ausentes = $conexion->query(
+            "SELECT COUNT(*) FROM asistencias 
+             WHERE fecha = CURDATE() 
+             AND (hora_entrada IS NOT NULL OR estado = 'Justificado')"
+        );
+        $no_ausentes_hoy = (int) $stmt_no_ausentes->fetchColumn();
+
+        $valor_tarjeta_3 = max(0, $total_activos_hoy - $no_ausentes_hoy);
+
+        $stmt_retrasos = $conexion->query(
+            "SELECT COUNT(*) FROM asistencias 
+             WHERE fecha = CURDATE() 
+             AND (
+                 estado LIKE '%Retraso%'
+                 OR (
+                     motivo_justificacion LIKE '%[Llegada Tardía]%' 
+                     AND estado_justificacion = 'Pendiente'
+                 )
+             )"
+        );
+        $retrasos_hoy  = $stmt_retrasos->fetchColumn();
+        $puntuales_hoy = max(0, (int)$valor_tarjeta_2 - (int)$retrasos_hoy);
 
         $stmt_pendientes = $conexion->query("SELECT COUNT(*) FROM asistencias WHERE estado_justificacion = 'Pendiente'");
         $just_pendientes = $stmt_pendientes->fetchColumn();
@@ -156,17 +187,37 @@ try {
         $valor_tarjeta_2 = $stmt2->fetchColumn();
         
         $titulo_tarjeta_3 = "Mis Retrasos (Mes)";
-        $stmt3 = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estado LIKE '%Retraso%'");
+        $stmt3 = $conexion->prepare(
+            "SELECT COUNT(*) FROM asistencias 
+             WHERE id_personal = :id 
+             AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
+             AND (
+                 estado LIKE '%Retraso%'
+                 OR (
+                     motivo_justificacion LIKE '%[Llegada Tardía]%' 
+                     AND estado_justificacion = 'Pendiente'
+                 )
+             )"
+        );
         $stmt3->execute([':id' => $id_personal]);
         $valor_tarjeta_3 = $stmt3->fetchColumn();
 
-        // Métricas Empleado
         $stmt_faltas = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE id_personal = :id AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estado = 'Falta'");
         $stmt_faltas->execute([':id' => $id_personal]);
         $faltas_injustificadas = $stmt_faltas->fetchColumn();
     }
 } catch (PDOException $e) {
     $valor_tarjeta_1 = "-"; $valor_tarjeta_2 = "-"; $valor_tarjeta_3 = "-";
+}
+
+// =====================================================================
+// CORRECCIÓN BUG 4 (parte PHP): Generamos el token CSRF aquí.
+// Se genera una sola vez por sesión (o se regenera si no existe).
+// El mismo token se inyecta como campo oculto en el formulario de
+// justificación más abajo.
+// =====================================================================
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -187,14 +238,6 @@ try {
     </script>
 </head>
 <body>
-
-    <div id="toastContainer" class="toast-notificacion">
-        <div class="toast-icono" id="toastIcon"></div>
-        <div class="toast-contenido">
-            <h4 id="toastTitle"></h4>
-            <p id="toastMessage"></p>
-        </div>
-    </div>
 
     <?php $pagina_activa = 'inicio'; require_once 'componentes/sidebar.php'; ?>
 
@@ -237,6 +280,7 @@ try {
                                     ¡Espera a tu salida!
                                 </button>
                             <?php else: ?>
+
                                 <form action="../controladores/ControladorAsistencia.php" method="POST">
                                     <input type="hidden" name="accion" value="marcar_salida">
                                     <button type="submit" class="btn-marcar-salida" id="btnSalida" <?php echo ($es_temprano_salida && $ya_justifico_salida) ? 'style="background-color: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);"' : ''; ?>>
@@ -245,12 +289,14 @@ try {
                                     </button>
                                 </form>
                             <?php endif; ?>
+
                         <?php else: ?>
                             <div class="mensaje-jornada-completada">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Jornada Completada por hoy
+                                <span class="texto-jornada">Jornada Completada<br>¡Hasta la próxima!</span>
                             </div>
                         <?php endif; ?>
+
                         <button type="button" class="btn-justificacion" onclick="abrirModalJustificacion()">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             Crear Justificación
@@ -264,7 +310,7 @@ try {
                             echo "Los reportes y módulos están habilitados, pero el registro de personal y justificaciones se encuentra pausado.";
                         } else {
                             if (!$asistencia_hoy) {
-                                if($es_tarde && !$ya_justifico_entrada) {
+                                if ($es_tarde && !$ya_justifico_entrada) {
                                     echo "Has excedido tu tiempo límite de llegada. Por favor, <strong>justifica tu retraso</strong> para habilitar el botón de entrada.";
                                 } elseif ($es_tarde && $ya_justifico_entrada) {
                                     echo "Justificación enviada a la Dirección. <strong>Ahora debes registrar tu entrada físicamente.</strong>";
@@ -298,7 +344,6 @@ try {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="banner-pausa-icono">
                         <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM9 8.25a.75.75 0 0 0-.75.75v6c0 .414.336.75.75.75h.75a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75H9Zm5.25 0a.75.75 0 0 0-.75.75v6c0 .414.336.75.75.75H15a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75h-.75Z" clip-rule="evenodd" />
                     </svg>
-
                     <div class="banner-pausa-texto">
                         <h3>Estadísticas en Pausa</h3>
                         <p>El monitoreo gráfico en tiempo real se reactivará el próximo día hábil.</p>
@@ -324,6 +369,13 @@ try {
             
             <form action="../controladores/ControladorJustificacion.php" method="POST" enctype="multipart/form-data" id="formJustificacion" novalidate>
                 <input type="hidden" name="id_personal" value="<?php echo $id_personal; ?>">
+
+                <!-- =====================================================================
+                     CORRECCIÓN BUG 4 (parte HTML): Token CSRF inyectado en el formulario.
+                     El controlador ControladorJustificacion.php lo valida con hash_equals()
+                     antes de procesar cualquier dato.
+                ===================================================================== -->
+                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                 
                 <p style="font-size: 0.85rem; margin-block-end: 15px; color: var(--text-color);">Detalla el motivo de tu incidencia y adjunta una prueba si es necesario.</p>
 
@@ -378,29 +430,29 @@ try {
     <script>
         const html = document.documentElement;
 
-        // --- 1. LÓGICA DE NOTIFICACIÓN TOAST ---
-        function mostrarToast(tipo, titulo, mensaje) {
-            const toast = document.getElementById('toastContainer');
-            const icon = document.getElementById('toastIcon');
-            const title = document.getElementById('toastTitle');
-            const msg = document.getElementById('toastMessage');
-
-            toast.className = `toast-notificacion ${tipo}`;
-            title.textContent = titulo;
-            msg.innerHTML = mensaje;
-
-            if (tipo === 'success') {
-                icon.innerHTML = '<svg class="toast-success-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
-            } else {
-                icon.innerHTML = '<svg class="toast-error-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+        // --- 1. LÓGICA DE NOTIFICACIÓN SWEETALERT2 (TOP BAR) ---
+        const ToastSwal = Swal.mixin({
+            toast: true,
+            position: 'top',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
             }
+        });
 
-            toast.classList.add('mostrar');
-            setTimeout(() => { toast.classList.remove('mostrar'); }, 5000);
+        function mostrarToast(tipo, titulo, mensaje) {
+            ToastSwal.fire({
+                icon: tipo === 'success' ? 'success' : 'error',
+                title: titulo,
+                html: mensaje
+            });
         }
 
         <?php if(isset($_SESSION['alerta_principal'])): 
-            $tipo_t = $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error';
+            $tipo_t   = $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error';
             $titulo_t = $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : 'Aviso';
         ?>
             mostrarToast('<?php echo $tipo_t; ?>', '<?php echo $titulo_t; ?>', '<?php echo $_SESSION['alerta_principal']['mensaje']; ?>');
@@ -410,7 +462,7 @@ try {
         // --- 2. VALIDACIÓN FRONTEND FORMULARIO ---
         const inputMotivo = document.getElementById('modal_j_motivo');
         const errorMotivo = document.getElementById('error-motivo');
-        const formJ = document.getElementById('formJustificacion');
+        const formJ       = document.getElementById('formJustificacion');
 
         if(inputMotivo) {
             inputMotivo.addEventListener('input', function() {
@@ -428,13 +480,13 @@ try {
             formJ.addEventListener('submit', function(e) {
                 let errores = [];
                 const valFecha = document.getElementById('modal_j_fecha').value;
-                const valTipo = document.getElementById('modal_j_tipo').value;
+                const valTipo  = document.getElementById('modal_j_tipo').value;
                 
                 inputMotivo.classList.remove('input-error');
                 errorMotivo.style.display = 'none';
 
                 if (!valFecha) errores.push("• Debes seleccionar la fecha de la incidencia.");
-                if (!valTipo) errores.push("• Debes seleccionar un tipo de incidencia.");
+                if (!valTipo)  errores.push("• Debes seleccionar un tipo de incidencia.");
                 if (inputMotivo.value.trim().length < 15) {
                     inputMotivo.classList.add('input-error');
                     errorMotivo.style.display = 'block';
@@ -449,9 +501,9 @@ try {
         }
 
         // --- 3. MODALES ---
-        const modalOverlay = document.getElementById('modalOverlay');
+        const modalOverlay      = document.getElementById('modalOverlay');
         const modalJustificacion = document.getElementById('modalJustificacion');
-        const fechaInput = document.getElementById('modal_j_fecha');
+        const fechaInput        = document.getElementById('modal_j_fecha');
 
         window.abrirModalJustificacion = function(tipo = '') {
             const hoy = new Date();
@@ -462,13 +514,29 @@ try {
             }
             const selectTipo = document.getElementById('modal_j_tipo');
             if(tipo) { selectTipo.value = tipo; } else { selectTipo.selectedIndex = 0; }
+
+            const motivo   = document.getElementById('modal_j_motivo');
+            const errorMot = document.getElementById('error-motivo');
+            if(motivo)   { motivo.value = ''; motivo.classList.remove('input-error'); }
+            if(errorMot) { errorMot.style.display = 'none'; }
+            document.getElementById('texto-archivo').textContent = 'Seleccionar archivo...';
+            const archivoInp = document.getElementById('modal_j_archivo');
+            if(archivoInp) archivoInp.value = '';
+
+            modalJustificacion.scrollTop = 0;
+            modalJustificacion.classList.remove('cerrando');
+            modalOverlay.classList.remove('cerrando');
             modalOverlay.classList.add('activo');
             modalJustificacion.classList.add('activo');
         };
 
         window.cerrarModales = function() {
-            modalOverlay.classList.remove('activo');
-            modalJustificacion.classList.remove('activo');
+            modalJustificacion.classList.add('cerrando');
+            modalOverlay.classList.add('cerrando');
+            setTimeout(function() {
+                modalOverlay.classList.remove('activo', 'cerrando');
+                modalJustificacion.classList.remove('activo', 'cerrando');
+            }, 220);
         };
 
         if(modalOverlay) {
@@ -476,6 +544,12 @@ try {
                 if (e.target === modalOverlay) cerrarModales();
             });
         }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('activo')) {
+                cerrarModales();
+            }
+        });
 
         const archivoInput = document.getElementById('modal_j_archivo');
         if (archivoInput) {
@@ -488,7 +562,6 @@ try {
         // --- 4. GRÁFICAS Y MODO OSCURO (DOM LISTO) ---
         document.addEventListener('DOMContentLoaded', function() {
             
-            // A. MODO OSCURO GLOBAL Y EN GRÁFICAS
             const btnCambiarTema = document.getElementById('btnCambiarTema');
             
             if (btnCambiarTema) {
@@ -498,12 +571,12 @@ try {
                     this.classList.add('girando'); 
                     
                     const temaActual = html.getAttribute('data-theme');
-                    const nuevoTema = temaActual === 'light' ? 'dark' : 'light';
+                    const nuevoTema  = temaActual === 'light' ? 'dark' : 'light';
                     html.setAttribute('data-theme', nuevoTema);
                     localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
 
                     const nuevoColorTexto = nuevoTema === 'dark' ? '#cbd5e1' : '#64748b';
-                    const nuevoColorGrid = nuevoTema === 'dark' ? '#334155' : '#e2e8f0';
+                    const nuevoColorGrid  = nuevoTema === 'dark' ? '#334155' : '#e2e8f0';
 
                     if (typeof Chart !== 'undefined') {
                         for (let id in Chart.instances) {
@@ -535,18 +608,17 @@ try {
                 const esFinSemana = <?php echo $es_fin_semana ? 'true' : 'false'; ?>;
                 if (esFinSemana) return; 
 
-                const rolUser = <?php echo $id_rol; ?>;
-                const colorTexto = html.getAttribute('data-theme') === 'dark' ? '#cbd5e1' : '#64748b';
-                const colorGrid = html.getAttribute('data-theme') === 'dark' ? '#334155' : '#e2e8f0';
+                const rolUser     = <?php echo $id_rol; ?>;
+                const colorTexto  = html.getAttribute('data-theme') === 'dark' ? '#cbd5e1' : '#64748b';
+                const colorGrid   = html.getAttribute('data-theme') === 'dark' ? '#334155' : '#e2e8f0';
                 
-                // Parseo estricto para evitar fallos de sintaxis en JS
                 const t1 = parseInt("<?php echo is_numeric($valor_tarjeta_1) ? $valor_tarjeta_1 : 0; ?>") || 0; 
                 const t2 = parseInt("<?php echo is_numeric($valor_tarjeta_2) ? $valor_tarjeta_2 : 0; ?>") || 0; 
                 const t3 = parseInt("<?php echo is_numeric($valor_tarjeta_3) ? $valor_tarjeta_3 : 0; ?>") || 0; 
 
-                const retrasosHoy = parseInt("<?php echo isset($retrasos_hoy) && is_numeric($retrasos_hoy) ? $retrasos_hoy : 0; ?>") || 0;
-                const puntualesHoy = parseInt("<?php echo isset($puntuales_hoy) && is_numeric($puntuales_hoy) ? $puntuales_hoy : 0; ?>") || 0;
-                const justPendientes = parseInt("<?php echo isset($just_pendientes) && is_numeric($just_pendientes) ? $just_pendientes : 0; ?>") || 0;
+                const retrasosHoy        = parseInt("<?php echo isset($retrasos_hoy) && is_numeric($retrasos_hoy) ? $retrasos_hoy : 0; ?>") || 0;
+                const puntualesHoy       = parseInt("<?php echo isset($puntuales_hoy) && is_numeric($puntuales_hoy) ? $puntuales_hoy : 0; ?>") || 0;
+                const justPendientes     = parseInt("<?php echo isset($just_pendientes) && is_numeric($just_pendientes) ? $just_pendientes : 0; ?>") || 0;
                 const faltasInjustificadas = parseInt("<?php echo isset($faltas_injustificadas) && is_numeric($faltas_injustificadas) ? $faltas_injustificadas : 0; ?>") || 0;
 
                 let d_labels_1 = [], d_data_1 = [], d_colors_1 = [];
@@ -559,34 +631,34 @@ try {
                     document.getElementById('tituloGrafico3').innerText = "Calidad de Llegada Hoy";
 
                     d_labels_1 = ['Presentes', 'Ausentes/Faltas'];
-                    d_data_1 = [t2, t3];
+                    d_data_1   = [t2, t3];
                     d_colors_1 = ['#3b82f6', '#ef4444'];
 
                     d_labels_2 = ['Pendientes (Revisar)', 'Aprobadas'];
-                    d_data_2 = [justPendientes, t2]; 
+                    d_data_2   = [justPendientes, t2]; 
                     d_colors_2 = ['#f59e0b', '#10b981'];
 
                     d_labels_3 = ['Llegaron Puntuales', 'Llegaron Tarde'];
-                    d_data_3 = [puntualesHoy, retrasosHoy];
+                    d_data_3   = [puntualesHoy, retrasosHoy];
                     d_colors_3 = ['#10b981', '#f59e0b'];
                 } else {
                     document.getElementById('tituloGrafico1').innerText = "Mis Llegadas (Mes)";
                     document.getElementById('tituloGrafico2').innerText = "Balance del Mes";
                     document.getElementById('tituloGrafico3').innerText = "Mis Inasistencias (Mes)";
 
-                    const puntuales = (t1 - t3) > 0 ? (t1 - t3) : 0;
+                    const puntuales   = (t1 - t3) > 0 ? (t1 - t3) : 0;
                     const totalFaltas = t2 + faltasInjustificadas;
 
                     d_labels_1 = ['Llegadas Puntuales', 'Retrasos'];
-                    d_data_1 = [puntuales, t3];
+                    d_data_1   = [puntuales, t3];
                     d_colors_1 = ['#10b981', '#f59e0b'];
 
                     d_labels_2 = ['Días Asistidos', 'Total Faltas'];
-                    d_data_2 = [t1, totalFaltas];
+                    d_data_2   = [t1, totalFaltas];
                     d_colors_2 = ['#3b82f6', '#ef4444'];
 
                     d_labels_3 = ['Faltas Justificadas', 'Faltas Sin Justificar'];
-                    d_data_3 = [t2, faltasInjustificadas];
+                    d_data_3   = [t2, faltasInjustificadas];
                     d_colors_3 = ['#8b5cf6', '#ef4444'];
                 }
 

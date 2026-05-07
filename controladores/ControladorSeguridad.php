@@ -17,6 +17,22 @@ $carpeta_respaldos = '../respaldos/';
 $fecha_hoy = date('d-m-Y');
 $archivo_limites = $carpeta_respaldos . 'limites_diarios.json';
 
+// ── TOKEN CSRF ──────────────────────────────────────────
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$acciones_post_requeridas = ['restaurar', 'subir_externo'];
+if (in_array($accion, $acciones_post_requeridas)) {
+    $token_recibido = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $token_recibido)) {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Solicitud no válida. Token de seguridad incorrecto.'];
+        header("Location: ../vistas/seguridad.php");
+        exit();
+    }
+}
+// ────────────────────────────────────────────────────────
+
 if (!file_exists($carpeta_respaldos)) {
     mkdir($carpeta_respaldos, 0777, true);
 }
@@ -187,24 +203,49 @@ else if ($accion === 'restaurar') {
         exit();
     }
 
-    $archivo = $_POST['archivo'] ?? '';
+    $archivo_raw     = $_POST['archivo'] ?? '';
     $password_recibida = $_POST['password_admin'] ?? '';
     $id_usuario_actual = $_SESSION['id_usuario'];
-    
+
+    // ── VALIDACIÓN DE CONTRASEÑA (frontend + backend) ──
+    if (strlen($password_recibida) < 6) {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.'];
+        header("Location: ../vistas/seguridad.php");
+        exit();
+    }
+
+    // ── VALIDACIÓN DEL NOMBRE DE ARCHIVO (anti path-traversal) ──
+    // basename() elimina rutas, luego verificamos extensión y que el archivo
+    // realmente exista dentro de la carpeta permitida (realpath).
+    $archivo_seguro  = basename($archivo_raw);
+    $extension_arch  = strtolower(pathinfo($archivo_seguro, PATHINFO_EXTENSION));
+
+    if ($extension_arch !== 'sql') {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Archivo no válido: solo se permiten archivos .sql'];
+        header("Location: ../vistas/seguridad.php");
+        exit();
+    }
+
+    $carpeta_real = realpath($carpeta_respaldos);
+    $ruta_archivo = $carpeta_real . DIRECTORY_SEPARATOR . $archivo_seguro;
+
+    // Confirmar que la ruta resuelta sigue dentro de la carpeta permitida
+    if (strpos(realpath($ruta_archivo) ?: '', $carpeta_real) !== 0) {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Ruta de archivo no permitida.'];
+        header("Location: ../vistas/seguridad.php");
+        exit();
+    }
+
     try {
-        $stmt_pass = $conexion->prepare("SELECT password FROM usuarios WHERE id_usuario = :id");
+        $stmt_pass = $conexion->prepare("SELECT password FROM usuarios WHERE id_usuario = :id LIMIT 1");
         $stmt_pass->execute([':id' => $id_usuario_actual]);
         $hash_db = $stmt_pass->fetchColumn();
 
-        $es_valida = false;
-        if (password_verify($password_recibida, $hash_db)) { $es_valida = true; } 
-        else if ($hash_db === md5($password_recibida)) { $es_valida = true; } 
-        else if ($hash_db === $password_recibida) { $es_valida = true; }
+        // ── SOLO password_verify() — sin fallback MD5 ni texto plano ──
+        if (!$hash_db || !password_verify($password_recibida, $hash_db)) {
 
-        if (!$hash_db || !$es_valida) {
-            
-            // NUEVO: Registrar INTENTO FALLIDO en Bitácora
-            ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Intento de Restauración Fallido', "Contraseña incorrecta al intentar restaurar: " . basename($archivo));
+            // Registrar intento fallido
+            ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Intento de Restauración Fallido', "Contraseña incorrecta al intentar restaurar: " . $archivo_seguro);
 
             $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Contraseña incorrecta. Restauración cancelada por seguridad.'];
             header("Location: ../vistas/seguridad.php");
@@ -215,8 +256,6 @@ else if ($accion === 'restaurar') {
         header("Location: ../vistas/seguridad.php");
         exit();
     }
-
-    $ruta_archivo = $carpeta_respaldos . basename($archivo);
 
     if (file_exists($ruta_archivo) && is_file($ruta_archivo)) {
         try {
@@ -229,6 +268,9 @@ else if ($accion === 'restaurar') {
 
             $limites['restaurados']++;
             file_put_contents($archivo_limites, json_encode($limites));
+
+            // Registrar restauración exitosa en bitácora
+            ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Restauración Exitosa', "Restauró la base de datos con: $archivo_seguro");
 
             $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Autenticación exitosa. Sistema restaurado correctamente.'];
         } catch (Exception $e) {

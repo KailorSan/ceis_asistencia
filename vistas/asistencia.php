@@ -2,6 +2,11 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
+// Validar si es fin de semana (Sábado = 6, Domingo = 7)
+date_default_timezone_set('America/Caracas');
+$dia_semana = date('N');
+$es_fin_de_semana = ($dia_semana == 6 || $dia_semana == 7);
+
 $nombre = $_SESSION['usuario'];
 $rol = $_SESSION['rol'];
 $id_rol = $_SESSION['id_rol'];
@@ -103,75 +108,94 @@ if ($es_admin) {
                     </div>
                 </div>
 
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-block-end: 2rem; align-items: stretch; justify-content: center;">
-                    
-                    <div class="tarjeta-perfil" style="flex: 0 0 auto; width: 100%; max-inline-size: 320px; margin: 0 auto;"> 
-                        <div class="banner-tarjeta" style="block-size: 70px;"></div>
-                        <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
-                            <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($mis_datos['foto_perfil']); ?>" alt="Mi Foto">
-                            <?php 
-                                if (!empty($mis_datos['asistio_hoy'])) {
-                                    echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($mis_datos['asistio_hoy'])) . ')"></span>';
-                                } else {
-                                    echo '<span class="indicador-estatus estatus-ausente" title="Aún no has marcado entrada hoy"></span>';
-                                }
-                            ?>
-                        </div>
-                        <div class="info-perfil" style="padding-block-start: 10px;">
-                            <h3 class="nombre-empleado"><?php echo htmlspecialchars($mis_datos['nombres'] . ' ' . $mis_datos['apellidos']); ?></h3>
-                            <span class="cargo-empleado"><?php echo htmlspecialchars($mis_datos['nombre_cargo']); ?></span>
-                            
-                            <div class="acciones-perfil">
-                                <button class="btn-editar-horario" onclick="abrirCalendario(<?php echo $mi_id_personal; ?>, 'Mi Asistencia', false)" style="inline-size: 100%; background-color: var(--primary-color); color: white;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: white; inline-size: 18px; block-size: 18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    Ver mi calendario
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+    <div class="contenedor-widgets-asistencia">
+    
+    <div class="tarjeta-perfil perfil-widget-min"> 
+        <div class="banner-tarjeta" style="block-size: 70px;"></div>
+        <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
+            <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($mis_datos['foto_perfil']); ?>" alt="Mi Foto">
+            <?php 
+                if (!empty($mis_datos['asistio_hoy'])) {
+                    echo '<span class="indicador-estatus estatus-presente" title="Asistencia marcada (' . date('h:i A', strtotime($mis_datos['asistio_hoy'])) . ')"></span>';
+                } else {
+                    echo '<span class="indicador-estatus estatus-ausente" title="Aún no has marcado entrada hoy"></span>';
+                }
+            ?>
+        </div>
+        <div class="info-perfil" style="padding-block-start: 10px;">
+            <h3 class="nombre-empleado"><?php echo htmlspecialchars($mis_datos['nombres'] . ' ' . $mis_datos['apellidos']); ?></h3>
+            <span class="cargo-empleado"><?php echo htmlspecialchars($mis_datos['nombre_cargo']); ?></span>
+            
+            <div class="acciones-perfil">
+                <button class="btn-editar-horario" onclick="abrirCalendario(<?php echo $mi_id_personal; ?>, 'Mi Asistencia', false)" style="inline-size: 100%; background-color: var(--primary-color); color: white;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    Ver mi calendario
+                </button>
+            </div>
+        </div>
+    </div>
 
-                    <div style="flex: 1 1 350px; max-inline-size: 500px; display: flex; flex-direction: column; justify-content: center; background: var(--navbar-bg); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); padding: 1.5rem 2rem; position: relative; overflow: hidden; border-left: 5px solid var(--primary-color); margin: 0 auto;">
-                        <svg style="position: absolute; right: -10px; bottom: 10px; width: 150px; height: 150px; color: var(--primary-color); opacity: 0.05; z-index: 0; pointer-events: none;" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M13 7h-2v5.414l3.293 3.293 1.414-1.414L13 11.586z"/></svg>
+    <?php if ($es_fin_de_semana): ?>
+        <div class="fin-semana-widget">
+            <svg xmlns="http://www.w3.org/2000/svg" class="fin-semana-icono" width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="13" r="8"></circle>
+                <polyline points="11 9 11 13 14 15"></polyline>
+                <path d="M15 3h4l-4 5h4"></path>
+                <path d="M21 7h3l-3 4h3" stroke-width="1.5"></path>
+            </svg>
+            <h2 class="fin-semana-titulo">¡Feliz Fin de Semana!</h2>
+            <p class="fin-semana-texto">El módulo de asistencia en tiempo real está en pausa hasta el lunes.</p>
+        </div>
+    <?php else: ?>
+        <div class="reloj-widget">
+            <svg class="reloj-bg-icon" width="150" height="150" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M13 7h-2v5.414l3.293 3.293 1.414-1.414L13 11.586z"/></svg>
 
-                        <div style="position: relative; z-index: 1;">
-                            <p id="reloj-saludo" style="color: var(--text-color); font-weight: 600; font-size: 1.05rem; margin-bottom: 2px;">Cargando reloj...</p>
-                            <h2 id="reloj-hora" style="font-size: clamp(2.2rem, 3.5vw, 3.4rem); font-weight: 800; color: var(--primary-color); letter-spacing: -2px; line-height: 1; margin-bottom: 8px; font-variant-numeric: tabular-nums;">--:--:--</h2>
-                            <p style="color: var(--text-color); font-weight: 500; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span id="reloj-fecha">Cargando fecha...</span>
-                            </p>
-                        </div>
-                    </div>
+            <div class="reloj-contenido">
+                <p id="reloj-saludo" class="reloj-saludo">Cargando reloj...</p>
+                <h2 id="reloj-hora" class="reloj-hora">--:--:--</h2>
+                <p class="reloj-fecha">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 16px; block-size: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span id="reloj-fecha">Cargando fecha...</span>
+                </p>
+            </div>
+        </div>
 
-                    <div style="flex: 0 1 320px; width: 100%; display: flex; flex-direction: column; gap: 12px; justify-content: space-between; margin: 0 auto;">
-                        
-                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #10b981; flex: 1;">
-                            <div>
-                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Estado del Turno</span>
-                                <div id="texto-estatus-turno" style="font-size: 1.1rem; font-weight: 700; margin-top: 2px;">Calculando...</div>
-                            </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #10b981; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        </div>
-
-                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #f59e0b; flex: 1;">
-                            <div>
-                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Personal Ausente</span>
-                                <div style="font-size: 1.3rem; font-weight: 900; color: #f59e0b; margin-top: 2px;"><?php echo $ausentes_hoy; ?> <span style="font-size:0.9rem; color:var(--text-color);">/ <?php echo $total_personal; ?></span></div>
-                            </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #f59e0b; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        </div>
-
-                        <div style="background: var(--navbar-bg); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #ef4444; flex: 1;">
-                            <div>
-                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-color); text-transform: uppercase;">Justif. Pendientes</span>
-                                <div style="font-size: 1.3rem; font-weight: 900; color: #ef4444; margin-top: 2px;"><?php echo $justificaciones_pendientes; ?></div>
-                            </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 28px; height: 28px; color: #ef4444; opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        </div>
-
-                    </div>
-
+        <div class="stats-widget">
+            
+            <div class="stat-tarjeta verde" id="tarjeta-estado-turno">
+                <div class="stat-info">
+                    <span>Estado del Turno</span>
+                    <div id="texto-estatus-turno" class="stat-valor" style="font-size: 1.1rem; font-weight: 700;">Calculando...</div>
                 </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stat-icono verde" id="icono-estado-turno" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+
+            <div class="stat-tarjeta naranja">
+                <div class="stat-info">
+                    <span>Personal Ausente</span>
+                    <div class="stat-valor naranja"><?php echo $ausentes_hoy; ?> <span class="limite">/ <?php echo $total_personal; ?></span></div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stat-icono naranja" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            </div>
+
+            <div class="stat-tarjeta rojo">
+                <div class="stat-info">
+                    <span>Justif. Pendientes</span>
+                    <div class="stat-valor rojo"><?php echo $justificaciones_pendientes; ?></div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stat-icono rojo" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+
+        </div>
+    <?php endif; ?>
+
+            </div>
+
                 <div class="separador-personal" style="margin-block-end: 20px;">Asistencia del Personal</div>
 
                 <div class="contenedor-filtros-globales" style="justify-content: center; margin-inline: auto; max-inline-size: 500px; margin-block-end: 25px; padding: 15px;">
@@ -212,7 +236,14 @@ if ($es_admin) {
                                 
                                 <div class="acciones-perfil">
                                     <button class="btn-editar-horario" onclick="abrirCalendario(<?php echo $emp['id_personal']; ?>, '<?php echo addslashes($emp['nombres']); ?>', true)" style="inline-size: 100%;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 18px; block-size: 18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                            <line x1="12" y1="11" x2="16" y2="11"/>
+                                            <line x1="12" y1="15" x2="16" y2="15"/>
+                                            <line x1="8" y1="11" x2="8.01" y2="11"/>
+                                            <line x1="8" y1="15" x2="8.01" y2="15"/>
+                                        </svg>
                                         Revisar Asistencia
                                     </button>
                                 </div>
@@ -246,6 +277,7 @@ if ($es_admin) {
 
     <?php if ($es_admin): ?>
     <style>
+        /* Estos estilos son solo estructurales para el modal */
         #modalCalendario { max-inline-size: 450px; padding: 1.5rem; }
         #modalCalendario .dia-celda { min-block-size: 50px; padding: 4px; }
         #modalCalendario .numero-dia { font-size: 0.95rem; }
@@ -288,7 +320,7 @@ if ($es_admin) {
             horas = horas % 12;
             horas = horas ? horas : 12; 
 
-            const horaStr = `${horas.toString().padStart(2, '0')}:${minutos}<span style="color: var(--text-color); font-size: 1.8rem; font-weight: 600; margin-left: 8px;">${ampm}</span>`;
+            const horaStr = `${horas.toString().padStart(2, '0')}:${minutos}<span>${ampm}</span>`;
             
             const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -300,29 +332,32 @@ if ($es_admin) {
             const nombreDirector = "<?php echo isset($mis_datos['nombres']) ? explode(' ', htmlspecialchars($mis_datos['nombres']))[0] : 'Director'; ?>";
             document.getElementById('reloj-saludo').textContent = `${saludo}, ${nombreDirector}.`;
 
-            // === LÓGICA DE TOLERANCIA (Mini Tarjeta 1) ===
+            // === LÓGICA DE TOLERANCIA (Tarjeta dinámica usando clases CSS y JS inline) ===
             const horaEntradaParts = configHoraEntrada.split(':');
             let fechaEntrada = new Date();
             fechaEntrada.setHours(parseInt(horaEntradaParts[0]), parseInt(horaEntradaParts[1]), 0, 0);
             
             let fechaTolerancia = new Date(fechaEntrada.getTime() + (configTolerancia * 60000));
-            let estadoTurno = document.getElementById('texto-estatus-turno');
             
-            if(estadoTurno) {
+            let estadoTurno = document.getElementById('texto-estatus-turno');
+            let tarjetaTurno = document.getElementById('tarjeta-estado-turno');
+            let iconoTurno = document.getElementById('icono-estado-turno');
+            
+            if(estadoTurno && tarjetaTurno && iconoTurno) {
                 if (ahora < fechaEntrada) {
                     estadoTurno.innerHTML = `<span style="color: #3b82f6;">Aún no inicia</span>`;
-                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#3b82f6';
-                    estadoTurno.parentElement.nextElementSibling.style.color = '#3b82f6';
+                    tarjetaTurno.style.borderLeftColor = '#3b82f6';
+                    iconoTurno.style.color = '#3b82f6';
                 } else if (ahora >= fechaEntrada && ahora <= fechaTolerancia) {
                     let diffMs = fechaTolerancia - ahora;
                     let diffMins = Math.floor(diffMs / 60000);
                     estadoTurno.innerHTML = `<span style="color: #10b981;">Quedan ${diffMins} min</span>`;
-                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#10b981';
-                    estadoTurno.parentElement.nextElementSibling.style.color = '#10b981';
+                    tarjetaTurno.style.borderLeftColor = '#10b981';
+                    iconoTurno.style.color = '#10b981';
                 } else {
                     estadoTurno.innerHTML = `<span style="color: #ef4444;">Turno cerrado</span>`;
-                    estadoTurno.parentElement.parentElement.style.borderLeftColor = '#ef4444';
-                    estadoTurno.parentElement.nextElementSibling.style.color = '#ef4444';
+                    tarjetaTurno.style.borderLeftColor = '#ef4444';
+                    iconoTurno.style.color = '#ef4444';
                 }
             }
         }
@@ -506,7 +541,7 @@ if ($es_admin) {
                 html: `
                     <p style="margin-block-end:15px; font-weight:bold; color:var(--primary-color); font-size:1.1rem;">Fecha: ${fechaVisual}</p>
                     
-                    <div style="text-align: start; margin-bottom: 5px;">
+                    <div style="text-align: start; margin-block-end: 5px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Estado Principal:</label>
                     </div>
                     <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:5px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
@@ -524,8 +559,8 @@ if ($es_admin) {
                         </button>
                     </div>
 
-                    <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px dashed var(--primary-color);">
-                        <div style="text-align: start; margin-bottom: 5px;">
+                    <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px solid var(--primary-color);">
+                        <div style="text-align: start; margin-block-end: 5px;">
                             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Segunda Incidencia:</label>
                         </div>
                         <select id="swal-estado-secundario" style="inline-size:100%; padding:10px; border-radius:8px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
@@ -565,10 +600,8 @@ if ($es_admin) {
                     const cajaSecundaria = document.getElementById('caja-secundaria');
                     const selectSecundario = document.getElementById('swal-estado-secundario');
 
-                    // RESTRICCIONES DE INTERFAZ
                     function evaluarBloqueos() {
                         const estado = selectPrincipal.value;
-                        
                         if (estado.includes('Falta') || estado === 'Salida Irregular') {
                             btnSecundaria.style.display = 'none';
                             cajaSecundaria.style.display = 'none';
@@ -579,7 +612,7 @@ if ($es_admin) {
                     }
 
                     selectPrincipal.addEventListener('change', evaluarBloqueos);
-                    evaluarBloqueos(); // Ejecutar al cargar el modal
+                    evaluarBloqueos(); 
 
                     btnSecundaria.addEventListener('click', function(e) {
                         e.preventDefault();
