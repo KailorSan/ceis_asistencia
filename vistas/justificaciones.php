@@ -12,17 +12,39 @@ $nombre = $_SESSION['usuario'];
 $rol    = $_SESSION['rol'];
 
 try {
+    // =====================================================================
+    // CORRECCIÓN: Se agrega el filtro "AND p.id_usuario != ?"
+    // para que el Director o Subdirector autenticado NO pueda ver
+    // ni procesar sus propias justificaciones pendientes.
+    // Solo otro Director o Subdirector podrá revisarlas.
+    // =====================================================================
     $sql = "SELECT a.id_asistencia, a.fecha, a.estado, a.motivo_justificacion, a.archivo_evidencia,
                    p.nombres, p.apellidos, p.foto_perfil, c.nombre_cargo 
             FROM asistencias a 
             INNER JOIN personal p ON a.id_personal = p.id_personal 
             INNER JOIN cargos c ON p.id_cargo = c.id_cargo 
-            WHERE a.estado_justificacion = 'Pendiente' 
+            WHERE a.estado_justificacion = 'Pendiente'
+            AND p.id_usuario != ?
             ORDER BY a.fecha DESC";
-    $stmt     = $conexion->query($sql);
+    $stmt     = $conexion->prepare($sql);
+    $stmt->execute([$_SESSION['id_usuario']]);
     $pendientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // =====================================================================
+    // NUEVO: Verificamos si el propio revisor tiene justificaciones pendientes
+    // para mostrarle un aviso informativo en la bandeja.
+    // =====================================================================
+    $sql_propias = "SELECT COUNT(*) FROM asistencias a
+                    INNER JOIN personal p ON a.id_personal = p.id_personal
+                    WHERE a.estado_justificacion = 'Pendiente'
+                    AND p.id_usuario = ?";
+    $stmt_propias = $conexion->prepare($sql_propias);
+    $stmt_propias->execute([$_SESSION['id_usuario']]);
+    $cantidad_propias = (int) $stmt_propias->fetchColumn();
+
 } catch (PDOException $e) {
-    $pendientes = [];
+    $pendientes       = [];
+    $cantidad_propias = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -68,6 +90,38 @@ try {
             align-items: center;
             gap: 5px;
         }
+
+        /* =====================================================================
+           NUEVO: Estilo para el aviso de justificaciones propias pendientes
+           ===================================================================== */
+        .aviso-propias {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-left: 5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-block-end: 25px;
+            color: #92400e;
+            font-size: 0.95rem;
+        }
+        [data-theme="dark"] .aviso-propias {
+            background-color: #2d2007;
+            border-color: #d97706;
+            color: #fde68a;
+        }
+        .aviso-propias svg {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            color: #d97706;
+        }
+        .aviso-propias strong {
+            display: block;
+            margin-block-end: 2px;
+        }
     </style>
 
     <script>
@@ -87,6 +141,22 @@ try {
 
         <main class="contenido">
             <h1 style="margin-block-end: 25px;">Justificaciones Pendientes</h1>
+
+            <?php if ($cantidad_propias > 0): ?>
+            <!-- =====================================================================
+                 NUEVO: Aviso informativo cuando el propio revisor tiene justificaciones
+                 pendientes que otro Director/Subdirector debe procesar.
+                 ===================================================================== -->
+            <div class="aviso-propias">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <strong>Tienes <?php echo $cantidad_propias; ?> justificaci<?php echo $cantidad_propias == 1 ? 'ón propia pendiente' : 'ones propias pendientes'; ?>.</strong>
+                    Por política, no puedes revisar tus propias justificaciones. Otro Director o Subdirector deberá procesarlas.
+                </div>
+            </div>
+            <?php endif; ?>
 
             <div class="grid-justificaciones">
                 <?php foreach ($pendientes as $req): 
@@ -172,19 +242,6 @@ try {
             });
         }
 
-        // =====================================================================
-        // CORRECCIÓN ADVERTENCIA: Motivo de rechazo ahora viaja por POST (fetch)
-        // en lugar de GET en la URL. Esto evita que el motivo quede expuesto en:
-        //   - La barra de direcciones del navegador
-        //   - El historial del navegador
-        //   - Los logs del servidor web (access.log)
-        //
-        // CÓMO FUNCIONA AHORA:
-        //   1. El modal recoge el motivo del Director.
-        //   2. Se envía mediante fetch() con method POST al controlador.
-        //   3. El controlador procesa y redirige a justificaciones.php.
-        //   4. Las alertas de resultado siguen funcionando igual (vía sesión).
-        // =====================================================================
         function procesar(id, accion, tipo, estado_base) {
             let textoAlerta = '';
             
@@ -246,8 +303,6 @@ try {
                             }
                         }).then((motivoResult) => {
                             if (motivoResult.isConfirmed) {
-                                // CAMBIO: Enviamos el motivo por POST usando fetch()
-                                // en lugar de window.location.href con parámetros GET.
                                 const formData = new FormData();
                                 formData.append('id',             id);
                                 formData.append('accion',         accion);
@@ -257,8 +312,6 @@ try {
                                     method: 'POST',
                                     body: formData
                                 }).then(() => {
-                                    // El controlador guarda la alerta en sesión y redirige;
-                                    // recargamos la página para que PHP muestre esa alerta.
                                     window.location.href = '../vistas/justificaciones.php';
                                 }).catch(() => {
                                     Swal.fire('Error', 'No se pudo conectar con el servidor. Intenta de nuevo.', 'error');
@@ -266,7 +319,6 @@ try {
                             }
                         });
                     } else {
-                        // Las aprobaciones siguen por GET (sin datos sensibles en la URL)
                         window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion;
                     }
                 }

@@ -3599,3 +3599,45 @@ input[type=number] {
         justify-content: center;
     }
 }
+
+/* ================================================================
+   PÁGINA: GESTIÓN DE PERSONAL (personal.php)
+   Validación de formularios, mensajes de error y animaciones
+   ================================================================ */
+
+/* ── Estados de validación en inputs y selects ────────────────── */
+.grupo-input input.input-error,
+.grupo-input select.input-error {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.grupo-input input.input-ok,
+.grupo-input select.input-ok {
+    border-color: #10b981 !important;
+}
+
+/* ── Mensaje de error por campo ───────────────────────────────── */
+.mensaje-error-campo {
+    color: #ef4444;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-block-start: 4px;
+    display: none;
+    padding-inline-start: 4px;
+}
+
+.mensaje-error-campo.visible {
+    display: block;
+}
+
+/* ── Animación shake al intentar enviar con errores ───────────── */
+@keyframes shake {
+    0%,  100% { transform: translateX(0); }
+    20%, 60%  { transform: translateX(-6px); }
+    40%, 80%  { transform: translateX(6px); }
+}
+
+.sacudir {
+    animation: shake 0.4s ease;
+}

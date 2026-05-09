@@ -66,12 +66,36 @@ if ($es_admin) {
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
 
         // 4. Calcular Ausentes
+        // =====================================================================
+        // CORRECCIÓN: Conteo de ausentes unificado con principal.php.
+        //
+        // ANTES: Loop PHP que solo contaba hora_entrada IS NOT NULL como
+        //   "presente". Un empleado con estado 'Justificado' (falta aprobada
+        //   sin entrada física) aparecía como ausente aquí pero no en
+        //   principal.php — ambos módulos mostraban números distintos.
+        //
+        // AHORA: Misma lógica SQL de principal.php:
+        //   "No ausente" = hora_entrada IS NOT NULL  OR  estado = 'Justificado'
+        // =====================================================================
         $total_personal = count($lista_personal);
-        $presentes_hoy = 0;
-        foreach($lista_personal as $p) {
-            if(!empty($p['asistio_hoy'])) $presentes_hoy++;
-        }
-        $ausentes_hoy = $total_personal - $presentes_hoy;
+
+        $stmt_no_ausentes_as = $conexion->query(
+            "SELECT COUNT(*) FROM asistencias 
+             WHERE fecha = CURDATE() 
+             AND (hora_entrada IS NOT NULL OR estado = 'Justificado')"
+        );
+        $no_ausentes_hoy_as = (int) $stmt_no_ausentes_as->fetchColumn();
+
+        // Usamos el total real de activos (excluyendo al admin actual, igual que el grid)
+        $stmt_total_activos_as = $conexion->prepare(
+            "SELECT COUNT(*) FROM personal p
+             INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
+             WHERE u.estado = 'Activo' AND p.id_personal != ?"
+        );
+        $stmt_total_activos_as->execute([$mi_id_personal]);
+        $total_activos_as = (int) $stmt_total_activos_as->fetchColumn();
+
+        $ausentes_hoy = max(0, $total_activos_as - $no_ausentes_hoy_as);
 
     } catch (PDOException $e) {}
 }

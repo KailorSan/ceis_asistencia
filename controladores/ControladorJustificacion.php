@@ -2,6 +2,14 @@
 session_start();
 require_once '../configuracion/conexion.php';
 
+// =====================================================================
+// CORRECCIÓN BUG: Este controlador recibe el formulario de justificación
+// de CUALQUIER empleado (rol 1, 2 o 3). La validación debe permitir el
+// acceso a todos los usuarios autenticados, NO solo a Director/Subdirector.
+// El error anterior (copiar el check de ControladorProcesarJustificacion.php)
+// bloqueaba a los empleados con rol 3 y los redirigía a principal.php
+// sin procesar nada, dando la ilusión de que el formulario "no hacía nada".
+// =====================================================================
 if (!isset($_SESSION['logueado']) || $_SESSION['logueado'] !== true) {
     header("Location: ../vistas/login.php");
     exit;
@@ -13,7 +21,7 @@ date_default_timezone_set('America/Caracas');
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // =====================================================================
-    // CORRECCIÓN BUG 4: PROTECCIÓN CSRF
+    // PROTECCIÓN CSRF
     // Verificamos que el token del formulario coincida con el de la sesión.
     // Sin esto, cualquier sitio externo podría enviar justificaciones en
     // nombre del empleado autenticado (ataque Cross-Site Request Forgery).

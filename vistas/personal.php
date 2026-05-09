@@ -42,36 +42,6 @@ try {
     <title>Gestión de Personal - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
 
-    <style>
-        /* ── Estilos para validación de inputs ── */
-        .grupo-input input.input-error,
-        .grupo-input select.input-error {
-            border-color: #ef4444 !important;
-            background-color: rgba(239, 68, 68, 0.05) !important;
-        }
-        .grupo-input input.input-ok,
-        .grupo-input select.input-ok {
-            border-color: #10b981 !important;
-        }
-        .mensaje-error-campo {
-            color: #ef4444;
-            font-size: 0.72rem;
-            font-weight: 600;
-            margin-block-start: 4px;
-            display: none;
-            padding-inline-start: 4px;
-        }
-        .mensaje-error-campo.visible {
-            display: block;
-        }
-        /* Shake animation cuando el form intenta enviarse con errores */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
-        }
-        .sacudir { animation: shake 0.4s ease; }
-    </style>
     
     <script>
         (function() {
@@ -290,7 +260,11 @@ try {
                             <span id="aviso-estado-bloqueado" style="display:none; font-size:0.7rem; color:var(--primary-color); font-weight:600; margin-inline-start:6px;">(no puedes desactivar tu propia cuenta)</span>
                         </label>
                         <div class="input-con-icono">
-                            <select name="estado_display" id="modal_e_estado" style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
+                            <!-- ✅ CAMBIO: name corregido de "estado_display" → "estado_display" se mantiene visual,
+                                 pero ahora sincroniza el hidden "estado" al cambiar -->
+                            <select name="estado_display" id="modal_e_estado"
+                                onchange="document.getElementById('modal_e_estado_hidden').value = this.value;"
+                                style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
                                 <option value="Activo">Activo</option>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
@@ -304,7 +278,10 @@ try {
                             <span id="aviso-rol-bloqueado" style="display:none; font-size:0.7rem; color:var(--primary-color); font-weight:600; margin-inline-start:6px;">(no puedes cambiar tu propio rol)</span>
                         </label>
                         <div class="input-con-icono">
-                            <select name="id_rol_display" id="modal_e_rol" style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
+                            <!-- ✅ CAMBIO: ahora sincroniza el hidden "id_rol" al cambiar el select -->
+                            <select name="id_rol_display" id="modal_e_rol"
+                                onchange="document.getElementById('modal_e_rol_hidden').value = this.value;"
+                                style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
                                 <?php foreach ($lista_roles as $r): ?>
                                     <option value="<?php echo $r['id_rol']; ?>"><?php echo htmlspecialchars($r['nombre_rol']); ?></option>
                                 <?php endforeach; ?>
