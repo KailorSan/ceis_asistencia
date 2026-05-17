@@ -108,8 +108,6 @@ $cantidad_notificaciones = count($notificaciones);
     // SISTEMA DE TIEMPO REAL (AJAX POLLING)
     // ==========================================
     function buscarNuevasNotificaciones() {
-        // Agregamos un timestamp dinámico para que la URL siempre sea distinta
-        // y le decimos explícitamente al navegador que NO use el caché ('no-store')
         const urlFesca = '../controladores/ControladorContarNotificaciones.php?t=' + new Date().getTime();
         
         fetch(urlFesca, { cache: 'no-store' })
@@ -117,32 +115,70 @@ $cantidad_notificaciones = count($notificaciones);
             .then(data => {
                 if (data.success) {
                     let cantActual = parseInt(badgeNotificacion.textContent) || 0;
+                    const dropdownBody = document.getElementById('dropdownBodyNotif');
+                    
+                    // Evaluamos si el usuario tiene el menú abierto en este momento
+                    let menuAbierto = dropdownNotificaciones.classList.contains('activo');
                     
                     if (data.cantidad > 0) {
-                        badgeNotificacion.textContent = data.cantidad > 99 ? '+99' : data.cantidad;
-                        badgeNotificacion.style.display = 'flex';
+                        // Si hay nuevas pero el menú está abierto, evitamos que el badge reaparezca de golpe
+                        if (!menuAbierto) {
+                            badgeNotificacion.textContent = data.cantidad > 99 ? '+99' : data.cantidad;
+                            badgeNotificacion.style.display = 'flex';
+                        }
 
-                        // Si la cantidad subió (entró una notificación nueva)
-                        if (data.cantidad > cantActual) {
-                            // Vibrar la campana
-                            btnNotificaciones.classList.add('animacion-vibrar');
-                            setTimeout(() => btnNotificaciones.classList.remove('animacion-vibrar'), 500);
+                        // CLAVE: Solo reconstruimos el HTML si la cantidad cambió Y el menú NO está abierto.
+                        // Así evitamos interrumpirte mientras lees o intentas hacer clic.
+                        if (data.cantidad !== cantActual && !menuAbierto) {
+                            if (data.cantidad > cantActual) {
+                                btnNotificaciones.classList.add('animacion-vibrar');
+                                setTimeout(() => btnNotificaciones.classList.remove('animacion-vibrar'), 500);
+                            }
 
-                            // Si el menú desplegable decía "No tienes notificaciones", inyectamos un aviso
-                            const dropdownBody = document.getElementById('dropdownBodyNotif');
-                            if (dropdownBody && dropdownBody.querySelector('.sin-notificaciones')) {
-                                dropdownBody.innerHTML = `
-                                    <div style="padding: 15px; text-align: center;">
-                                        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-color); margin-block-end: 10px;">¡Tienes notificaciones nuevas!</p>
-                                        <button onclick="window.location.reload()" style="background-color: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; inline-size: 100%;">Refrescar para verlas</button>
+                            let nuevoHtml = '';
+                            data.notificaciones.forEach(notif => {
+                                let clase = (notif.tipo === 'Exito') ? 'notif-exito' : ((notif.tipo === 'Alerta') ? 'notif-alerta' : 'notif-info');
+                                let icono = (notif.tipo === 'Exito') ? '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />' : ((notif.tipo === 'Alerta') ? '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />' : '<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />');
+                                
+                                let fechaObj = new Date(notif.fecha_creacion);
+                                let dia = String(fechaObj.getDate()).padStart(2, '0');
+                                let mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                                let anio = fechaObj.getFullYear();
+                                let horas = fechaObj.getHours();
+                                let minutos = String(fechaObj.getMinutes()).padStart(2, '0');
+                                let ampm = horas >= 12 ? 'PM' : 'AM';
+                                horas = horas % 12;
+                                horas = horas ? horas : 12; 
+                                let horasStr = String(horas).padStart(2, '0');
+                                let fechaFormateada = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
+
+                                let mensajeJs = notif.mensaje.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                let mensajeHtml = notif.mensaje.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                                nuevoHtml += `
+                                    <div class="item-notificacion ${clase}" style="cursor: pointer;" onclick="abrirNotificacion('${mensajeJs}', '${notif.tipo}', '${fechaFormateada}')">
+                                        <div class="icono-notif">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icono}</svg>
+                                        </div>
+                                        <div class="texto-notif">
+                                            <p>${mensajeHtml}</p>
+                                            <span>${fechaFormateada}</span>
+                                        </div>
                                     </div>
                                 `;
-                            }
+                            });
+                            
+                            dropdownBody.innerHTML = nuevoHtml;
                         }
                     } else {
-                        // Si desde el backend viene 0, ocultamos el badge
+                        // Si desde el backend viene 0, ocultamos el círculo rojo
                         badgeNotificacion.style.display = 'none';
                         badgeNotificacion.textContent = '0';
+                        
+                        // CLAVE: Solo borramos los mensajes del menú si NO está abierto
+                        if (dropdownBody && !menuAbierto) {
+                            dropdownBody.innerHTML = '<p class="sin-notificaciones">No tienes notificaciones nuevas.</p>';
+                        }
                     }
                 }
             })

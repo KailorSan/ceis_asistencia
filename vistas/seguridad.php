@@ -577,14 +577,25 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
         // ==========================================
         function abrirModalBitacora() {
             const modal = document.getElementById('modalBitacora');
+            const contenedor = modal.querySelector('.modal-bitacora-contenedor');
             modal.style.display = 'flex';
+            // Reiniciar animación de entrada
+            contenedor.style.animation = 'none';
+            contenedor.offsetHeight; // reflow
+            contenedor.style.animation = 'zoomIn 0.3s ease-out';
             document.body.style.overflow = 'hidden'; 
         }
 
         function cerrarModalBitacora() {
             const modal = document.getElementById('modalBitacora');
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto'; 
+            const contenedor = modal.querySelector('.modal-bitacora-contenedor');
+            // Animar salida y luego ocultar
+            contenedor.style.animation = 'zoomOut 0.22s ease-in forwards';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                contenedor.style.animation = '';
+                document.body.style.overflow = 'auto';
+            }, 210);
         }
         
         // Función para filtrar dinámicamente por módulo en la barra lateral

@@ -208,7 +208,6 @@ if ($id_personal != 'todos') {
                 $color = (strpos($estado, 'Falta') !== false || strpos($estado, 'Irregular') !== false) ? 'class="alerta-roja"' : '';
                 $tabla_html .= "<tr><td>{$fecha_format}</td><td {$color}>{$estado}</td><td class='texto-izq'>{$motivo}</td></tr>";
             } else {
-                // === CORRECCIÓN AQUÍ ===
                 if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
                     $f++; $tabla_html .= "<tr><td>{$fecha_format}</td><td class='alerta-roja'>Falta</td><td class='texto-izq alerta-roja'>Inasistencia automática</td></tr>";
                 }
@@ -274,20 +273,43 @@ if ($id_personal != 'todos') {
 
     } else {
         $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Mes</th><th>Puntual</th><th>Retraso</th><th>S.Temp</th><th>S.Irreg</th><th>Falta</th><th>Justif.</th></tr></thead><tbody>';
+        
+        $fecha_hoy = date('Y-m-d');
+        
+        // Buscamos todos los registros del año de una sola vez
+        $stmt_stats = $conexion->prepare("SELECT fecha, estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
+        $stmt_stats->execute([$id_personal, $anio]);
+        $registros_reales = [];
+        while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
+            $registros_reales[$row['fecha']] = $row;
+        }
+
+        // Iteramos sobre los 12 meses
         for($m = 1; $m <= 12; $m++) {
-            $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND MONTH(fecha) = ? AND YEAR(fecha) = ?");
-            $stmt_stats->execute([$id_personal, $m, $anio]);
             $p = 0; $r = 0; $f = 0; $j = 0; $st = 0; $si = 0;
-            while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
-                if ($row['estado_justificacion'] == 'Aprobada') { $j++; } 
-                else {
-                    $est = $row['estado'];
-                    if (strpos($est, 'Puntual') !== false) $p++;
-                    if (strpos($est, 'Retraso') !== false) $r++;
-                    if (strpos($est, 'Falta') !== false) $f++;
-                    if (strpos($est, 'Justificado') !== false) $j++;
-                    if (strpos($est, 'Salida Temprana') !== false) $st++;
-                    if (strpos($est, 'Salida Irregular') !== false) $si++;
+            $dias_del_mes = cal_days_in_month(CAL_GREGORIAN, $m, $anio);
+            
+            // Iteramos sobre los días del mes actual para detectar las faltas silenciosas
+            for ($d = 1; $d <= $dias_del_mes; $d++) {
+                $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
+                if ($fecha_ciclo > $fecha_hoy) break;
+
+                $dia_semana = date('N', strtotime($fecha_ciclo)); 
+                if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
+
+                if (isset($registros_reales[$fecha_ciclo])) {
+                    $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
+                    if (strpos($estado, 'Puntual') !== false) $p++;
+                    if (strpos($estado, 'Retraso') !== false) $r++;
+                    if (strpos($estado, 'Falta') !== false) $f++;
+                    if (strpos($estado, 'Justificado') !== false) $j++;
+                    if (strpos($estado, 'Salida Temprana') !== false) $st++;
+                    if (strpos($estado, 'Salida Irregular') !== false) $si++;
+                } else {
+                    // Contamos la inasistencia si es un día laborable pasado desde que ingresó
+                    if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
+                        $f++;
+                    }
                 }
             }
             $html .= "<tr><td class='texto-izq'>{$meses_es[$m-1]}</td><td>{$p}</td><td>{$r}</td><td style='color:#3b82f6;font-weight:bold;'>{$st}</td><td style='color:#991b1b;font-weight:bold;'>{$si}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
@@ -330,18 +352,35 @@ if ($id_personal != 'todos') {
         $p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
 
         if($mes === 'todos') {
-            $stmt_stats = $conexion->prepare("SELECT estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
+            $stmt_stats = $conexion->prepare("SELECT fecha, estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
             $stmt_stats->execute([$id_p, $anio]);
+            $registros_reales = [];
             while ($row = $stmt_stats->fetch(PDO::FETCH_ASSOC)) {
-                if ($row['estado_justificacion'] == 'Aprobada') { $j++; } 
-                else {
-                    $est = $row['estado'];
-                    if (strpos($est, 'Puntual') !== false) $p++;
-                    if (strpos($est, 'Retraso') !== false) $r++;
-                    if (strpos($est, 'Falta') !== false) $f++;
-                    if (strpos($est, 'Justificado') !== false) $j++;
-                    if (strpos($est, 'Salida Temprana') !== false) $st++;
-                    if (strpos($est, 'Salida Irregular') !== false) $si++;
+                $registros_reales[$row['fecha']] = $row;
+            }
+
+            for($m = 1; $m <= 12; $m++) {
+                $dias_del_mes_ciclo = cal_days_in_month(CAL_GREGORIAN, $m, $anio);
+                for ($d = 1; $d <= $dias_del_mes_ciclo; $d++) {
+                    $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
+                    if ($fecha_ciclo > $fecha_hoy) break;
+
+                    $dia_semana = date('N', strtotime($fecha_ciclo)); 
+                    if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
+
+                    if (isset($registros_reales[$fecha_ciclo])) {
+                        $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
+                        if (strpos($estado, 'Puntual') !== false) $p++;
+                        if (strpos($estado, 'Retraso') !== false) $r++;
+                        if (strpos($estado, 'Falta') !== false) $f++;
+                        if (strpos($estado, 'Justificado') !== false) $j++;
+                        if (strpos($estado, 'Salida Temprana') !== false) $st++;
+                        if (strpos($estado, 'Salida Irregular') !== false) $si++;
+                    } else {
+                        if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
+                            $f++;
+                        }
+                    }
                 }
             }
         } else {
@@ -369,7 +408,6 @@ if ($id_personal != 'todos') {
                     if (strpos($estado, 'Salida Temprana') !== false) $st++;
                     if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
-                    // === CORRECCIÓN AQUÍ ===
                     if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
                         $f++; 
                     }
