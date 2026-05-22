@@ -89,7 +89,7 @@ try {
                         <div class="banner-tarjeta">
                             <span class="etiqueta-estado"><?php echo $emp['estado']; ?></span>
                             <?php if ($esMiPerfil): ?>
-                                <span style="background:var(--primary-color);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Tú</span>
+                                <span style="background: #000000;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Tú</span>
                             <?php endif; ?>
                         </div>
                         <div class="contenedor-avatar">

@@ -76,145 +76,7 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             document.documentElement.setAttribute('data-theme', localStorage.getItem('tema_usuario_' + idUsr) || 'light');
         })();
     </script>
-    <style>
-        ::-webkit-scrollbar { inline-size: 8px; block-size: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
-        [data-theme="light"] ::-webkit-scrollbar-track { background: #f1f5f9; }
-        [data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
-        [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        .contenedor-filtros-globales { 
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
-            background: #ffffff; padding: 15px 20px; border-radius: 12px; margin-block-end: 20px; border: 1px solid #e2e8f0; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); color: #1e293b; 
-        }
-        .grupo-selectores { display: flex; align-items: center; gap: 15px; }
-        .grupo-acciones-derecha { display: flex; justify-content: flex-end; }
-        .contenedor-filtros-globales select { 
-            padding: 8px 15px; border-radius: 8px; border: 2px solid #cbd5e1; font-family: 'Montserrat', sans-serif; 
-            outline: none; background: #f8fafc; color: #0f172a; font-weight: 700; cursor: pointer; transition: 0.2s ease;
-        }
-        .contenedor-filtros-globales select:hover { border-color: #6366f1; background: #ffffff; }
-
-        [data-theme="dark"] .contenedor-filtros-globales { background: #0f172a; border-color: #1e293b; color: #f8fafc; }
-        [data-theme="dark"] .contenedor-filtros-globales select { background: #1e293b; border-color: #4f46e5; color: #ffffff !important; }
-        [data-theme="dark"] .contenedor-filtros-globales select:hover { border-color: #818cf8; background: #334155; }
-
-        .contenedor-busqueda-elegante { position: relative; display: flex; align-items: center; inline-size: 100%; max-inline-size: 350px; margin: 0 auto; }
-        .campo-busqueda-elegante { inline-size: 100%; padding: 10px 40px 10px 18px; border-radius: 25px; border: 2px solid #e2e8f0; background: #f8fafc; color: #1e293b; font-size: 0.95rem; font-family: 'Montserrat', sans-serif; transition: 0.3s; outline: none; }
-        .campo-busqueda-elegante:focus { border-color: #4f46e5; background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15); }
-        .icono-busqueda { position: absolute; inset-inline-end: 15px; color: #94a3b8; pointer-events: none; transition: 0.3s; }
-        .campo-busqueda-elegante:focus + .icono-busqueda { color: #4f46e5; }
-        [data-theme="dark"] .campo-busqueda-elegante { background: #1e293b; border-color: #334155; color: #f8fafc; }
-        [data-theme="dark"] .campo-busqueda-elegante:focus { border-color: #818cf8; background: #0f172a; box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15); }
-
-        .botones-filtro-cargo { display: flex; flex-wrap: wrap; gap: 10px; margin-block-end: 30px; }
-        .btn-filtro { background: var(--bg-light); border: 2px solid transparent; color: var(--text-color); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.2s; }
-        .btn-filtro:hover { border-color: var(--primary-color); }
-        .btn-filtro.activo { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 6px -1px rgba(64, 111, 243, 0.4); }
-        
-        /* === CUADRÍCULA DE RESUMEN (VISTA ESCRITORIO) === */
-        .grid-resumen { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px; 
-            margin-block-start: 15px; 
-        }
-
-        .caja-resumen { 
-            padding: 10px; 
-            border-radius: 8px; 
-            text-align: center; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 0.8rem; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-        }
-        
-        .caja-verde { background: linear-gradient(135deg, #10b981, #059669); }
-        .caja-naranja { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .caja-roja { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .caja-azul { background: linear-gradient(135deg, #3b82f6, #2563eb); } 
-        .caja-rojo-oscuro { background: linear-gradient(135deg, #991b1b, #7f1d1d); } 
-        .caja-gris { background: linear-gradient(135deg, #64748b, #475569); }
-        
-        .numero-resumen { 
-            font-size: 1.5rem; 
-            display: block; 
-            margin-block-start: 4px; 
-        }
-
-        .contenedor-grafico { 
-            inline-size: 100%; 
-            max-inline-size: 220px; 
-            margin: 10px auto; 
-            display: none; 
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        /* === RESPONSIVE EXTREMO PARA MÓVILES === */
-        @media (max-width: 600px) {
-            #modalContenidoResumen {
-                width: 88% !important; 
-                max-width: 320px !important; 
-                padding: 1rem !important; 
-                margin: auto;
-            }
-            
-            .modal-header { margin-block-end: 0.5rem; }
-            .modal-header h2 { font-size: 1.15rem; } 
-            .btn-cerrar-modal svg { width: 22px; height: 22px; } 
-            
-            #resumen-nombre { font-size: 1.05rem; margin-block-end: 2px; }
-            #resumen-cargo { font-size: 0.8rem; }
-            #resumen-periodo { font-size: 0.75rem; margin-block-start: 2px; }
-
-            .contenedor-grafico {
-                width: 100%;
-                max-width: 170px !important; 
-                height: 200px !important; 
-                margin: 5px auto 10px auto !important; 
-            }
-
-            .grid-resumen { 
-                grid-template-columns: repeat(2, 1fr); 
-                gap: 6px; 
-                margin-block-start: 5px;
-            }
-
-            .caja-resumen {
-                width: 100%; 
-                padding: 6px 4px; 
-                font-size: 0.65rem; 
-                line-height: 1.2; 
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-            }
-
-            .numero-resumen {
-                font-size: 1.1rem; 
-                margin-block-start: 3px; 
-            }
-        }
-
-        /* === DIRECTORIO PERSONAL === */
-        #directorio-personal .tarjeta-perfil { display: flex; flex-direction: column; block-size: 100%; }
-        #directorio-personal .info-perfil { display: flex; flex-direction: column; flex-grow: 1; padding-block-end: 15px; }
-        #directorio-personal .acciones-perfil { margin-block-start: auto; display: flex; flex-direction: column; gap: 8px; }
-        #directorio-personal .nombre-empleado { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-block-size: 2.4em; margin-block-end: 5px; }
-
-        @media (max-inline-size: 1024px) {
-            .contenedor-filtros-globales { justify-content: center; }
-            .contenedor-busqueda-elegante { max-inline-size: 100%; order: 3; margin-block-start: 10px; }
-        }
-    </style>
+    <!-- Estilos migrados a principal.css — sección "PÁGINA: REPORTES" -->
 </head>
 <body>
 
@@ -224,23 +86,23 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         <?php $titulo_pagina = $es_directivo ? 'Panel de Reportes' : 'Mi Reporte de Asistencia'; require_once 'componentes/topbar.php'; ?>
 
         <main class="contenido">
-            <div class="cabecera-personal" style="margin-block-end: 15px;">
+            <div class="cabecera-personal cabecera-personal--reportes">
                 <div>
                     <h1><?php echo $es_directivo ? 'Directorio de Reportes' : 'Mi Reporte Mensual'; ?></h1>
                     <p>Selecciona el mes o el año para generar el expediente.</p>
                 </div>
             </div>
 
-            <form id="formGenerarPDF" action="generar_pdf_asistencia.php" method="POST" target="_blank" style="display: none;">
+            <form id="formGenerarPDF" action="generar_pdf_asistencia.php" method="POST" target="_blank" class="form-pdf-oculto">
                 <input type="hidden" name="id_personal" id="pdf_id_personal">
                 <input type="hidden" name="mes" id="pdf_mes">
                 <input type="hidden" name="anio" id="pdf_anio">
                 <input type="hidden" name="id_cargo" id="pdf_id_cargo" value="todos">
             </form>
 
-            <div class="contenedor-filtros-globales" <?php if(!$es_directivo) echo 'style="justify-content: flex-start;"'; ?>>
+            <div class="contenedor-filtros-globales <?php if(!$es_directivo) echo 'contenedor-filtros-globales--personal'; ?>">
                 <div class="grupo-selectores">
-                    <span style="font-weight: 600;">Evaluar Período:</span>
+                    <span class="label-periodo">Evaluar Período:</span>
                     <select id="anio_global">
                         <?php if(empty($anios_disponibles)): ?>
                             <option value="<?php echo date('Y'); ?>"><?php echo date('Y'); ?></option>
@@ -259,7 +121,7 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                         <svg class="icono-busqueda" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                     <div class="grupo-acciones-derecha">
-                        <button onclick="descargarPDF('todos')" class="btn-guardar" style="display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; padding: 10px 20px; background-color: #495b85; color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.2s; block-size: 46px; white-space: nowrap;">
+                        <button onclick="descargarPDF('todos')" class="btn-guardar btn-descarga-general">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             Descargar General
                         </button>
@@ -282,20 +144,20 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
                 <?php foreach ($lista_personal as $emp): ?>
                     <!-- Se agregó la clase item-filtrable para estandarizar con CSS de paginación -->
                     <div class="tarjeta-perfil item-filtrable" data-cargo="<?php echo $emp['id_cargo']; ?>">
-                        <div class="banner-tarjeta" style="block-size: 70px;"></div>
-                        <div class="contenedor-avatar" style="margin-block-start: -40px; inline-size: 80px; block-size: 80px;">
+                        <div class="banner-tarjeta banner-tarjeta--reportes"></div>
+                        <div class="contenedor-avatar contenedor-avatar--reportes">
                             <img src="../recursos/img/perfiles/<?php echo htmlspecialchars($emp['foto_perfil']); ?>" alt="Foto">
                         </div>
-                        <div class="info-perfil" style="padding-block-start: 10px;">
+                        <div class="info-perfil info-perfil--reportes">
                             <h3 class="nombre-empleado"><?php echo htmlspecialchars($emp['nombres'] . ' ' . $emp['apellidos']); ?></h3>
                             <span class="cargo-empleado"><?php echo htmlspecialchars($emp['nombre_cargo']); ?></span>
                             
                             <div class="acciones-perfil">
-                                <button onclick="abrirResumen(<?php echo $emp['id_personal']; ?>, '<?php echo addslashes($emp['nombres'] . ' ' . $emp['apellidos']); ?>', '<?php echo addslashes($emp['nombre_cargo']); ?>')" class="btn-editar-horario" style="inline-size: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                                <button onclick="abrirResumen(<?php echo $emp['id_personal']; ?>, '<?php echo addslashes($emp['nombres'] . ' ' . $emp['apellidos']); ?>', '<?php echo addslashes($emp['nombre_cargo']); ?>')" class="btn-editar-horario btn-ver-resumen">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                     Ver Resumen Web
                                 </button>
-                                <button onclick="descargarPDF(<?php echo $emp['id_personal']; ?>)" class="btn-guardar" style="inline-size: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; background-color: #e11d48; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                                <button onclick="descargarPDF(<?php echo $emp['id_personal']; ?>)" class="btn-guardar btn-descargar-pdf-tarjeta">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                     Descargar PDF
                                 </button>
@@ -307,9 +169,9 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
             <!-- CONTENEDOR DEL BOTÓN VER MÁS -->
             <?php if ($es_directivo): ?>
-            <div id="contenedor-ver-mas-reportes" style="text-align: center; margin-block-start: 10px; margin-block-end: 30px; display: none;">
-                <button id="btn-ver-mas-reportes" class="btn-guardar" style="background-color: var(--primary-color); border-radius: 25px; padding: 0.8rem 2rem; font-size: 0.95rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 20px; block-size: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <div id="contenedor-ver-mas-reportes" class="contenedor-ver-mas">
+                <button id="btn-ver-mas-reportes" class="btn-guardar btn-ver-mas-pill">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     Cargar más personal
                 </button>
             </div>
@@ -319,22 +181,22 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <div class="modal-overlay" id="modalOverlayResumen">
-        <div class="modal-contenido" id="modalContenidoResumen" style="max-inline-size: 500px; padding: 1.5rem;">
+        <div class="modal-contenido modal-resumen-contenido" id="modalContenidoResumen">
             <div class="modal-header">
                 <h2>Resumen de Asistencia</h2>
                 <button class="btn-cerrar-modal" onclick="cerrarResumen()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            <div style="text-align: center; margin-block-end: 5px;">
-                <h3 id="resumen-nombre" style="color: var(--text-color); margin-block-end: 5px;">Cargando...</h3>
-                <span id="resumen-cargo" style="color: var(--primary-color); font-weight: bold; font-size: 0.9rem;"></span>
-                <p id="resumen-periodo" style="color: #64748b; font-size: 0.85rem; margin-block-start: 5px;"></p>
+            <div class="resumen-encabezado">
+                <h3 id="resumen-nombre" class="resumen-nombre">Cargando...</h3>
+                <span id="resumen-cargo" class="resumen-cargo"></span>
+                <p id="resumen-periodo" class="resumen-periodo"></p>
             </div>
-            <div id="cargando-resumen" style="text-align: center; padding: 20px;">
+            <div id="cargando-resumen" class="resumen-cargando">
                 <svg class="animacion-vibrar" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--primary-color)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <div class="contenedor-grafico" id="contenedor-grafico-resumen"><canvas id="miGraficoDona"></canvas></div>
             
-            <div class="grid-resumen" id="datos-resumen" style="display: none;">
+            <div class="grid-resumen grid-resumen--oculto" id="datos-resumen">
                 <div class="caja-resumen caja-verde">Llegada<br>Puntual<span class="numero-resumen" id="num-puntual">0</span></div>
                 <div class="caja-resumen caja-naranja">Llegada<br>Tardía<span class="numero-resumen" id="num-retraso">0</span></div>
                 <div class="caja-resumen caja-azul">Salida<br>Temprana<span class="numero-resumen" id="num-salida-temp">0</span></div>

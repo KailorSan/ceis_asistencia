@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-05-2026 a las 21:08:07
+-- Tiempo de generación: 22-05-2026 a las 23:31:57
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -46,7 +46,9 @@ CREATE TABLE `asistencias` (
 --
 
 INSERT INTO `asistencias` (`id_asistencia`, `id_personal`, `fecha`, `hora_esperada`, `hora_entrada`, `hora_salida`, `estado`, `motivo_justificacion`, `archivo_evidencia`, `estado_justificacion`, `observacion`) VALUES
-(1, 1, '2026-05-07', '12:50:00', '14:22:24', NULL, 'Justificado', '[Inasistencia] - eddedededededede', NULL, 'Aprobada', NULL);
+(1, 1, '2026-05-22', '16:10:00', '15:15:22', NULL, 'Puntual', NULL, NULL, NULL, NULL),
+(2, 2, '2026-05-21', '00:00:00', NULL, NULL, 'Puntual y Salida Irregular', '', NULL, NULL, 'El sistema cerró la jornada automáticamente por omisión de salida.'),
+(3, 2, '2026-05-22', '00:00:00', NULL, NULL, 'Puntual', '', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -182,7 +184,63 @@ INSERT INTO `bitacora` (`id_bitacora`, `id_usuario`, `modulo`, `accion`, `detall
 (111, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 12:00:00, salida: 17:30:00, tolerancia: 30 min.', '2026-05-07 14:15:58', '::1'),
 (112, 1, 'Asistencia', 'Registro de Salida', 'El empleado Anthony Maita marcó su salida a las 14:21:15.', '2026-05-07 14:21:15', '::1'),
 (113, 1, 'Asistencia', 'Registro de Entrada (Tras Justificar)', 'El empleado Anthony Maita marcó su entrada a las 14:22:24.', '2026-05-07 14:22:24', '::1'),
-(114, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 10:00:00, salida: 15:30:00, tolerancia: 30 min.', '2026-05-07 14:37:10', '::1');
+(114, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 10:00:00, salida: 15:30:00, tolerancia: 30 min.', '2026-05-07 14:37:10', '::1'),
+(115, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 14:10:00, salida: 20:30:00, tolerancia: 30 min. Plantilla ID 5 marcada como activa.', '2026-05-08 16:41:11', '::1'),
+(116, 1, 'Configuracion', 'Eliminación de Plantilla Preestablecida', 'Plantilla \'dededed\' (ID: 5) eliminada.', '2026-05-08 16:41:18', '::1'),
+(117, 1, 'Configuracion', 'Eliminación de Plantilla Preestablecida', 'Plantilla \'dedee\' (ID: 6) eliminada.', '2026-05-08 16:41:21', '::1'),
+(118, 1, 'Configuracion', 'Nueva Plantilla Preestablecida', 'Plantilla \'prueba\' creada (ID: 9). Entrada: 14:10:00, salida: 20:30:00, tolerancia: 30 min.', '2026-05-08 16:41:32', '::1'),
+(119, 1, 'Asistencia', 'Registro de Entrada (Tras Justificar)', 'El empleado Anthony Maita marcó su entrada a las 17:51:45.', '2026-05-08 17:51:45', '::1'),
+(120, 1, 'Asistencia', 'Registro de Salida', 'El empleado Anthony Maita marcó su salida a las 17:51:53.', '2026-05-08 17:51:53', '::1'),
+(121, 1, 'Asistencia', 'Registro de Entrada (Tras Justificar)', 'El empleado Anthony Maita marcó su entrada a las 17:53:29.', '2026-05-08 17:53:29', '::1'),
+(122, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dede\'. Cédula: 21312312, Estado: Activo, Rol: Personal.', '2026-05-08 17:54:14', '::1'),
+(123, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dede\'. Cédula: 21312312, Estado: Activo, Rol: Personal.', '2026-05-08 17:55:04', '::1'),
+(124, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dede\'. Cédula: 21312312, Estado: Activo, Rol: Personal.', '2026-05-08 17:55:15', '::1'),
+(125, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dede\'. Cédula: 21312312, Estado: Activo, Rol: Personal.', '2026-05-08 17:56:39', '::1'),
+(126, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:56:48', '::1'),
+(127, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:56:56', '::1'),
+(128, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dedededede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:57:00', '::1'),
+(129, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dedededede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:57:06', '::1'),
+(130, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dedededede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:57:21', '::1'),
+(131, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dedededede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Personal.', '2026-05-08 17:57:24', '::1'),
+(132, 1, 'Asistencia', 'Registro de Salida', 'El empleado Anthony Maita marcó su salida a las 22:16:37.', '2026-05-08 22:16:37', '::1'),
+(133, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'dedededede dedededede\'. Cédula: 300000000000, Estado: Activo, Rol: Subdirector.', '2026-05-08 22:16:52', '::1'),
+(134, 11, 'Asistencia', 'Registro de Entrada (Tras Justificar)', 'El empleado dedededede dedededede marcó su entrada a las 22:18:05.', '2026-05-08 22:18:05', '::1'),
+(135, 11, 'Asistencia', 'Registro de Salida', 'El empleado dedededede dedededede marcó su salida a las 22:18:06.', '2026-05-08 22:18:06', '::1'),
+(136, 11, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual\' para el empleado \'Anthony Maita\' en la fecha: 2026-05-08.', '2026-05-08 22:19:10', '::1'),
+(137, 11, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Retraso\' para el empleado \'Anthony Maita\' en la fecha: 2026-05-08.', '2026-05-08 22:19:14', '::1'),
+(138, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 14:10:00, salida: 20:30:00, tolerancia: 30 min.', '2026-05-08 22:24:04', '::1'),
+(139, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'for mavi\'. Cédula: 12321312, Estado: Activo, Rol: Director.', '2026-05-08 22:29:16', '::1'),
+(140, 1, 'Seguridad', 'Restauración Exitosa', 'Restauró la base de datos con: respaldo_ceis_08-05-2026_22-29-53.sql', '2026-05-20 23:20:32', '::1'),
+(141, 1, 'Reportes', 'Descarga de Reporte PDF', 'Descargó Reporte Individual (C.I: 30710894) correspondiente a: TODO EL AÑO de 2026.', '2026-05-20 23:21:09', '::1'),
+(142, 1, 'Asistencia', 'Justificación por rango', 'Justificó al personal ID 11 desde 2026-05-01 hasta 2026-05-31 (21 días hábiles en total).', '2026-05-21 12:45:41', '::1'),
+(143, 1, 'Asistencia', 'Justificación por rango', 'Justificó al personal ID 11 desde 2026-05-06 hasta 2026-05-13 (6 días hábiles en total) adjuntando 0 evidencias.', '2026-05-21 13:41:26', '::1'),
+(144, 1, 'Configuracion', 'Modificación de Horarios del Sistema', 'Nueva entrada: 16:10:00, salida: 20:30:00, tolerancia: 30 min.', '2026-05-21 15:52:45', '::1'),
+(145, 1, 'Asistencia', 'Registro de Entrada', 'El empleado Anthony Maita marcó su entrada a las 15:52:50.', '2026-05-21 15:52:50', '::1'),
+(146, 2, 'Asistencia', 'Registro de Entrada', 'El empleado lauris viera marcó su entrada a las 15:56:13.', '2026-05-21 15:56:13', '::1'),
+(147, 1, 'Asistencia', 'Justificación por rango', 'Justificó al personal ID 2 desde 2026-04-01 hasta 2026-05-20 (36 días hábiles en total) adjuntando 0 evidencias.', '2026-05-21 15:59:05', '::1'),
+(148, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Retraso\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-21 16:51:15', '::1'),
+(149, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Justificado\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-21 16:51:19', '::1'),
+(150, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Falta\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-21 16:51:25', '::1'),
+(151, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Salida Irregular\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-21 16:51:28', '::1'),
+(152, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-21 16:51:37', '::1'),
+(153, 1, 'Reportes', 'Descarga de Reporte PDF', 'Descargó Reporte Individual (C.I: 14669420) correspondiente a: Abril de 2026.', '2026-05-21 17:20:13', '::1'),
+(154, 1, 'Asistencia', 'Registro de Entrada', 'El empleado Anthony Maita marcó su entrada a las 12:58:16.', '2026-05-22 12:58:16', '::1'),
+(155, 1, 'Asistencia', 'Registro de Salida', 'El empleado Anthony Maita marcó su salida a las 14:00:00.', '2026-05-22 14:00:00', '::1'),
+(156, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'lauris viera\'. Cédula: 14669420, Estado: Activo, Rol: Subdirector.', '2026-05-22 14:01:19', '::1'),
+(157, 1, 'Usuarios', 'Edición Completa de Perfil', 'Actualizó los datos de \'lauris viera\'. Cédula: 14669420, Estado: Activo, Rol: Subdirector.', '2026-05-22 14:01:38', '::1'),
+(158, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual y Salida Temprana\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 14:02:57', '::1'),
+(159, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Retraso\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 14:15:06', '::1'),
+(160, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual y Salida Temprana\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 14:15:14', '::1'),
+(161, 2, 'Asistencia', 'Registro de Entrada (Tras Justificar)', 'El empleado lauris viera marcó su entrada a las 14:31:57.', '2026-05-22 14:31:57', '::1'),
+(162, 2, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual\' para el empleado \'Anthony Maita\' en la fecha: 2026-05-22.', '2026-05-22 14:32:45', '::1'),
+(163, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual y Salida Temprana\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 14:35:46', '::1'),
+(164, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Retraso y Salida Temprana\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 14:35:58', '::1'),
+(165, 2, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual y Salida Temprana\' para el empleado \'Anthony Maita\' en la fecha: 2026-05-21.', '2026-05-22 14:37:21', '::1'),
+(166, 1, 'Reportes', 'Descarga de Reporte PDF', 'Descargó Reporte General de Asistencia correspondiente a: TODO EL AÑO de 2026.', '2026-05-22 15:02:09', '::1'),
+(167, 1, 'Reportes', 'Descarga de Reporte PDF', 'Descargó Reporte Individual (C.I: 14669420) correspondiente a: TODO EL AÑO de 2026.', '2026-05-22 15:13:49', '::1'),
+(168, 1, 'Asistencia', 'Registro de Entrada', 'El empleado Anthony Maita marcó su entrada a las 15:15:22.', '2026-05-22 15:15:22', '::1'),
+(169, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual\' para el empleado \'lauris viera\' en la fecha: 2026-05-21.', '2026-05-22 15:15:29', '::1'),
+(170, 1, 'Asistencia', 'Modificación de Asistencia', 'Cambió el estado a \'Puntual\' para el empleado \'lauris viera\' en la fecha: 2026-05-22.', '2026-05-22 15:15:34', '::1');
 
 -- --------------------------------------------------------
 
@@ -225,7 +283,7 @@ CREATE TABLE `configuracion` (
 --
 
 INSERT INTO `configuracion` (`id_config`, `hora_entrada_general`, `hora_salida_general`, `minutos_tolerancia`) VALUES
-(1, '10:00:00', '15:30:00', 30);
+(1, '16:10:00', '20:30:00', 30);
 
 -- --------------------------------------------------------
 
@@ -250,8 +308,21 @@ CREATE TABLE `configuraciones_preestablecidas` (
 --
 
 INSERT INTO `configuraciones_preestablecidas` (`id_preestablecida`, `nombre`, `hora_entrada`, `hora_salida`, `minutos_tolerancia`, `es_activa`, `id_usuario_creador`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-(5, 'dededed', '14:10:00', '20:30:00', 30, 0, 1, '2026-04-28 23:10:00', '2026-04-28 23:10:00'),
-(6, 'dedee', '14:10:00', '20:30:00', 30, 0, 1, '2026-04-28 23:10:07', '2026-04-28 23:10:07');
+(9, 'prueba', '14:10:00', '20:30:00', 30, 0, 1, '2026-05-08 16:41:32', '2026-05-08 16:41:32');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `feriados`
+--
+
+CREATE TABLE `feriados` (
+  `id_feriado` int(11) NOT NULL,
+  `fecha` date NOT NULL,
+  `descripcion` varchar(150) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -322,7 +393,29 @@ INSERT INTO `notificaciones` (`id_notificacion`, `id_usuario`, `mensaje`, `tipo`
 (47, 1, '¡Tu justificación del día 08-04-2026 ha sido APROBADA!', 'Exito', 1, '2026-04-30 11:38:17'),
 (48, 1, '¡Tu justificación del día 01-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-01 17:12:59'),
 (49, 1, 'ATENCIÓN: Tu justificación del 07-05-2026 ha sido RECHAZADA. Motivo: no weon', 'Alerta', 1, '2026-05-07 14:21:03'),
-(50, 1, '¡Tu justificación del día 07-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-07 15:51:54');
+(50, 1, '¡Tu justificación del día 07-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-07 15:51:54'),
+(51, 1, '¡Tu justificación del día 08-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-08 17:51:49'),
+(52, 1, '¡Tu justificación del día 08-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-08 17:52:11'),
+(53, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:54:14'),
+(54, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:55:04'),
+(55, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:55:15'),
+(56, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:56:39'),
+(57, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:56:48'),
+(58, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:56:56'),
+(59, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:57:00'),
+(60, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:57:06'),
+(61, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:57:21'),
+(62, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 17:57:24'),
+(63, 11, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-08 22:16:52'),
+(64, 1, '¡Tu justificación del día 08-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-08 22:18:26'),
+(65, 11, '¡Tu justificación del día 08-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-08 22:18:41'),
+(66, 9, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 0, '2026-05-08 22:29:16'),
+(67, 11, '¡Se han justificado 21 días de tu asistencia por motivo de: Esta de reposo medico jeje!', 'Exito', 0, '2026-05-21 12:45:41'),
+(68, 11, '¡Se han justificado 6 días de tu asistencia por motivo de: kmkmkmkmkmkk!', 'Exito', 0, '2026-05-21 13:41:26'),
+(69, 2, '¡Se han justificado 36 días de tu asistencia por motivo de: wswwsswwsswswswswwssw!', 'Exito', 1, '2026-05-21 15:59:05'),
+(70, 2, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-22 14:01:19'),
+(71, 2, 'Administración ha actualizado tus datos personales y/o de acceso. Revisa tu perfil.', 'Informativa', 1, '2026-05-22 14:01:38'),
+(72, 1, '¡Tu justificación del día 22-05-2026 ha sido APROBADA!', 'Exito', 1, '2026-05-22 14:02:27');
 
 -- --------------------------------------------------------
 
@@ -349,18 +442,8 @@ CREATE TABLE `personal` (
 --
 
 INSERT INTO `personal` (`id_personal`, `cedula`, `nombres`, `apellidos`, `foto_perfil`, `telefono`, `id_cargo`, `id_usuario`, `hora_entrada_personalizada`, `hora_salida_personalizada`, `fecha_ingreso`) VALUES
-(1, '30710894', 'Anthony', 'Maita', 'default.png', '04040404040', 1, 1, '12:50:00', '16:03:00', '2026-04-16'),
-(2, '14669420', 'Lauris', 'Viera', 'default.png', '01010101010', 4, 2, NULL, NULL, '2026-04-16'),
-(3, '30303030', 'koli', 'vvv', 'default.png', '13213213213', 3, 3, NULL, NULL, '2026-04-16'),
-(4, '89798789', 'rita', 'man', 'default.png', '13165464545', 5, 4, NULL, NULL, '2026-04-16'),
-(5, '42342342', 'lolo', 'rerere', 'default.png', '43123212312', 6, 5, NULL, NULL, '2026-04-16'),
-(6, '13213543', 'kioki', 'lolo', 'default.png', '04128974532', 3, 6, NULL, NULL, '2026-04-16'),
-(7, '12331231', 'mobica', 'martin', 'default.png', '45654654654', 3, 7, NULL, NULL, '2026-04-16'),
-(8, '46848944', 'lolol', 'd13edwdwa', 'default.png', '65456456165', 4, 8, NULL, NULL, '2026-04-16'),
-(9, '12321312', 'for', 'mavi', 'default.png', '31231232131', 4, 9, NULL, NULL, '2026-04-16'),
-(10, '53454354', 'lovo', 'qeqwe', 'default.png', '12312313131', 5, 10, NULL, NULL, '2026-04-16'),
-(11, '21312312', 'dede', 'dede', 'default.png', '12323213123', 4, 11, NULL, NULL, '2026-04-16'),
-(13, '12313123', 'dedeeded', 'dedeed', 'default.png', '12343242432', 4, 13, NULL, NULL, '2026-04-24');
+(1, '30710894', 'Anthony', 'Maita', 'default.png', '04444444444', 1, 1, NULL, NULL, '2026-05-21'),
+(2, '14669420', 'lauris', 'viera', 'default.png', '04115615616', 4, 2, NULL, NULL, '2026-05-21');
 
 -- --------------------------------------------------------
 
@@ -407,18 +490,8 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `nombre_usuario`, `password`, `id_rol`, `estado`, `pregunta_1`, `respuesta_1`, `pregunta_2`, `respuesta_2`, `pregunta_3`, `respuesta_3`) VALUES
-(1, 'anthony12', '$2y$10$DRWhHJmwnZRtbcyxXGpCyeGojFfPIddcj12gopj1x6ZwQs6M/8PbW', 1, 'Activo', 1, '$2y$10$BVyAkwrRzbBJ9tuAd2knsehVnQ8Qz6NXtpcJXU2GGggvUNtLU5Zt.', 2, '$2y$10$.bwdaZgtiZj38qIqFF43q.VdDmsObq6u40Qsr5AY2BLV4J8BOpZya', 3, '$2y$10$MrLRjTejXJVDLbswIiicBukk1CmRq1Wx1TXKo3RGoqofaOgNHKT8u'),
-(2, 'lauri12', '$2y$10$jF3ZtGPxA9zaa8AiarONNueLijyAuwB0aI5P3ByVMJ1Nm1d1Ft8GK', 3, 'Activo', 3, '$2y$10$xbV.zubjzllTApaKNV3PWuyUdPoMhUDhswls0i4T8u/vVy3Z8iBVO', 1, '$2y$10$XexaOW3gdbHhzh308McX9OaIFOedZPGuA0uwurtNn9R2WruWhHth2', 4, '$2y$10$VIQGUc3MmqYLC7wqM48OPuQ3.TNNMn8.1Wb7iAoukAXSXzM0ErJTG'),
-(3, 'ami', '$2y$10$gDwc4CDjCK0xMwJnP7USpOS4z9vaktD10y0J2cIfBClMvpjruZYWu', 3, 'Activo', 1, '$2y$10$Da3VYXXG2mClbVhRIfZ7VuVlIBuGzzv8NVRQZqZd4aLtK57pPK9dK', 2, '$2y$10$YrzcoyAPCyS48/nIoBdvzeseSSkWwTEqvwofTjXAAJlse3840sBrC', 3, '$2y$10$s1tgL9zNMWS3oiMK5RgZYeXbyW77NK7utl2K0xmZZVREho1JtTgie'),
-(4, 'moon', '$2y$10$abtBC7ZvTeTF.SDrtdKRGe8ErWG3ZkzGLeFQocLxJ.A5pIIqqr3yO', 3, 'Activo', 1, '$2y$10$0L4O4R8mXguJcLvwbDSeNu.uBMRYiUbI.TKIqHMJ89ai/BpQL3huG', 2, '$2y$10$ivRwcqCx317Fy3PYbGMvS.qIydlVxlEDHTfzOKXJTcsCnEWs3FoKW', 4, '$2y$10$Z5hvOmU8Y4g7l/04EonN5OJGN55p3LBPoD023BSDJ6rfvKKJSzojm'),
-(5, 'juan12', '$2y$10$v4CQMbEO9ycIyyiqbvH/pOCmKMidiSs1tIYojcWv7VN8WlUnjwdLy', 3, 'Activo', 1, '$2y$10$Ei.mjjIKBgb6xyQlIVV/q.czJBFC.NRL39EcZl/X.0lxbWn2yckry', 2, '$2y$10$owY7aZItWFGqFUTPtxVMTu4Cd7cXJB.a8/lcgw6emvo5wu.n0E.jK', 3, '$2y$10$3n6fKqmYI63BPLWioB2NdejGeHnk6ZLbTr7VeIsAMlfpf78nGm8Le'),
-(6, 'bece', '$2y$10$B5rYIYfwkB5Loyav983ZE.EYcYcSxuM/otW2W9ij.7K5r8pAA/KlK', 3, 'Activo', 2, '$2y$10$LKDKp.0sTH6YfkB063Ir5ONNs/x.72iAX11WOORdxj5z05j9oEO2S', 3, '$2y$10$fA8valgK7mjUqBr8bpBCH.knVnvSJ/arPl7ckZL0EbEtKTpBL4IPm', 1, '$2y$10$JV0z3H91z93mophwnOkYBuI.7n2KxhEhjoj0wE8UQUzfA4LS8jzh.'),
-(7, 'movi', '$2y$10$a00zM.TNxCXvm7fbzEasxOaF9thu2a1MznrLQzI86qY0bLY2Hleh.', 3, 'Activo', 1, '$2y$10$UP9GSTyxBf4Ub23npLox4OXKjK8jVoLD0nPyKKaUZ05FWlgVn9Jpq', 3, '$2y$10$/cjTepaPYyv.vzsdRAmDqOHhVUvb1QjaHZi1LI8vR/pGDlw8.tKEK', 2, '$2y$10$AZuT5ZpIyZSJla1WWjBPMOzyYgRcBabC/JwJKQOHGxrwV1drTqdFO'),
-(8, 'ñopo', '$2y$10$Hk7z6LmWUNlEa/pFZQiRSeeJ9oBmowz0eicPERtF8Lp.OyzFLB5hu', 3, 'Activo', 1, '$2y$10$qRpfhY8QnAqK5ATaBub2O.HeK5pqnb7RvKau7cZ4SVj.RB1SjStCu', 2, '$2y$10$Uw4bU6tcXrsKs0qPN8WixOb1f3blRklOdpfAAnWNl48xuR7VqvTEW', 3, '$2y$10$EjXnUL6x.4er.p3V8DHQLueyUDwErhrlRK0YGSr2r6frstnna2KUq'),
-(9, 'kilo', '$2y$10$7TxzFhUFLpzPtEa8aK4kuupWMjZ.BwOLZhyzF8bWo0gRu8v7.ZR36', 3, 'Activo', 1, '$2y$10$JLCzf3By/uCLyiORP5BCAOk9dfxZcXXvIMNu85UNSkQigMiN26M2W', 2, '$2y$10$PSdVNHNlIKLkOiXIdI8owuS2RA3YhSevns6K8GZmYbYH7f/CZ3gmi', 4, '$2y$10$VgD9H3bWsnkXokgmXF0G.uMNeoQvFVhJIR4iP//A612bP/4Dpfpk6'),
-(10, 'polo', '$2y$10$bV3d1jbQ9PhApPxIErjWWOK7chkzvpRrrbKfnjBDli/Sy3BQz0Zei', 3, 'Activo', 1, '$2y$10$supjFoYp3.RS0A0cTBJX4O9Rm4fvHdEAPvipmD2WnojYCpjFLkbjq', 3, '$2y$10$70OVgjaeBVCqNIJRdYCW1uUXg2.Vfc2zwvBKlTxm3KLRKKtAL7EnW', 2, '$2y$10$2wukGQejN5n9gyWdvwuPu.OS./1ph0bM9XAp.N3Q73QRE4fOrjSY.'),
-(11, 'jum', '$2y$10$Ep.hIzcFJB.CH8z9zoWoNuejx9rCiHsaV1ggH/bX3zfHVY1F2tscO', 3, 'Activo', 1, '$2y$10$.AB0icSJQkumkiK1Ct4H9u09c6y5EX57xUxr24N/py8Pih7K.mLRa', 2, '$2y$10$JjJk1L5w7pL5LRkaHrSEteDgLqJLQOoRnj/geyttY3sk1b3XqxkMK', 3, '$2y$10$jYRcGvrjMODzC027RGJYwuSbh3PbHrzk/7RgCIfOP9UI4QAsdwu7.'),
-(13, 'meme', '$2y$10$5HO2n8qaANePkG/S.A.5cO02iDmT2UOPymhfqfaXmRFIWYtxm.dA.', 3, 'Activo', 2, '$2y$10$9HpLZQMzS16TnNsPXl8MMuJb91zHxC8ZaMGue9fU1O6oO3Yowt906', 1, '$2y$10$ISA.Uy331aXBIi8Nsy76Gu6wyLAud3vfkc02bXf2zssfr9I1Z9Qqy', 3, '$2y$10$4FfhXVHmFZuDpwyXxpglneiQgA8lETdj3.uNlbDEUQlGxF5RSh0L6');
+(1, 'anthony12', '$2y$10$Uv4ayT6GjpFI00XZNDq5N.IkQz65VlQCjH3E9M/RaxG41drYX7kZ6', 1, 'Activo', 1, '$2y$10$htzzRkd.nQPZDgvW8u2iCeYkFCyGHKJh41brG/LsKPAIxcMbzxt46', 3, '$2y$10$Vkwtfx5OJKjRLNPoNiVo0uTsngmiK1QX.Y1fCgQNPE4g3EuzCsS26', 2, '$2y$10$SQXHaHK0IMCzDLseoAKEZ.abI1Mz6RjIUy9UlmZ1f8T2IxclDBecO'),
+(2, 'lauris12', '$2y$10$mxVSuk/k3G079pL4SlkLeuDebbUiUll4VQz0pag3YCKYr7IAQItqS', 2, 'Activo', 1, '$2y$10$vkJoVAbfzU8bLcTCs3jzs.EUZuY/swj3.rh8OBBiZvd3Edy/ehlQO', 2, '$2y$10$3/FCEh/fdozGYu54H2jZOeoKKvmYhRXKmjFxXw1GxrEkS2kY4rVOW', 3, '$2y$10$kHhXOkZbwtqintnKuNXevu37RRcGepOdzHJRTkhKs7MduOpmXAHI2');
 
 --
 -- Índices para tablas volcadas
@@ -459,6 +532,14 @@ ALTER TABLE `configuraciones_preestablecidas`
   ADD KEY `idx_usuario_creador` (`id_usuario_creador`);
 
 --
+-- Indices de la tabla `feriados`
+--
+ALTER TABLE `feriados`
+  ADD PRIMARY KEY (`id_feriado`),
+  ADD UNIQUE KEY `fecha_unica` (`fecha`),
+  ADD KEY `fk_feriados_usuario` (`id_usuario`);
+
+--
 -- Indices de la tabla `notificaciones`
 --
 ALTER TABLE `notificaciones`
@@ -496,13 +577,13 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `asistencias`
 --
 ALTER TABLE `asistencias`
-  MODIFY `id_asistencia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_asistencia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `bitacora`
 --
 ALTER TABLE `bitacora`
-  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=171;
 
 --
 -- AUTO_INCREMENT de la tabla `cargos`
@@ -520,19 +601,25 @@ ALTER TABLE `configuracion`
 -- AUTO_INCREMENT de la tabla `configuraciones_preestablecidas`
 --
 ALTER TABLE `configuraciones_preestablecidas`
-  MODIFY `id_preestablecida` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_preestablecida` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `feriados`
+--
+ALTER TABLE `feriados`
+  MODIFY `id_feriado` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `notificaciones`
 --
 ALTER TABLE `notificaciones`
-  MODIFY `id_notificacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id_notificacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
 
 --
 -- AUTO_INCREMENT de la tabla `personal`
 --
 ALTER TABLE `personal`
-  MODIFY `id_personal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_personal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -544,7 +631,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Restricciones para tablas volcadas
@@ -561,6 +648,12 @@ ALTER TABLE `asistencias`
 --
 ALTER TABLE `bitacora`
   ADD CONSTRAINT `fk_bitacora_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `feriados`
+--
+ALTER TABLE `feriados`
+  ADD CONSTRAINT `fk_feriados_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `notificaciones`

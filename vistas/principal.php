@@ -307,7 +307,7 @@ if (empty($_SESSION['csrf_token'])) {
                 <p class="texto-estado-asistencia">
                     <?php 
                         if ($es_fin_semana) {
-                            echo "Los reportes y módulos están habilitados, pero el registro de personal y justificaciones se encuentra pausado.";
+                            echo "Los reportes y los demas módulos están habilitados, pero el registro de asistencia y justificaciones se encuentra pausado.";
                         } else {
                             if (!$asistencia_hoy) {
                                 if ($es_tarde && !$ya_justifico_entrada) {
@@ -370,11 +370,6 @@ if (empty($_SESSION['csrf_token'])) {
             <form action="../controladores/ControladorJustificacion.php" method="POST" enctype="multipart/form-data" id="formJustificacion" novalidate>
                 <input type="hidden" name="id_personal" value="<?php echo $id_personal; ?>">
 
-                <!-- =====================================================================
-                     CORRECCIÓN BUG 4 (parte HTML): Token CSRF inyectado en el formulario.
-                     El controlador ControladorJustificacion.php lo valida con hash_equals()
-                     antes de procesar cualquier dato.
-                ===================================================================== -->
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                 
                 <p style="font-size: 0.85rem; margin-block-end: 15px; color: var(--text-color);">Detalla el motivo de tu incidencia y adjunta una prueba si es necesario.</p>

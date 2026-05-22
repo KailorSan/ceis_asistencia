@@ -36,18 +36,15 @@ $tolerancia_sys = 15;
 
 if ($es_admin) {
     try {
-        // 1. Obtener configuración general para el contador
         $stmt_config = $conexion->query("SELECT hora_entrada_general, minutos_tolerancia FROM configuracion LIMIT 1");
         if ($config_sys = $stmt_config->fetch(PDO::FETCH_ASSOC)) {
             $hora_entrada_sys = $config_sys['hora_entrada_general'];
             $tolerancia_sys = $config_sys['minutos_tolerancia'];
         }
 
-        // 2. Obtener Justificaciones pendientes
         $stmt_just = $conexion->query("SELECT COUNT(*) FROM asistencias WHERE estado_justificacion = 'Pendiente'");
         $justificaciones_pendientes = $stmt_just->fetchColumn();
 
-        // 3. Consulta del personal
         $sql = "SELECT p.id_personal, p.cedula, p.nombres, p.apellidos, p.foto_perfil, p.id_cargo, c.nombre_cargo,
                        a.hora_entrada AS asistio_hoy
                 FROM personal p
@@ -65,18 +62,6 @@ if ($es_admin) {
         $stmt_cargos = $conexion->query("SELECT id_cargo, nombre_cargo FROM cargos ORDER BY id_cargo ASC");
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
 
-        // 4. Calcular Ausentes
-        // =====================================================================
-        // CORRECCIÓN: Conteo de ausentes unificado con principal.php.
-        //
-        // ANTES: Loop PHP que solo contaba hora_entrada IS NOT NULL como
-        //   "presente". Un empleado con estado 'Justificado' (falta aprobada
-        //   sin entrada física) aparecía como ausente aquí pero no en
-        //   principal.php — ambos módulos mostraban números distintos.
-        //
-        // AHORA: Misma lógica SQL de principal.php:
-        //   "No ausente" = hora_entrada IS NOT NULL  OR  estado = 'Justificado'
-        // =====================================================================
         $total_personal = count($lista_personal);
 
         $stmt_no_ausentes_as = $conexion->query(
@@ -86,7 +71,6 @@ if ($es_admin) {
         );
         $no_ausentes_hoy_as = (int) $stmt_no_ausentes_as->fetchColumn();
 
-        // Usamos el total real de activos (excluyendo al admin actual, igual que el grid)
         $stmt_total_activos_as = $conexion->prepare(
             "SELECT COUNT(*) FROM personal p
              INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
@@ -105,9 +89,10 @@ if ($es_admin) {
 <html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Asistencia - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    
     <script>
         (function() {
             const idUsr = "<?php echo $_SESSION['id_usuario']; ?>";
@@ -250,7 +235,7 @@ if ($es_admin) {
                                     if (!empty($emp['asistio_hoy'])) {
                                         echo '<span class="indicador-estatus estatus-presente" title="Asistió hoy (' . date('h:i A', strtotime($emp['asistio_hoy'])) . ')"></span>';
                                     } else {
-                                        echo '<span class="indicador-estatus estatus-ausente" title="Aún no has marcado entrada hoy"></span>';
+                                        echo '<span class="indicador-estatus estatus-ausente" title="Aún no ha marcado entrada hoy"></span>';
                                     }
                                 ?>
                             </div>
@@ -300,35 +285,191 @@ if ($es_admin) {
     </div>
 
     <?php if ($es_admin): ?>
-    <style>
-        /* Estos estilos son solo estructurales para el modal */
-        #modalCalendario { max-inline-size: 450px; padding: 1.5rem; }
-        #modalCalendario .dia-celda { min-block-size: 50px; padding: 4px; }
-        #modalCalendario .numero-dia { font-size: 0.95rem; }
-        #modalCalendario .icono-estado { inline-size: 16px; block-size: 16px; }
-    </style>
-    
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-contenido" id="modalCalendario">
+            <button id="btnFlotanteRangoModal" onclick="ejecutarModalRango()" class="btn-flotante-rango-modal" style="display: none;" title="Justificar Múltiples Días">
+                <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 11v6m-3-3h6" />
+                </svg>
+            </button>
+
             <div class="modal-header">
                 <h2 id="titulo_modal_calendario" style="font-size: 1.2rem;">Asistencia</h2>
                 <button class="btn-cerrar-modal" onclick="cerrarModal()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            
             <div id="contenedor-calendario-modal"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalRango">
+        <div id="contenidoModalRango" class="modal-contenido" style="max-width: 550px; padding: 2.5rem; border-radius: 16px; z-index: 1001;">
+            <div class="modal-header" style="margin-bottom: 25px;">
+                <h2 style="font-size: 1.4rem; color: var(--primary-color);">Justificación Múltiple</h2>
+                <button type="button" class="btn-cerrar-modal" onclick="cerrarModalRango()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            
+            <form id="formJustificacionRango" enctype="multipart/form-data" novalidate>
+                
+                <div class="grupo-input-modal">
+                    <label>Personal a Justificar:</label>
+                    <input type="hidden" id="rango_id_personal">
+                    <input type="text" id="rango_nombre_personal" class="input-modal-rango disabled" readonly>
+                </div>
+
+                <div class="grid-formulario" style="gap: 15px; margin-bottom: 15px;">
+                    <div class="grupo-input-modal" style="margin-bottom: 0;">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="rango_fecha_inicio" class="input-modal-rango">
+                        <span class="error-inline" id="err_rango_inicio">Seleccione una fecha de inicio.</span>
+                    </div>
+                    <div class="grupo-input-modal" style="margin-bottom: 0;">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="rango_fecha_fin" class="input-modal-rango">
+                        <span class="error-inline" id="err_rango_fin">Seleccione una fecha final válida.</span>
+                    </div>
+                </div>
+
+                <div class="grupo-input-modal">
+                    <label>Motivo (Reposo médico, Vacaciones, etc.):</label>
+                    <textarea id="rango_motivo" class="input-modal-rango" rows="3" placeholder="Detalle el motivo (Mín. 10 caracteres)..."></textarea>
+                    <span class="error-inline" id="err_rango_motivo">El motivo debe tener al menos 10 caracteres.</span>
+                </div>
+
+                <div class="grupo-input-modal">
+                    <label>Adjuntar Evidencias (Opcional):</label>
+                    <div class="zona-upload-multiple">
+                        <input type="file" id="rango_evidencias" multiple class="input-file-oculto" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                        <label for="rango_evidencias" class="btn-subir-archivo">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            <span style="font-size: 0.9rem;">Cargar archivos...</span>
+                        </label>
+                    </div>
+                    <div id="lista_preview_archivos_rango" class="lista-archivos-preview"></div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button type="submit" class="btn-guardar" style="width: 100%; justify-content: center; border-radius: 10px; padding: 1rem;">
+                        Procesar Justificación
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     <?php endif; ?>
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script>
-        // ==========================================
-        // LÓGICA DEL RELOJ Y ESTADO DEL TURNO
-        // ==========================================
+      /**
+         * ============================================================================
+         * 1. CONSTANTES Y VARIABLES GLOBALES DE ESTADO
+         * ============================================================================
+         */
+        
+        // Configuración del Sistema (Reloj y Tolerancia)
         const configHoraEntrada = "<?php echo htmlspecialchars($hora_entrada_sys); ?>";
         const configTolerancia = <?php echo (int)$tolerancia_sys; ?>;
 
-        function actualizarReloj() {
+        // Estado de Paginación y Filtrado
+        const ITEMS_POR_CARGA = 8;
+        let limitePaginacionActual = ITEMS_POR_CARGA; 
+        let cargoActivoGlobal = 'todos'; 
+
+        // Estado del Modal de Justificación Múltiple (Archivos)
+        let arrayArchivosRango = [];
+
+        // Estado del Calendario Individual
+        let idPersonalActual = <?php echo $mi_id_personal; ?>;
+        let nombrePersonalActual = "";
+        let esModoAdmin = false;
+        let mesActual = new Date().getMonth() + 1;
+        let anioActual = new Date().getFullYear();
+        let fechaIngresoActual = ""; 
+
+        /**
+         * ============================================================================
+         * 2. INICIALIZACIÓN (Event Listeners Principales)
+         * ============================================================================
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar el reloj si el elemento existe
+            if (document.getElementById('reloj-hora')) {
+                setInterval(actualizarRelojSistema, 1000);
+                actualizarRelojSistema();
+            }
+
+            // Inicializar filtro universal
+            aplicarFiltroUniversal(null, null, true);
+            
+            // Carga de calendario inline (Vista Empleado)
+            <?php if (!$es_admin): ?>
+                cargarCalendarioHtml('contenedor-calendario-inline');
+            <?php endif; ?>
+
+            // Listeners UI Globales
+            configurarListenersUI();
+        });
+
+        /**
+         * Configura los escuchadores de eventos para elementos estáticos del DOM.
+         */
+        function configurarListenersUI() {
+            // Tema Oscuro/Claro
+            const btnCambiarTema = document.getElementById('btnCambiarTema');
+            if(btnCambiarTema) {
+                btnCambiarTema.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const html = document.documentElement;
+                    const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                    html.setAttribute('data-theme', nuevoTema);
+                    localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
+                });
+            }
+
+            // Buscador Universal
+            const inputBuscador = document.getElementById('buscador-universal');
+            if (inputBuscador) {
+                inputBuscador.addEventListener('input', () => aplicarFiltroUniversal(null, null, true));
+            }
+
+            // Botón "Cargar Más"
+            const btnVerMas = document.getElementById('btn-ver-mas');
+            if (btnVerMas) {
+                btnVerMas.addEventListener('click', () => {
+                    limitePaginacionActual += ITEMS_POR_CARGA;
+                    aplicarFiltroUniversal(cargoActivoGlobal, document.querySelector('.btn-filtro.activo'), false); 
+                });
+            }
+
+            // Input File de Justificación Múltiple
+            const inputEvidenciasRango = document.getElementById('rango_evidencias');
+            if (inputEvidenciasRango) {
+                inputEvidenciasRango.addEventListener('change', (e) => {
+                    const nuevosArchivos = Array.from(e.target.files);
+                    arrayArchivosRango = arrayArchivosRango.concat(nuevosArchivos);
+                    renderizarPreviewArchivosRango();
+                    inputEvidenciasRango.value = ''; // Resetear para permitir reselección
+                });
+            }
+
+            // Envío del Formulario de Rango
+            const formRango = document.getElementById('formJustificacionRango');
+            if (formRango) {
+                formRango.addEventListener('submit', procesarEnvioJustificacionRango);
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 3. MÓDULO: RELOJ Y ESTADO DEL TURNO
+         * ============================================================================
+         */
+
+        /**
+         * Calcula y renderiza la hora actual, la fecha y el estado del turno 
+         * evaluando la tolerancia configurada en el sistema.
+         */
+        function actualizarRelojSistema() {
             const elHora = document.getElementById('reloj-hora');
             if (!elHora) return;
 
@@ -341,40 +482,36 @@ if ($es_admin) {
             if (horas >= 5 && horas < 12) saludo = 'Buenos días';
             else if (horas >= 12 && horas < 18) saludo = 'Buenas tardes';
 
-            horas = horas % 12;
-            horas = horas ? horas : 12; 
+            horas = horas % 12 || 12; 
 
-            const horaStr = `${horas.toString().padStart(2, '0')}:${minutos}<span>${ampm}</span>`;
+            // Actualizar DOM UI Reloj
+            elHora.innerHTML = `${horas.toString().padStart(2, '0')}:${minutos}<span>${ampm}</span>`;
             
             const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            const fechaStr = `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
-
-            elHora.innerHTML = horaStr;
-            document.getElementById('reloj-fecha').textContent = fechaStr;
+            document.getElementById('reloj-fecha').textContent = `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
             
             const nombreDirector = "<?php echo isset($mis_datos['nombres']) ? explode(' ', htmlspecialchars($mis_datos['nombres']))[0] : 'Director'; ?>";
             document.getElementById('reloj-saludo').textContent = `${saludo}, ${nombreDirector}.`;
 
-            // === LÓGICA DE TOLERANCIA (Tarjeta dinámica usando clases CSS y JS inline) ===
+            // Lógica de cálculo de Tolerancia y Estado de Turno
             const horaEntradaParts = configHoraEntrada.split(':');
             let fechaEntrada = new Date();
             fechaEntrada.setHours(parseInt(horaEntradaParts[0]), parseInt(horaEntradaParts[1]), 0, 0);
             
             let fechaTolerancia = new Date(fechaEntrada.getTime() + (configTolerancia * 60000));
             
-            let estadoTurno = document.getElementById('texto-estatus-turno');
-            let tarjetaTurno = document.getElementById('tarjeta-estado-turno');
-            let iconoTurno = document.getElementById('icono-estado-turno');
+            const estadoTurno = document.getElementById('texto-estatus-turno');
+            const tarjetaTurno = document.getElementById('tarjeta-estado-turno');
+            const iconoTurno = document.getElementById('icono-estado-turno');
             
-            if(estadoTurno && tarjetaTurno && iconoTurno) {
+            if (estadoTurno && tarjetaTurno && iconoTurno) {
                 if (ahora < fechaEntrada) {
                     estadoTurno.innerHTML = `<span style="color: #3b82f6;">Aún no inicia</span>`;
                     tarjetaTurno.style.borderLeftColor = '#3b82f6';
                     iconoTurno.style.color = '#3b82f6';
                 } else if (ahora >= fechaEntrada && ahora <= fechaTolerancia) {
-                    let diffMs = fechaTolerancia - ahora;
-                    let diffMins = Math.floor(diffMs / 60000);
+                    let diffMins = Math.floor((fechaTolerancia - ahora) / 60000);
                     estadoTurno.innerHTML = `<span style="color: #10b981;">Quedan ${diffMins} min</span>`;
                     tarjetaTurno.style.borderLeftColor = '#10b981';
                     iconoTurno.style.color = '#10b981';
@@ -386,114 +523,278 @@ if ($es_admin) {
             }
         }
 
-        setInterval(actualizarReloj, 1000);
-        actualizarReloj();
+        /**
+         * ============================================================================
+         * 4. MÓDULO: FILTRADO Y BÚSQUEDA DE PERSONAL
+         * ============================================================================
+         */
 
-        // ==========================================
-        // SISTEMA DE FILTRADO Y PAGINACIÓN INFINITA
-        // ==========================================
-        const inputBuscadorUniv = document.getElementById('buscador-universal');
-        let cargoActivoUniv = 'todos'; 
-        
-        const itemsPorCarga = 8;
-        let limiteActual = itemsPorCarga; 
-        
+        /**
+         * Filtra las tarjetas de personal combinando el filtro de cargo y la búsqueda de texto.
+         * Incorpora un sistema de pseudo-paginación ("Cargar más").
+         * * @param {number|string|null} idCargo - ID del cargo a filtrar (o 'todos').
+         * @param {HTMLElement|null} botonSeleccionado - Referencia al nodo del botón clicado.
+         * @param {boolean} reiniciarPaginacion - Indica si se debe resetear el límite de paginación.
+         */
         function aplicarFiltroUniversal(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
+            if (reiniciarPaginacion) limitePaginacionActual = ITEMS_POR_CARGA;
             
-            if (reiniciarPaginacion) {
-                limiteActual = itemsPorCarga;
-            }
-
             if (idCargo !== null) {
-                cargoActivoUniv = idCargo;
+                cargoActivoGlobal = idCargo;
                 document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
                 if(botonSeleccionado) botonSeleccionado.classList.add('activo');
             }
-            const textoBusqueda = inputBuscadorUniv ? inputBuscadorUniv.value.toLowerCase().trim() : '';
             
+            const inputVal = document.getElementById('buscador-universal');
+            const textoBusqueda = inputVal ? inputVal.value.toLowerCase().trim() : '';
             let coincidentes = 0;
             
             document.querySelectorAll('.item-filtrable').forEach(item => {
-                const coincideCargo = (cargoActivoUniv === 'todos') || (item.getAttribute('data-cargo') == cargoActivoUniv);
+                const coincideCargo = (cargoActivoGlobal === 'todos') || (item.getAttribute('data-cargo') == cargoActivoGlobal);
                 const elNombre = item.querySelector('.nombre-empleado');
                 const elCargo = item.querySelector('.cargo-empleado');
-                const nombre = elNombre ? elNombre.innerText.toLowerCase() : '';
-                const cargo = elCargo ? elCargo.innerText.toLowerCase() : '';
-                const coincideTexto = nombre.includes(textoBusqueda) || cargo.includes(textoBusqueda);
+                
+                const nombreStr = elNombre ? elNombre.innerText.toLowerCase() : '';
+                const cargoStr = elCargo ? elCargo.innerText.toLowerCase() : '';
+                const coincideTexto = nombreStr.includes(textoBusqueda) || cargoStr.includes(textoBusqueda);
                 
                 if (coincideCargo && coincideTexto) {
                     item.classList.remove('oculto-por-filtro');
                     coincidentes++;
                     
-                    if (coincidentes > limiteActual) {
+                    if (coincidentes > limitePaginacionActual) {
                         item.classList.add('oculto-por-paginacion');
                         item.classList.remove('animacion-aparecer');
                     } else {
-                        if (item.classList.contains('oculto-por-paginacion')) {
-                            item.classList.remove('oculto-por-paginacion');
-                            void item.offsetWidth; 
-                            item.classList.add('animacion-aparecer');
-                        } 
-                        else if (reiniciarPaginacion) {
-                            item.classList.remove('animacion-aparecer');
+                        // Forzar repintado para disparar animación
+                        if (item.classList.contains('oculto-por-paginacion') || reiniciarPaginacion) {
+                            item.classList.remove('oculto-por-paginacion', 'animacion-aparecer');
                             void item.offsetWidth; 
                             item.classList.add('animacion-aparecer');
                         }
                     }
                 } else {
                     item.classList.add('oculto-por-filtro');
-                    item.classList.remove('oculto-por-paginacion');
-                    item.classList.remove('animacion-aparecer');
+                    item.classList.remove('oculto-por-paginacion', 'animacion-aparecer');
                 }
             });
 
+            // Control de visualización del botón "Cargar Más"
             const contenedorVerMas = document.getElementById('contenedor-ver-mas');
             if (contenedorVerMas) {
-                if (coincidentes > limiteActual) {
-                    contenedorVerMas.style.display = 'block';
-                } else {
-                    contenedorVerMas.style.display = 'none';
-                }
+                contenedorVerMas.style.display = (coincidentes > limitePaginacionActual) ? 'block' : 'none';
             }
         }
 
-        if (inputBuscadorUniv) {
-            inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal(null, null, true));
-        }
+        /**
+         * ============================================================================
+         * 5. MÓDULO: MODAL JUSTIFICACIÓN MÚLTIPLE (POR RANGO)
+         * ============================================================================
+         */
 
-        const btnVerMas = document.getElementById('btn-ver-mas');
-        if (btnVerMas) {
-            btnVerMas.addEventListener('click', () => {
-                limiteActual += itemsPorCarga;
-                aplicarFiltroUniversal(cargoActivoUniv, document.querySelector('.btn-filtro.activo'), false); 
+        /**
+         * Renderiza el DOM con la vista previa (imágenes o iconos) de los archivos seleccionados.
+         */
+        function renderizarPreviewArchivosRango() {
+            const listaPreview = document.getElementById('lista_preview_archivos_rango');
+            if(!listaPreview) return;
+            listaPreview.innerHTML = '';
+            
+            arrayArchivosRango.forEach((archivo, index) => {
+                const div = document.createElement('div');
+                div.className = 'item-archivo-preview';
+                
+                let iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>`;
+                
+                if (archivo.type && archivo.type.startsWith('image/')) {
+                    const objUrl = URL.createObjectURL(archivo);
+                    iconHtml = `<img src="${objUrl}" class="img-preview-mini" onload="URL.revokeObjectURL(this.src)">`;
+                }
+
+                div.innerHTML = `
+                    ${iconHtml}
+                    <span class="nombre-archivo" title="${archivo.name}">${archivo.name}</span>
+                    <button type="button" class="btn-eliminar-preview" onclick="eliminarArchivoRango(${index})" title="Quitar archivo">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                `;
+                listaPreview.appendChild(div);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            aplicarFiltroUniversal(null, null, true);
-        });
+        /**
+         * Elimina un archivo específico del array de evidencias y re-renderiza la interfaz.
+         * @param {number} index - Índice del archivo en el array arrayArchivosRango.
+         */
+        function eliminarArchivoRango(index) {
+            arrayArchivosRango.splice(index, 1);
+            renderizarPreviewArchivosRango();
+        }
 
-        // ==========================================
-        // RESTO DEL CÓDIGO (TEMA Y CALENDARIO)
-        // ==========================================
-        const btnCambiarTema = document.getElementById('btnCambiarTema');
-        if(btnCambiarTema) {
-            btnCambiarTema.addEventListener('click', function(e) {
-                e.preventDefault();
-                const html = document.documentElement;
-                const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                html.setAttribute('data-theme', nuevoTema);
-                localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
+        /**
+         * Prepara y abre el Modal de Justificación Múltiple. Extrae datos del calendario abierto.
+         */
+        function ejecutarModalRango() {
+            // Extracción preventiva de la fecha de ingreso almacenada en el dataset
+            if (!fechaIngresoActual) {
+                const contenedor = document.getElementById('contenedor-calendario-modal');
+                if (contenedor) fechaIngresoActual = contenedor.getAttribute('data-fecha-ingreso') || "";
+            }
+
+            if (fechaIngresoActual) {
+                const hoy = new Date().toISOString().slice(0,10);
+                if (fechaIngresoActual > hoy) {
+                    Swal.fire('Aviso', 'La fecha de ingreso del empleado es futura. No se puede procesar justificación.', 'warning');
+                    return;
+                }
+            }
+
+            cerrarModal(); // Cierra el modal individual
+            
+            setTimeout(() => {
+                const inputId = document.getElementById('rango_id_personal');
+                const inputNombre = document.getElementById('rango_nombre_personal');
+                if (inputId && inputNombre) {
+                    inputId.value = idPersonalActual;
+                    inputNombre.value = nombrePersonalActual;
+                }
+                document.getElementById('modalRango').classList.add('activo');
+                document.getElementById('contenidoModalRango').classList.add('activo');
+            }, 150);
+        }
+
+        /**
+         * Cierra y resetea completamente el Modal de Justificación Múltiple.
+         */
+        function cerrarModalRango() {
+            const modal = document.getElementById('modalRango');
+            const contenido = document.getElementById('contenidoModalRango');
+            const form = document.getElementById('formJustificacionRango');
+            
+            if (modal) modal.classList.remove('activo');
+            if (contenido) contenido.classList.remove('activo');
+            if (form) form.reset();
+            
+            // Limpieza de clases de validación visual
+            document.querySelectorAll('.input-modal-rango').forEach(el => el.classList.remove('input-error', 'sacudir'));
+            document.querySelectorAll('.error-inline').forEach(el => el.style.display = 'none');
+            
+            arrayArchivosRango = [];
+            renderizarPreviewArchivosRango();
+        }
+
+        /**
+         * Manejador asíncrono para validar y enviar el formulario de Justificación Múltiple vía Fetch API.
+         * @param {Event} e - Evento Submit.
+         */
+        function procesarEnvioJustificacionRango(e) {
+            e.preventDefault();
+            
+            const inpInicio = document.getElementById('rango_fecha_inicio');
+            const inpFin = document.getElementById('rango_fecha_fin');
+            const inpMotivo = document.getElementById('rango_motivo');
+            
+            const errInicio = document.getElementById('err_rango_inicio');
+            const errFin = document.getElementById('err_rango_fin');
+            const errMotivo = document.getElementById('err_rango_motivo');
+
+            // Reset UI states
+            [inpInicio, inpFin, inpMotivo].forEach(el => el.classList.remove('input-error', 'sacudir'));
+            [errInicio, errFin, errMotivo].forEach(el => el.style.display = 'none');
+
+            let hasError = false;
+
+            // Bloque de Validación
+            if (!inpInicio.value) {
+                inpInicio.classList.add('input-error', 'sacudir');
+                errInicio.style.display = 'block';
+                hasError = true;
+            }
+            
+            if (!inpFin.value) {
+                inpFin.classList.add('input-error', 'sacudir');
+                errFin.innerText = 'Seleccione una fecha final.';
+                errFin.style.display = 'block';
+                hasError = true;
+            } else if (inpInicio.value && inpFin.value < inpInicio.value) {
+                inpFin.classList.add('input-error', 'sacudir');
+                errFin.innerText = 'La fecha fin no puede ser anterior al inicio.';
+                errFin.style.display = 'block';
+                hasError = true;
+            }
+
+            if (!inpMotivo.value || inpMotivo.value.trim().length < 10) {
+                inpMotivo.classList.add('input-error', 'sacudir');
+                errMotivo.style.display = 'block';
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            // Construcción del FormData
+            const formData = new FormData();
+            formData.append('id_personal', document.getElementById('rango_id_personal').value);
+            formData.append('fecha_inicio', inpInicio.value);
+            formData.append('fecha_fin', inpFin.value);
+            formData.append('motivo', inpMotivo.value);
+            
+            arrayArchivosRango.forEach((archivo) => {
+                formData.append('evidencias[]', archivo);
+            });
+
+            // UI Feedback
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Validando archivos y registrando en el sistema...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); },
+                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
+                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
+            });
+
+            // Petición AJAX
+            fetch('../controladores/ControladorJustificacionRango.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: '¡Completado!',
+                        text: data.msg,
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
+                        color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
+                    }).then(() => {
+                        cerrarModalRango();
+                        location.reload(); 
+                    });
+                } else {
+                    Swal.fire('Error de Validación', data.msg, 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error de Conexión', 'Hubo un problema al procesar la solicitud.', 'error');
             });
         }
 
-        let idPersonalActual = <?php echo $mi_id_personal; ?>;
-        let esModoAdmin = false;
-        let mesActual = new Date().getMonth() + 1;
-        let anioActual = new Date().getFullYear();
+        /**
+         * ============================================================================
+         * 6. MÓDULO: CALENDARIO INDIVIDUAL Y EDICIÓN DE DÍAS
+         * ============================================================================
+         */
 
+        /**
+         * Abre el Modal del Calendario e inicializa las variables de estado.
+         * * @param {number} idPersonal - ID del empleado seleccionado.
+         * @param {string} nombre - Nombre completo del empleado.
+         * @param {boolean} modoEdicion - True si el usuario tiene privilegios de Admin.
+         */
         function abrirCalendario(idPersonal, nombre, modoEdicion) {
             idPersonalActual = idPersonal;
+            nombrePersonalActual = nombre;
             esModoAdmin = modoEdicion;
             mesActual = new Date().getMonth() + 1;
             anioActual = new Date().getFullYear();
@@ -501,54 +802,107 @@ if ($es_admin) {
             const titulo = document.getElementById('titulo_modal_calendario');
             if (titulo) titulo.innerText = 'Asistencia: ' + nombre;
             
+            const btnFab = document.getElementById('btnFlotanteRangoModal');
+            if(btnFab) btnFab.style.display = modoEdicion ? 'flex' : 'none';
+
             document.getElementById('modalOverlay').classList.add('activo');
             document.getElementById('modalCalendario').classList.add('activo');
             
-            cargarCalendario('contenedor-calendario-modal');
+            cargarCalendarioHtml('contenedor-calendario-modal');
         }
 
+        /**
+         * Cierra el modal individual de calendario.
+         */
         function cerrarModal() {
-            document.getElementById('modalOverlay').classList.remove('activo');
-            document.getElementById('modalCalendario').classList.remove('activo');
+            const overlay = document.getElementById('modalOverlay');
+            const modal = document.getElementById('modalCalendario');
+            if(overlay) overlay.classList.remove('activo');
+            if(modal) modal.classList.remove('activo');
         }
 
-        <?php if (!$es_admin): ?>
-            document.addEventListener('DOMContentLoaded', function() {
-                cargarCalendario('contenedor-calendario-inline');
-            });
-        <?php endif; ?>
-
-        function cargarCalendario(idContenedor) {
+        /**
+         * Realiza una petición AJAX para obtener y pintar la vista HTML del mes del calendario.
+         * @param {string} idContenedor - El ID del nodo DOM donde se inyectará el calendario.
+         */
+        function cargarCalendarioHtml(idContenedor) {
             const contenedor = document.getElementById(idContenedor);
+            if (!contenedor) return;
+            
+            // Render spinner inicial
             contenedor.innerHTML = '<div style="text-align:center; padding: 40px;"><svg class="animacion-vibrar" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--primary-color)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p>Cargando fechas...</p></div>';
 
             fetch(`../controladores/ControladorCalendario.php?id=${idPersonalActual}&mes=${mesActual}&anio=${anioActual}&admin=${esModoAdmin}&contenedor=${idContenedor}`)
                 .then(response => response.text())
-                .then(html => { contenedor.innerHTML = html; })
-                .catch(error => { contenedor.innerHTML = '<p style="color:red; text-align:center;">Error al cargar el calendario.</p>'; });
+                .then(html => {
+                    contenedor.innerHTML = html;
+                    const contPrincipal = document.getElementById(idContenedor);
+                    if (contPrincipal) {
+                        fechaIngresoActual = contPrincipal.getAttribute('data-fecha-ingreso') || "";
+                    }
+                })
+                .catch(() => {
+                    contenedor.innerHTML = '<p style="color:red; text-align:center;">Error al cargar el calendario.</p>';
+                });
         }
 
+        /**
+         * Interfaz de navegación para mover los meses hacia adelante o atrás.
+         * @param {number} direccion - (+1 para siguiente, -1 para anterior).
+         * @param {string} idContenedor - ID destino de renderizado.
+         */
         function cambiarMes(direccion, idContenedor) {
             mesActual += direccion;
             if (mesActual > 12) { mesActual = 1; anioActual++; }
             if (mesActual < 1) { mesActual = 12; anioActual--; }
-            cargarCalendario(idContenedor);
+            cargarCalendarioHtml(idContenedor);
         }
 
+        /**
+         * Lanza SweetAlert para la edición individual de un día (Modifica/Agrega/Elimina el estado).
+         * * @param {string} fechaBD - Formato YYYY-MM-DD.
+         * @param {string} fechaVisual - Formato DD/MM/YYYY.
+         * @param {string} estadoActual - Estado textual (Ej: "Retraso y Salida Temprana").
+         * @param {string} motivo - Motivo actual (si existe).
+         * @param {string} archivo - Nombre de archivo adjunto (si existe).
+         */
         function editarDia(fechaBD, fechaVisual, estadoActual, motivo, archivo) {
             if (!esModoAdmin) return;
+            
+            if (fechaIngresoActual && fechaBD < fechaIngresoActual) {
+                Swal.fire('Operación no permitida', 'No se puede modificar una fecha anterior a la fecha de ingreso del empleado.', 'error');
+                return;
+            }
 
+            // Identificación de contextos cronológicos
+            const hoy = new Date().toISOString().slice(0,10);
+            const esFuturo = fechaBD > hoy;
+
+            // Parsear estados combinados
             let estadoPrimario = estadoActual;
             let estadoSecundario = '';
             
             if (estadoActual && estadoActual.includes(' y ')) {
-                let partes = estadoActual.split(' y ');
+                const partes = estadoActual.split(' y ');
                 estadoPrimario = partes[0].trim();
                 estadoSecundario = partes[1].trim();
             }
 
+            // Generación Dinámica de Opciones (Futuro vs Pasado/Presente)
+            let opcionesEstado = esFuturo ? `
+                <option value="Justificado" selected>Justificado (Gris)</option>
+                <option value="Eliminar">Eliminar Registro (Deshacer Justificación)</option>
+            ` : `
+                <option value="Puntual" ${estadoPrimario === 'Puntual' ? 'selected' : ''}>Puntual (Verde)</option>
+                <option value="Retraso" ${estadoPrimario === 'Retraso' ? 'selected' : ''}>Retraso (Naranja)</option>
+                <option value="Salida Irregular" ${estadoPrimario === 'Salida Irregular' ? 'selected' : ''}>Salida Irregular (Rojo Oscuro)</option>
+                <option value="Justificado" ${estadoPrimario === 'Justificado' ? 'selected' : ''}>Justificado (Gris)</option>
+                <option value="Falta" ${estadoPrimario.includes('Falta') ? 'selected' : ''}>Falta (Rojo)</option>
+            `;
+
+            // Construcción del HTML de Evidencia adjunta
             let enlaceEvidencia = '';
-            if (archivo !== '') {
+            if (archivo && archivo !== 'undefined' && archivo !== 'null') {
                 enlaceEvidencia = `
                     <div style="margin-block-end: 15px; text-align: start; background: var(--bg-light); padding: 10px; border-radius: 8px;">
                         <span style="font-size:0.85rem; color:var(--text-color); display:block; margin-block-end:5px;">Evidencia adjunta:</span>
@@ -560,8 +914,9 @@ if ($es_admin) {
                 `;
             }
 
+            // Ejecución del Modal Dinámico
             Swal.fire({
-                title: 'Modificar Asistencia',
+                title: esFuturo ? 'Gestionar Justificación Futura' : 'Modificar Asistencia',
                 html: `
                     <p style="margin-block-end:15px; font-weight:bold; color:var(--primary-color); font-size:1.1rem;">Fecha: ${fechaVisual}</p>
                     
@@ -569,21 +924,17 @@ if ($es_admin) {
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Estado Principal:</label>
                     </div>
                     <select id="swal-estado" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:5px; border:1px solid #ccc; outline:none; font-family:'Montserrat';">
-                        <option value="Puntual" ${estadoPrimario === 'Puntual' ? 'selected' : ''}>Puntual (Verde)</option>
-                        <option value="Retraso" ${estadoPrimario === 'Retraso' ? 'selected' : ''}>Retraso (Naranja)</option>
-                        <option value="Salida Irregular" ${estadoPrimario === 'Salida Irregular' ? 'selected' : ''}>Salida Irregular (Rojo Oscuro)</option>
-                        <option value="Justificado" ${estadoPrimario === 'Justificado' ? 'selected' : ''}>Justificado (Gris)</option>
-                        <option value="Falta" ${estadoPrimario.includes('Falta') ? 'selected' : ''}>Falta (Rojo)</option>
+                        ${opcionesEstado}
                     </select>
 
-                    <div style="text-align: end; margin-block-end: 15px;">
+                    <div style="text-align: end; margin-block-end: 15px; display: ${esFuturo ? 'none' : 'block'};">
                         <button type="button" id="btn-add-secundaria" style="background: none; border: none; color: var(--primary-color); font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: transform 0.2s;">
                             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                             Añadir Incidencia Secundaria
                         </button>
                     </div>
 
-                    <div id="caja-secundaria" style="display: ${estadoSecundario ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px solid var(--primary-color);">
+                    <div id="caja-secundaria" style="display: ${estadoSecundario && !esFuturo ? 'block' : 'none'}; background: var(--bg-light); padding: 10px; border-radius: 8px; margin-block-end: 15px; border: 1px solid var(--primary-color);">
                         <div style="text-align: start; margin-block-end: 5px;">
                             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color);">Segunda Incidencia:</label>
                         </div>
@@ -594,9 +945,10 @@ if ($es_admin) {
                         </select>
                     </div>
 
-                    <textarea id="swal-motivo" placeholder="Escriba un motivo o nota de Dirección..." style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:15px; border:1px solid #ccc; min-block-size:80px; font-family:'Montserrat'; outline:none;">${motivo}</textarea>
+                    <textarea id="swal-motivo" placeholder="${esFuturo ? 'Motivo de la justificación...' : 'Escriba un motivo o nota de Dirección...'}" style="inline-size:100%; padding:10px; border-radius:8px; margin-block-end:15px; border:1px solid #ccc; min-block-size:80px; font-family:'Montserrat'; outline:none;">${motivo}</textarea>
                     ${enlaceEvidencia}
-                    <div style="text-align: start; margin-block-start: 10px; overflow: hidden;">
+                    
+                    <div style="text-align: start; margin-block-start: 10px; overflow: hidden; display: ${esFuturo ? 'none' : 'block'};">
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-color); display: block; margin-block-end: 8px;">${archivo ? 'Reemplazar evidencia (Opcional):' : 'Subir evidencia (Opcional):'}</label>
                         <div style="position: relative; display: block; inline-size: 100%;">
                             <input type="file" id="swal-archivo" accept=".pdf, .jpg, .jpeg, .png" style="position: absolute; inset-inline-start: -9999px;">
@@ -613,58 +965,77 @@ if ($es_admin) {
                 cancelButtonText: 'Cancelar',
                 background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333',
+                
                 didOpen: () => {
-                    document.getElementById('swal-archivo').addEventListener('change', function(e) {
-                        const nombreArchivo = e.target.files[0] ? e.target.files[0].name : 'Seleccionar archivo...';
-                        document.getElementById('texto-swal-archivo').textContent = nombreArchivo;
-                    });
+                    // Prevenir error si se oculta en contexto futuro
+                    if (!esFuturo) {
+                        document.getElementById('swal-archivo').addEventListener('change', function(e) {
+                            const name = e.target.files[0] ? e.target.files[0].name : 'Seleccionar archivo...';
+                            document.getElementById('texto-swal-archivo').textContent = name;
+                        });
+                    }
 
                     const selectPrincipal = document.getElementById('swal-estado');
                     const btnSecundaria = document.getElementById('btn-add-secundaria');
                     const cajaSecundaria = document.getElementById('caja-secundaria');
                     const selectSecundario = document.getElementById('swal-estado-secundario');
+                    const textareaMotivo = document.getElementById('swal-motivo');
 
-                    function evaluarBloqueos() {
+                    function evaluarBloqueosUI() {
                         const estado = selectPrincipal.value;
-                        if (estado.includes('Falta') || estado === 'Salida Irregular') {
+                        
+                        if (estado === 'Eliminar') {
+                            textareaMotivo.style.display = 'none';
                             btnSecundaria.style.display = 'none';
                             cajaSecundaria.style.display = 'none';
                             selectSecundario.value = '';
                         } else {
-                            btnSecundaria.style.display = 'inline-flex';
+                            textareaMotivo.style.display = 'block';
+                            if (esFuturo) {
+                                btnSecundaria.style.display = 'none';
+                            } else {
+                                if (estado.includes('Falta') || estado === 'Salida Irregular') {
+                                    btnSecundaria.style.display = 'none';
+                                    cajaSecundaria.style.display = 'none';
+                                    selectSecundario.value = '';
+                                } else {
+                                    btnSecundaria.style.display = 'inline-flex';
+                                }
+                            }
                         }
                     }
 
-                    selectPrincipal.addEventListener('change', evaluarBloqueos);
-                    evaluarBloqueos(); 
+                    selectPrincipal.addEventListener('change', evaluarBloqueosUI);
+                    evaluarBloqueosUI(); 
 
-                    btnSecundaria.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        if (cajaSecundaria.style.display === 'none') {
-                            cajaSecundaria.style.display = 'block';
-                            selectSecundario.value = 'Salida Temprana'; 
-                            btnSecundaria.style.color = '#ef4444';
-                            btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Quitar Incidencia Secundaria';
-                        } else {
-                            cajaSecundaria.style.display = 'none';
-                            selectSecundario.value = '';
-                            btnSecundaria.style.color = 'var(--primary-color)';
-                            btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg> Añadir Incidencia Secundaria';
-                        }
-                    });
-
-                    if (cajaSecundaria.style.display === 'block') {
-                        btnSecundaria.style.color = '#ef4444';
-                        btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Quitar Incidencia Secundaria';
+                    if(btnSecundaria) {
+                        btnSecundaria.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            if (cajaSecundaria.style.display === 'none') {
+                                cajaSecundaria.style.display = 'block';
+                                selectSecundario.value = 'Salida Temprana'; 
+                                btnSecundaria.style.color = '#ef4444';
+                                btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Quitar Incidencia Secundaria';
+                            } else {
+                                cajaSecundaria.style.display = 'none';
+                                selectSecundario.value = '';
+                                btnSecundaria.style.color = 'var(--primary-color)';
+                                btnSecundaria.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg> Añadir Incidencia Secundaria';
+                            }
+                        });
                     }
                 },
                 preConfirm: () => {
+                    let archivoVal = null;
+                    if (!esFuturo && document.getElementById('swal-archivo')) {
+                        archivoVal = document.getElementById('swal-archivo').files[0];
+                    }
                     return {
                         fecha: fechaBD,
                         estado: document.getElementById('swal-estado').value,
                         estado_secundario: document.getElementById('swal-estado-secundario').value,
                         motivo: document.getElementById('swal-motivo').value,
-                        archivo: document.getElementById('swal-archivo').files[0]
+                        archivo: archivoVal
                     }
                 }
             }).then((result) => {
@@ -681,7 +1052,7 @@ if ($es_admin) {
                     }
 
                     Swal.fire({
-                        title: 'Guardando cambios...',
+                        title: 'Procesando...',
                         allowOutsideClick: false,
                         didOpen: () => { Swal.showLoading(); },
                         background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
@@ -703,20 +1074,13 @@ if ($es_admin) {
                                 background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
                                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
                             }).then(() => {
-                                cargarCalendario('contenedor-calendario-modal');
+                                cargarCalendarioHtml('contenedor-calendario-modal');
                             });
                         } else {
-                            Swal.fire({
-                                title: 'Error',
-                                text: data.msg,
-                                icon: 'error',
-                                confirmButtonColor: '#ef4444',
-                                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
-                            });
+                            Swal.fire('Error', data.msg, 'error');
                         }
                     })
-                    .catch(error => {
+                    .catch(() => {
                         Swal.fire('Error de Conexión', 'Hubo un problema al contactar al servidor.', 'error');
                     });
                 }
