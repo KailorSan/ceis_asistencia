@@ -266,7 +266,22 @@ try {
 
 
                 <!-- ── COLUMNA DERECHA: Formulario principal ── -->
-                <div class="tarjeta-formulario-config">
+                <div class="tarjeta-formulario-config" style="position: relative;">
+                    
+                    <!-- BOTÓN FLOTANTE DE ESCRITORIO (DÍAS LIBRES) -->
+                    <button id="btnFlotanteRangoModal" onclick="abrirModalFeriados()" class="btn-flotante-rango-modal" title="Configurar Días Libres">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" class="ionicon" viewBox="0 0 512 512">
+                            <rect fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" x="48" y="80" width="416" height="384" rx="48"/>
+                            <circle cx="296" cy="232" r="24"/><circle cx="376" cy="232" r="24"/>
+                            <circle cx="296" cy="312" r="24"/><circle cx="376" cy="312" r="24"/>
+                            <circle cx="136" cy="312" r="24"/><circle cx="216" cy="312" r="24"/>
+                            <circle cx="136" cy="392" r="24"/><circle cx="216" cy="392" r="24"/>
+                            <circle cx="296" cy="392" r="24"/>
+                            <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" stroke-linecap="round" d="M128 48v32M384 48v32"/>
+                            <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" d="M464 160H48"/>
+                        </svg>
+                    </button>
+
                     <!--
                         id="formConfiguracion"         → validador JS
                         campoIdActivaOculto            → le indica al controlador
@@ -361,61 +376,76 @@ try {
             </div><!-- /contenido-configuracion -->
 
             <!-- ════════════════════════════════════════════════════
-                 BOTÓN FLOTANTE — Solo visible en móvil (< 860px)
-                 Abre el panel de plantillas como modal inferior.
-                 El ícono combina un rayo (velocidad/acceso rápido)
-                 con líneas de lista (plantillas), comunicando
-                 claramente "acceso rápido a plantillas".
+                 MODAL DE DÍAS LIBRES (FERIADOS)
                  ════════════════════════════════════════════════════ -->
+            <div class="modal-calendario-overlay" id="modalFeriadosOverlay" onclick="cerrarModalFeriadosSiOverlay(event)">
+                <div class="modal-calendario-contenido">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: var(--primary-color); margin: 0; font-size: 1.4rem;">Días libres</h2>
+                        <button onclick="cerrarModalFeriados()" style="background:none; border:none; cursor:pointer; color:var(--text-color);" title="Cerrar">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <button type="button" class="btn-cancelar" onclick="cambiarMesFeriado(-1)" style="padding: 5px 15px; border-radius: 8px;">Anterior</button>
+                        <strong id="mesAnioFeriado" style="font-size: 1.1rem; text-transform: capitalize; color: var(--text-color);"></strong>
+                        <button type="button" class="btn-cancelar" onclick="cambiarMesFeriado(1)" style="padding: 5px 15px; border-radius: 8px;">Siguiente</button>
+                    </div>
+                    <div id="gridCalendarioFeriados" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════════════════
+                 BOTONES FLOTANTES MÓVIL
+                 ════════════════════════════════════════════════════ -->
+            <!-- Botón flotante para días libres (móvil) -->
+            <button class="btn-flotante-plantillas btn-flotante-feriados-movil" onclick="abrirModalFeriados()" title="Configurar Días Libres">
+                <svg width="22" height="22" xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                    <rect fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" x="48" y="80" width="416" height="384" rx="48"/>
+                    <circle cx="296" cy="232" r="24"/><circle cx="376" cy="232" r="24"/>
+                    <circle cx="296" cy="312" r="24"/><circle cx="376" cy="312" r="24"/>
+                    <circle cx="136" cy="312" r="24"/><circle cx="216" cy="312" r="24"/>
+                    <circle cx="136" cy="392" r="24"/><circle cx="216" cy="392" r="24"/>
+                    <circle cx="296" cy="392" r="24"/>
+                    <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" stroke-linecap="round" d="M128 48v32M384 48v32"/>
+                    <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32" d="M464 160H48"/>
+                </svg>
+            </button>
+
+            <!-- Botón flotante de plantillas (existente) -->
             <button class="btn-flotante-plantillas"
                     id="btnAbrirModalPlantillas"
                     onclick="abrirModalPlantillas()"
                     title="Ver plantillas rápidas"
                     aria-label="Abrir plantillas de configuración">
 
-                <!-- Badge con el número de plantillas guardadas -->
                 <span class="badge-flotante" id="badgeFlotante">
                     <?php echo $total_preestablecidas; ?>
                 </span>
 
-                <!--
-                    SVG: Ícono de "plantillas rápidas"
-                    Rayo (velocidad / acceso rápido) + pequeñas líneas
-                    representando una lista de configuraciones.
-                    Diseño propio siguiendo el estilo stroke del proyecto.
-                -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <!-- Rayo -->
                     <path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2Z"/>
                 </svg>
             </button>
 
-            <!-- ════════════════════════════════════════════════════
-                 OVERLAY + PANEL MODAL — Solo activo en móvil.
-                 Contiene una copia del panel de plantillas que sube
-                 desde abajo con animación (bottom sheet pattern).
-                 Clic en el overlay oscuro cierra el modal.
-                 ════════════════════════════════════════════════════ -->
+            <!-- Overlay + panel modal de plantillas (móvil) - existente -->
             <div class="modal-plantillas-overlay"
                  id="modalPlantillasOverlay"
                  onclick="cerrarModalPlantillasSiOverlay(event)">
 
-                <!-- Panel reutilizado — misma estructura que la columna izquierda -->
                 <div class="panel-plantillas" id="panelPlantillasModal">
-
-                    <!-- Tirador visual (drag handle) -->
                     <div class="tirador-modal"></div>
-
-                    <!-- ZONA 1: Cabecera con botón cerrar -->
                     <div class="panel-plantillas-cabecera">
                         <span class="titulo-panel">Plantillas rápidas</span>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span class="contador-plantillas">
                                 <?php echo $total_preestablecidas; ?> / 4
                             </span>
-                            <!-- Botón X para cerrar el modal -->
                             <button onclick="cerrarModalPlantillas()"
                                     style="background:none;border:none;cursor:pointer;
                                            color:var(--text-color);opacity:0.6;
@@ -428,10 +458,7 @@ try {
                             </button>
                         </div>
                     </div>
-
-                    <!-- ZONA 2: Lista scrolleable (mismas tarjetas) -->
                     <div class="panel-plantillas-lista">
-
                         <?php if (empty($preestablecidas)): ?>
                             <p class="estado-vacio-plantillas">
                                 Sin plantillas aún. Configura un horario y guárdalo como plantilla.
@@ -439,7 +466,6 @@ try {
                         <?php else: ?>
                             <?php foreach ($preestablecidas as $pre): ?>
                                 <div class="tarjeta-preestablecida <?php echo $pre['es_activa'] ? 'es-activa' : ''; ?>">
-
                                     <div class="cabecera-tarjeta">
                                         <span class="nombre-preestablecida"
                                               title="Doble clic para renombrar"
@@ -459,7 +485,6 @@ try {
                                             </svg>
                                         </button>
                                     </div>
-
                                     <?php if ($pre['es_activa']): ?>
                                         <span class="badge-activa">
                                             <svg width="6" height="6" viewBox="0 0 6 6">
@@ -468,9 +493,7 @@ try {
                                             Aplicada al sistema
                                         </span>
                                     <?php endif; ?>
-
                                     <hr class="separador-tarjeta">
-
                                     <table class="tabla-horario">
                                         <tr>
                                             <td class="etiqueta">Entrada</td>
@@ -485,7 +508,6 @@ try {
                                             <td class="valor"><?php echo $pre['minutos_tolerancia']; ?> min</td>
                                         </tr>
                                     </table>
-
                                     <button class="btn-aplicar-preestablecida"
                                             onclick="confirmarAplicarPlantilla(
                                                 <?php echo $pre['id_preestablecida']; ?>,
@@ -501,14 +523,10 @@ try {
                                         </svg>
                                         Aplicar al formulario
                                     </button>
-
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
-
-                    </div><!-- /panel-plantillas-lista -->
-
-                    <!-- ZONA 3: Pie con botón agregar -->
+                    </div>
                     <div class="panel-plantillas-pie">
                         <button class="tarjeta-agregar-nueva <?php echo ($total_preestablecidas >= 4) ? 'oculto' : ''; ?>"
                                 onclick="guardarComoNueva()"
@@ -526,9 +544,8 @@ try {
                             Límite de 4 plantillas alcanzado.
                         </p>
                     </div>
-
-                </div><!-- /panel-plantillas (modal) -->
-            </div><!-- /modal-plantillas-overlay -->
+                </div>
+            </div>
         </main>
     </div><!-- /contenedor-principal -->
 
@@ -1097,11 +1114,183 @@ try {
         const _confirmarAplicarPlantillaOriginal = confirmarAplicarPlantilla;
         confirmarAplicarPlantilla = function(idPlantilla, nombre, entrada, salida, tolerancia) {
             _confirmarAplicarPlantillaOriginal(idPlantilla, nombre, entrada, salida, tolerancia);
-            // El cierre ocurre después del SweetAlert de confirmación,
-            // dentro del .then() del original — aquí cerramos el modal
-            // antes para que el formulario ya esté visible.
             cerrarModalPlantillas();
         };
+
+
+        // ============================================================
+        // MÓDULO: DÍAS LIBRES (FERIADOS Y FESTIVOS)
+        // ============================================================
+        let mesCal = new Date().getMonth();
+        let anioCal = new Date().getFullYear();
+        let feriadosActuales = [];
+
+        function abrirModalFeriados() {
+            const overlay = document.getElementById('modalFeriadosOverlay');
+            if (overlay) {
+                overlay.classList.add('abierto');
+                document.body.style.overflow = 'hidden';
+            }
+            cargarFeriados();
+        }
+
+        function cerrarModalFeriados() {
+            const overlay = document.getElementById('modalFeriadosOverlay');
+            if (overlay) {
+                overlay.classList.remove('abierto');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function cerrarModalFeriadosSiOverlay(e) {
+            if (e.target.id === 'modalFeriadosOverlay') cerrarModalFeriados();
+        }
+
+        // Cerrar con la tecla Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') cerrarModalFeriados();
+        });
+
+        function cambiarMesFeriado(dir) {
+            mesCal += dir;
+            if (mesCal < 0) { mesCal = 11; anioCal--; }
+            else if (mesCal > 11) { mesCal = 0; anioCal++; }
+            renderizarCalendarioFeriados();
+        }
+
+        function cargarFeriados() {
+            fetch('../controladores/ControladorFeriados.php?accion=listar')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) feriadosActuales = data.data; 
+                    renderizarCalendarioFeriados();
+                }).catch(err => console.error('Error cargando feriados:', err));
+        }
+
+        function renderizarCalendarioFeriados() {
+            const grid = document.getElementById('gridCalendarioFeriados');
+            const labelMes = document.getElementById('mesAnioFeriado');
+            const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            if(!grid) return;
+            labelMes.textContent = `${nombresMeses[mesCal]} ${anioCal}`;
+            grid.innerHTML = '';
+
+            diasSemana.forEach(d => {
+                const div = document.createElement('div');
+                div.style.fontWeight = 'bold'; div.style.padding = '10px 0'; div.style.color = 'var(--text-color)'; div.textContent = d;
+                grid.appendChild(div);
+            });
+
+            const primerDia = new Date(anioCal, mesCal, 1).getDay();
+            const diasEnMes = new Date(anioCal, mesCal + 1, 0).getDate();
+
+            for (let i = 0; i < primerDia; i++) grid.appendChild(document.createElement('div'));
+
+            for (let i = 1; i <= diasEnMes; i++) {
+                const div = document.createElement('div');
+                const fechaFormat = `${anioCal}-${String(mesCal + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const feriadoEncontrado = feriadosActuales.find(f => f.fecha === fechaFormat);
+                
+                div.textContent = i; div.style.padding = '15px 5px'; div.style.borderRadius = '8px';
+                div.style.border = '1px solid var(--text-color)';
+                div.style.transition = 'all 0.2s';
+                
+                const diaSem = new Date(anioCal, mesCal, i).getDay();
+                const esFinde = (diaSem === 0 || diaSem === 6); // domingo o sábado
+                
+                if (feriadoEncontrado) {
+                    // Día libre configurado (morado)
+                    div.style.backgroundColor = '#e9d5ff'; // morado claro
+                    div.style.color = '#6b21a8';
+                    div.style.fontWeight = 'bold';
+                    div.style.borderColor = '#c084fc';
+                    div.title = feriadoEncontrado.descripcion;
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => gestionarFeriado(fechaFormat, feriadoEncontrado);
+                } else if (esFinde) {
+                    // Fin de semana: no se puede modificar
+                    div.style.backgroundColor = 'var(--bg-light)';
+                    div.style.color = 'var(--text-color)';
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'default';
+                    div.title = 'Día no laborable, no se puede modificar';
+                    div.onclick = null;
+                } else {
+                    // Día laborable sin feriado
+                    div.style.backgroundColor = 'var(--bg-card)';
+                    div.style.color = 'var(--text-color)';
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => gestionarFeriado(fechaFormat, null);
+                }
+
+                div.onmouseover = () => {
+                    if (!esFinde) div.style.transform = 'scale(1.05)';
+                };
+                div.onmouseout = () => {
+                    if (!esFinde) div.style.transform = 'scale(1)';
+                };
+                
+                grid.appendChild(div);
+            }
+        }
+
+        function gestionarFeriado(fechaStr, datosFeriado) {
+            const t = parametrosTema();
+            const fechaVisual = fechaStr.split('-').reverse().join('/');
+
+            if (datosFeriado) {
+                Swal.fire({
+                    title: '¿Restaurar Día?',
+                    html: `Día libre:<br><b style="color:var(--primary-color);">${datosFeriado.descripcion}</b><br><br>¿Volver a marcar como laborable?`,
+                    icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, restaurar', cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#10b981', cancelButtonColor: '#6b7280', ...t
+                }).then((res) => { if (res.isConfirmed) enviarFeriadoBD(fechaStr, null, null); });
+            } else {
+                Swal.fire({
+                    title: 'Inhabilitar Día',
+                    html: `
+                        <div style="text-align: left; font-size: 0.95rem;">
+                            <p style="margin-bottom: 10px; color: var(--primary-color); font-weight: bold;">Fecha: ${fechaVisual}</p>
+                            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: var(--text-color);">Clasificación:</label>
+                            <select id="swal-feriado-tipo" style="width: 100%; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ccc; outline: none; font-family: inherit;">
+                                <option value="Feriado">Feriado Nacional / Regional</option>
+                                <option value="Día Festivo">Día Festivo del Plantel</option>
+                            </select>
+                            <label style="font-weight: bold; margin-bottom: 5px; display: block; color: var(--text-color);">Justificación (Mín. 10 caracteres):</label>
+                            <input type="text" id="swal-feriado-motivo" placeholder="Ej: Aniversario del Plantel..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; outline: none; box-sizing: border-box; font-family: inherit;">
+                        </div>
+                    `,
+                    showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', ...t,
+                    preConfirm: () => {
+                        const tipo = document.getElementById('swal-feriado-tipo').value;
+                        const motivo = document.getElementById('swal-feriado-motivo').value.trim();
+                        if (motivo.length < 10) { Swal.showValidationMessage('La justificación debe tener al menos 10 caracteres.'); return false; }
+                        return { tipo, motivo };
+                    }
+                }).then((res) => {
+                    if (res.isConfirmed) { enviarFeriadoBD(fechaStr, res.value.tipo, res.value.motivo); }
+                });
+            }
+        }
+
+        function enviarFeriadoBD(fecha, tipo, motivo) {
+            const payload = { fecha: fecha };
+            if (tipo && motivo) { payload.tipo = tipo; payload.motivo = motivo; }
+
+            fetch('../controladores/ControladorFeriados.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    Swal.fire({ title: '¡Éxito!', text: data.message || 'Actualizado.', icon: 'success', timer: 2000, showConfirmButton: false, ...parametrosTema() });
+                    cargarFeriados(); 
+                } else {
+                    Swal.fire('Error', data.message || 'Error de validación', 'error');
+                }
+            }).catch(() => Swal.fire('Error', 'Fallo de comunicación', 'error'));
+        }
 
     </script>
 
