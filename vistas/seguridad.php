@@ -40,6 +40,34 @@ $restantes_generar = max(0, $limite_generar - $limites['generados']);
 $restantes_subir = max(0, $limite_subir - $limites['subidos']);
 $restantes_restaurar = max(0, $limite_restaurar - $limites['restaurados']);
 $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
+
+// -- FECHAS VÁLIDAS PARA EL FILTRO DE BITÁCORA --
+// 1. Feriados registrados en BD (formato YYYY-MM-DD)
+$feriados_set = [];
+$res_feriados = $conexion->query("SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS f FROM feriados");
+if ($res_feriados) {
+    while ($row = $res_feriados->fetch(PDO::FETCH_ASSOC)) {
+        $feriados_set[$row['f']] = true;
+    }
+}
+
+// 2. Fechas que SÍ tienen registros en la bitácora
+$fechas_con_registros = [];
+foreach ($registros_bitacora as $reg) {
+    $fecha_iso = date('Y-m-d', strtotime($reg['fecha_hora']));
+    $fechas_con_registros[$fecha_iso] = true;
+}
+
+// 3. Solo fechas con registros, excluyendo fines de semana y feriados
+$fechas_validas = [];
+foreach (array_keys($fechas_con_registros) as $fecha_iso) {
+    $dow = (int) date('N', strtotime($fecha_iso)); // 6=sáb, 7=dom
+    if ($dow < 6 && !isset($feriados_set[$fecha_iso])) {
+        $fechas_validas[$fecha_iso] = true;
+    }
+}
+// Pasar al JS como JSON (array de strings "YYYY-MM-DD")
+$fechas_validas_json = json_encode(array_keys($fechas_validas));
 ?>
 
 <!DOCTYPE html>
@@ -288,38 +316,116 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
                             
                             <div style="position: relative; flex: 1; min-inline-size: 250px; max-inline-size: 400px;">
                                 <svg style="position: absolute; inset-inline-start: 15px; inset-block-start: 50%; transform: translateY(-50%); color: var(--text-color); opacity: 0.5; inline-size: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                <input type="text" placeholder="Buscar registro específico..." style="inline-size: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
+                                <input type="text" id="busqueda-bitacora" placeholder="Buscar registro específico..." oninput="filtrarBitacora()" style="inline-size: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
                             </div>
 
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <svg style="color: var(--text-color); opacity: 0.6; inline-size: 20px; margin-inline-end: 5px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 
-                                <select class="select-filtro-bitacora">
-                                    <option value="">Día</option>
-                                    <?php for($i=1; $i<=31; $i++) echo "<option value='$i'>".str_pad($i,2,'0',STR_PAD_LEFT)."</option>"; ?>
-                                </select>
-                                
-                                <select class="select-filtro-bitacora">
-                                    <option value="">Mes</option>
-                                    <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
-                                    <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
-                                    <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
-                                    <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-                                </select>
-                                
-                                <select class="select-filtro-bitacora">
-                                    <option value="">Año</option>
-                                    <option value="2026">2026</option>
-                                    <option value="2025">2025</option>
-                                </select>
+                                <!-- ── Dropdown personalizado: DÍA ── -->
+                                <div class="cdd-wrap" id="cdd-dia">
+                                    <input type="hidden" id="filtro-dia" value="">
+                                    <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-dia')">
+                                        <span class="cdd-label">Día</span>
+                                        <svg class="cdd-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div class="cdd-panel">
+                                        <div class="cdd-item cdd-placeholder" onclick="seleccionarCdd('cdd-dia','','Día')">Día</div>
+                                        <?php
+                                        $dias_validos = [];
+                                        foreach (array_keys($fechas_validas) as $f) {
+                                            $dias_validos[(int)date('d', strtotime($f))] = true;
+                                        }
+                                        for ($i = 1; $i <= 31; $i++) {
+                                            $val = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                            if (isset($dias_validos[$i])) {
+                                                echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-dia','$val','$val')\">$val</div>";
+                                            } else {
+                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este día'>$val</div>";
+                                            }
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
 
-                                <button style="padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; margin-inline-start: 5px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                <!-- ── Dropdown personalizado: MES ── -->
+                                <div class="cdd-wrap" id="cdd-mes">
+                                    <input type="hidden" id="filtro-mes" value="">
+                                    <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-mes')">
+                                        <span class="cdd-label">Mes</span>
+                                        <svg class="cdd-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div class="cdd-panel">
+                                        <div class="cdd-item cdd-placeholder" onclick="seleccionarCdd('cdd-mes','','Mes')">Mes</div>
+                                        <?php
+                                        $meses_validos = [];
+                                        foreach (array_keys($fechas_validas) as $f) {
+                                            $meses_validos[(int)date('m', strtotime($f))] = true;
+                                        }
+                                        $nombres_meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                                                           'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                                        for ($i = 1; $i <= 12; $i++) {
+                                            $val = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                            $nombre = $nombres_meses[$i];
+                                            if (isset($meses_validos[$i])) {
+                                                echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-mes','$val','$nombre')\">$nombre</div>";
+                                            } else {
+                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este mes'>$nombre</div>";
+                                            }
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+
+                                <!-- ── Dropdown personalizado: AÑO ── -->
+                                <div class="cdd-wrap" id="cdd-anio">
+                                    <input type="hidden" id="filtro-anio" value="">
+                                    <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-anio')">
+                                        <span class="cdd-label">Año</span>
+                                        <svg class="cdd-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <div class="cdd-panel">
+                                        <div class="cdd-item cdd-placeholder" onclick="seleccionarCdd('cdd-anio','','Año')">Año</div>
+                                        <?php
+                                        $anios_validos = [];
+                                        foreach (array_keys($fechas_validas) as $f) {
+                                            $anios_validos[date('Y', strtotime($f))] = true;
+                                        }
+                                        arsort($anios_validos);
+                                        foreach (array_keys($anios_validos) as $anio_v) {
+                                            echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-anio','$anio_v','$anio_v')\">$anio_v</div>";
+                                        }
+                                        foreach (['2026','2025'] as $anio_ref) {
+                                            if (!isset($anios_validos[$anio_ref])) {
+                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este año'>$anio_ref</div>";
+                                            }
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+
+                                <button onclick="filtrarBitacora()" style="padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; margin-inline-start: 5px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                                     Filtrar
+                                </button>
+                                <button onclick="limpiarFiltrosBitacora()" title="Limpiar filtros" style="padding: 10px 14px; background: rgba(100,116,139,0.12); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    Limpiar
                                 </button>
                             </div>
                         </div>
 
                         <div class="modal-bitacora-tabla-wrap" style="flex: 1; overflow-y: auto; padding-inline-end: 5px;">
+                            <div id="contador-resultados" style="font-size: 0.8rem; color: var(--text-color); opacity: 0.6; margin-block-end: 8px; padding-inline-start: 5px;"></div>
+
+                            <!-- Mensaje cuando la fecha no tiene registros válidos -->
+                            <div id="mensaje-sin-registros" style="display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 12px; text-align: center;">
+                                <span class="msg-icono" style="font-size: 2.5rem;">📅</span>
+                                <p class="msg-texto" style="margin: 0; font-size: 0.95rem; color: var(--text-color); opacity: 0.7; max-inline-size: 380px; line-height: 1.5;"></p>
+                                <button onclick="limpiarFiltrosBitacora()" style="margin-block-start: 5px; padding: 8px 20px; background: rgba(64,111,243,0.1); color: var(--primary-color); border: 1px solid rgba(64,111,243,0.3); border-radius: 50px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='rgba(64,111,243,0.2)'" onmouseout="this.style.background='rgba(64,111,243,0.1)'">
+                                    Limpiar filtros
+                                </button>
+                            </div>
+
                             <table style="inline-size: 100%; border-collapse: separate; border-spacing: 0 10px;">
                                 <thead>
                                     <tr style="text-align: start; color: var(--text-color); font-size: 0.85rem; text-transform: uppercase; opacity: 0.7;">
@@ -402,6 +508,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
     <script>
         // Token CSRF generado por el servidor — solo lectura desde JS
         const CSRF_TOKEN = "<?php echo $_SESSION['csrf_token']; ?>";
+
+        // Fechas laborables que SÍ tienen registros (excluye fines de semana y feriados)
+        const FECHAS_VALIDAS = new Set(<?php echo $fechas_validas_json; ?>);
 
         const btnCambiarTema = document.getElementById('btnCambiarTema');
         const html = document.documentElement;
@@ -583,7 +692,9 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
             contenedor.style.animation = 'none';
             contenedor.offsetHeight; // reflow
             contenedor.style.animation = 'zoomIn 0.3s ease-out';
-            document.body.style.overflow = 'hidden'; 
+            document.body.style.overflow = 'hidden';
+            // Inicializar contador al abrir
+            filtrarBitacora();
         }
 
         function cerrarModalBitacora() {
@@ -603,18 +714,168 @@ $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
             // Cambiar el diseño del botón presionado
             document.querySelectorAll('.btn-tab-bitacora').forEach(b => b.classList.remove('activo'));
             btn.classList.add('activo');
-            
-            // Mostrar/Ocultar filas basándose en el data-modulo
-            const filas = document.querySelectorAll('.fila-bitacora');
-            filas.forEach(fila => {
-                const moduloFila = fila.getAttribute('data-modulo');
-                
-                if (moduloFiltro === 'Todos' || moduloFila === moduloFiltro) {
-                    fila.style.display = 'table-row';
-                } else {
-                    fila.style.display = 'none';
+            // Delega a filtrarBitacora para respetar texto y fecha activos
+            filtrarBitacora();
+        }
+
+        // ==========================================
+        // FILTRO COMBINADO: texto + fecha + módulo
+        // ==========================================
+        function filtrarBitacora() {
+            const textoBusqueda = (document.getElementById('busqueda-bitacora')?.value || '').toLowerCase().trim();
+            const dia  = document.getElementById('filtro-dia')?.value  || '';
+            const mes  = document.getElementById('filtro-mes')?.value  || '';
+            const anio = document.getElementById('filtro-anio')?.value || '';
+
+            // --- Validar si la fecha seleccionada es laborable y tiene registros ---
+            const mensajeVacio = document.getElementById('mensaje-sin-registros');
+            let fechaEsInvalida = false;
+            if (dia !== '' || mes !== '' || anio !== '') {
+                // Solo validar si tenemos los 3 campos para construir una fecha completa
+                if (dia !== '' && mes !== '' && anio !== '') {
+                    const fechaISO = `${anio}-${mes}-${dia}`;
+                    const objFecha = new Date(fechaISO + 'T00:00:00');
+                    const dow = objFecha.getDay(); // 0=dom, 6=sáb
+                    if (dow === 0 || dow === 6) {
+                        fechaEsInvalida = 'fin_de_semana';
+                    } else if (!FECHAS_VALIDAS.has(fechaISO)) {
+                        fechaEsInvalida = 'sin_registros';
+                    }
                 }
+            }
+
+            // Módulo activo (tab seleccionado en sidebar)
+            const btnActivo = document.querySelector('.btn-tab-bitacora.activo');
+            const labelActivo = btnActivo ? btnActivo.textContent.trim() : 'Todos los Registros';
+
+            const filas = document.querySelectorAll('.fila-bitacora');
+            let visibles = 0;
+            const total = filas.length;
+
+            filas.forEach(fila => {
+                // --- Filtro por módulo ---
+                const moduloFila = fila.getAttribute('data-modulo') || '';
+                const pasaModulo = labelActivo.includes('Todos') || moduloFila === labelActivo;
+
+                // --- Filtro por texto (busca en toda la fila) ---
+                const textoFila = fila.textContent.toLowerCase();
+                const pasaTexto = textoBusqueda === '' || textoFila.includes(textoBusqueda);
+
+                // --- Filtro por fecha (formato dd/mm/YYYY en primer td) ---
+                const celdaFecha = fila.querySelector('td:first-child');
+                const textoCelda = celdaFecha ? celdaFecha.textContent.trim() : '';
+                const matchFecha = textoCelda.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                let pasaDia = true, pasaMes = true, pasaAnio = true;
+
+                if (matchFecha) {
+                    const [, diaFila, mesFila, anioFila] = matchFecha;
+                    if (dia  !== '') pasaDia  = diaFila  === dia;
+                    if (mes  !== '') pasaMes  = mesFila  === mes;
+                    if (anio !== '') pasaAnio = anioFila === anio;
+                } else if (dia !== '' || mes !== '' || anio !== '') {
+                    pasaDia = pasaMes = pasaAnio = false;
+                }
+
+                const mostrar = pasaModulo && pasaTexto && pasaDia && pasaMes && pasaAnio;
+                fila.style.display = mostrar ? 'table-row' : 'none';
+                if (mostrar) visibles++;
             });
+
+            // --- Mostrar/ocultar mensaje de fecha inválida o sin registros ---
+            if (mensajeVacio) {
+                if (fechaEsInvalida === 'fin_de_semana') {
+                    mensajeVacio.style.display = 'flex';
+                    mensajeVacio.querySelector('.msg-texto').textContent = 'Los fines de semana no tienen registros de actividad.';
+                    mensajeVacio.querySelector('.msg-icono').textContent = '📅';
+                } else if (fechaEsInvalida === 'sin_registros') {
+                    mensajeVacio.style.display = 'flex';
+                    mensajeVacio.querySelector('.msg-texto').textContent = 'No hubo actividad registrada en esta fecha (puede ser feriado u otro motivo).';
+                    mensajeVacio.querySelector('.msg-icono').textContent = '🗓️';
+                } else if (visibles === 0 && (textoBusqueda !== '' || dia !== '' || mes !== '' || anio !== '')) {
+                    mensajeVacio.style.display = 'flex';
+                    mensajeVacio.querySelector('.msg-texto').textContent = 'No se encontraron registros con los filtros aplicados.';
+                    mensajeVacio.querySelector('.msg-icono').textContent = '🔍';
+                } else {
+                    mensajeVacio.style.display = 'none';
+                }
+            }
+
+            // --- Actualizar contador ---
+            const contador = document.getElementById('contador-resultados');
+            if (contador) {
+                if (total === 0 || fechaEsInvalida) {
+                    contador.textContent = '';
+                } else if (visibles === total) {
+                    contador.textContent = `Mostrando ${total} registro${total !== 1 ? 's' : ''}`;
+                } else {
+                    contador.textContent = `Mostrando ${visibles} de ${total} registro${total !== 1 ? 's' : ''}`;
+                }
+            }
+        }
+
+        // ==========================================
+        // DROPDOWNS PERSONALIZADOS (cdd = custom dropdown)
+        // ==========================================
+        function toggleCdd(id) {
+            const wrap = document.getElementById(id);
+            const isOpen = wrap.classList.contains('cdd-open');
+            // Cerrar todos los abiertos
+            document.querySelectorAll('.cdd-wrap.cdd-open').forEach(w => {
+                w.classList.remove('cdd-open');
+            });
+            if (!isOpen) wrap.classList.add('cdd-open');
+        }
+
+        function seleccionarCdd(wrapId, value, label) {
+            const wrap = document.getElementById(wrapId);
+            // Actualizar input oculto
+            document.getElementById(
+                wrapId === 'cdd-dia'  ? 'filtro-dia'  :
+                wrapId === 'cdd-mes'  ? 'filtro-mes'  : 'filtro-anio'
+            ).value = value;
+            // Actualizar etiqueta del botón
+            wrap.querySelector('.cdd-label').textContent = label || (
+                wrapId === 'cdd-dia' ? 'Día' : wrapId === 'cdd-mes' ? 'Mes' : 'Año'
+            );
+            // Marcar ítem activo
+            wrap.querySelectorAll('.cdd-item').forEach(i => i.classList.remove('cdd-active'));
+            if (value !== '') {
+                // Buscar el item cuyo onclick contiene el value
+                wrap.querySelectorAll('.cdd-available').forEach(i => {
+                    if (i.getAttribute('onclick') && i.getAttribute('onclick').includes("'" + value + "'")) {
+                        i.classList.add('cdd-active');
+                    }
+                });
+            }
+            // Indicador rojo si el trigger queda en placeholder (valor vacío)
+            const trigger = wrap.querySelector('.cdd-trigger');
+            if (value === '') {
+                trigger.classList.remove('cdd-selected');
+            } else {
+                trigger.classList.add('cdd-selected');
+            }
+            wrap.classList.remove('cdd-open');
+            filtrarBitacora();
+        }
+
+        // Cerrar dropdowns al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.cdd-wrap')) {
+                document.querySelectorAll('.cdd-wrap.cdd-open').forEach(w => w.classList.remove('cdd-open'));
+            }
+        });
+
+        // ==========================================
+        // LIMPIAR TODOS LOS FILTROS
+        // ==========================================
+        function limpiarFiltrosBitacora() {
+            const input = document.getElementById('busqueda-bitacora');
+            if (input) input.value = '';
+            // Limpiar dropdowns personalizados
+            seleccionarCdd('cdd-dia',  '', 'Día');
+            seleccionarCdd('cdd-mes',  '', 'Mes');
+            seleccionarCdd('cdd-anio', '', 'Año');
+            filtrarBitacora();
         }
         
     </script>

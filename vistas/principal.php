@@ -24,11 +24,9 @@ try {
     ];
 
     if ($dia_semana_hoy <= 5) {
-
         $clave_flag_faltas = 'auto_faltas_ejecutado_' . date('Y-m-d');
 
         if (empty($_SESSION[$clave_flag_faltas])) {
-
             $sql_ausentes = "SELECT p.id_personal, p.hora_entrada_personalizada, p.hora_salida_personalizada 
                              FROM personal p
                              INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
@@ -86,7 +84,6 @@ try {
     $empleado   = $stmt_emp->fetch(PDO::FETCH_ASSOC);
     $id_personal = $empleado ? $empleado['id_personal'] : null;
 
-    // Reutilizamos $config_global (no hay segunda query a configuracion)
     $config = $config_global;
 
     $asistencia_hoy           = false;
@@ -131,7 +128,6 @@ try {
         }
     }
 
-    // === CÁLCULO DE DATOS PARA TARJETAS Y GRÁFICOS ===
     if ($id_rol == 1 || $id_rol == 2) {
         $titulo_tarjeta_1 = "Personal Registrado";
         $stmt1 = $conexion->query("SELECT COUNT(*) FROM personal");
@@ -210,12 +206,6 @@ try {
     $valor_tarjeta_1 = "-"; $valor_tarjeta_2 = "-"; $valor_tarjeta_3 = "-";
 }
 
-// =====================================================================
-// CORRECCIÓN BUG 4 (parte PHP): Generamos el token CSRF aquí.
-// Se genera una sola vez por sesión (o se regenera si no existe).
-// El mismo token se inyecta como campo oculto en el formulario de
-// justificación más abajo.
-// =====================================================================
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -238,6 +228,14 @@ if (empty($_SESSION['csrf_token'])) {
     </script>
 </head>
 <body>
+
+    <div id="cortina-transicion" style="position: fixed; inset: 0; z-index: 999999; pointer-events: none;"></div>
+    <script>
+        (function() {
+            const tema = localStorage.getItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>') || 'light';
+            document.getElementById('cortina-transicion').style.backgroundColor = (tema === 'dark') ? '#0f172a' : '#ffffff';
+        })();
+    </script>
 
     <?php $pagina_activa = 'inicio'; require_once 'componentes/sidebar.php'; ?>
 
@@ -280,7 +278,6 @@ if (empty($_SESSION['csrf_token'])) {
                                     ¡Espera a tu salida!
                                 </button>
                             <?php else: ?>
-
                                 <form action="../controladores/ControladorAsistencia.php" method="POST">
                                     <input type="hidden" name="accion" value="marcar_salida">
                                     <button type="submit" class="btn-marcar-salida" id="btnSalida" <?php echo ($es_temprano_salida && $ya_justifico_salida) ? 'style="background-color: #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);"' : ''; ?>>
@@ -289,7 +286,6 @@ if (empty($_SESSION['csrf_token'])) {
                                     </button>
                                 </form>
                             <?php endif; ?>
-
                         <?php else: ?>
                             <div class="mensaje-jornada-completada">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -421,11 +417,38 @@ if (empty($_SESSION['csrf_token'])) {
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/chart.min.js"></script>
+    <script src="../recursos/librerias/gsap.min.js"></script>
 
     <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const cortina = document.getElementById("cortina-transicion");
+            
+            if (typeof gsap !== 'undefined' && sessionStorage.getItem('mostrarAnimacionEntrada') === 'true') {
+                sessionStorage.removeItem('mostrarAnimacionEntrada');
+                
+                const tl = gsap.timeline();
+                tl.to(cortina, { 
+                    opacity: 0, 
+                    duration: 0.7, 
+                    ease: "power2.inOut",
+                    onComplete: () => { cortina.style.display = "none"; }
+                })
+                .from(".contenido h1, .contenido p, .panel-asistencia, .grid-tarjetas, .grid-graficos, .banner-pausa", { 
+                    y: 30, 
+                    opacity: 0, 
+                    duration: 0.6, 
+                    stagger: 0.1, 
+                    ease: "back.out(1.2)" 
+                }, "-=0.4");
+            } else {
+                if (cortina) {
+                    cortina.style.display = "none";
+                }
+            }
+        });
+
         const html = document.documentElement;
 
-        // --- 1. LÓGICA DE NOTIFICACIÓN SWEETALERT2 (TOP BAR) ---
         const ToastSwal = Swal.mixin({
             toast: true,
             position: 'top',
@@ -454,7 +477,6 @@ if (empty($_SESSION['csrf_token'])) {
             <?php unset($_SESSION['alerta_principal']); ?>
         <?php endif; ?>
 
-        // --- 2. VALIDACIÓN FRONTEND FORMULARIO ---
         const inputMotivo = document.getElementById('modal_j_motivo');
         const errorMotivo = document.getElementById('error-motivo');
         const formJ       = document.getElementById('formJustificacion');
@@ -495,7 +517,6 @@ if (empty($_SESSION['csrf_token'])) {
             });
         }
 
-        // --- 3. MODALES ---
         const modalOverlay      = document.getElementById('modalOverlay');
         const modalJustificacion = document.getElementById('modalJustificacion');
         const fechaInput        = document.getElementById('modal_j_fecha');
@@ -554,9 +575,7 @@ if (empty($_SESSION['csrf_token'])) {
             });
         }
 
-        // --- 4. GRÁFICAS Y MODO OSCURO (DOM LISTO) ---
         document.addEventListener('DOMContentLoaded', function() {
-            
             const btnCambiarTema = document.getElementById('btnCambiarTema');
             
             if (btnCambiarTema) {
@@ -598,7 +617,6 @@ if (empty($_SESSION['csrf_token'])) {
                 });
             }
 
-            // B. RENDERIZADO DE LAS GRÁFICAS
             try {
                 const esFinSemana = <?php echo $es_fin_semana ? 'true' : 'false'; ?>;
                 if (esFinSemana) return; 
@@ -698,7 +716,7 @@ if (empty($_SESSION['csrf_token'])) {
                 }
 
             } catch(e) {
-                console.error("No se pudieron cargar las gráficas: ", e);
+                console.error(e);
             }
         });
     </script>

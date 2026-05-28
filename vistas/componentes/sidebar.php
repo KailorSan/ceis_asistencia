@@ -60,10 +60,13 @@
         </li>
         <?php endif; ?>
 
-        <li class="menu-item"><a href="../vistas/reportes.php" class="enlace-menu" aria-label="Reportes" style="<?php echo (isset($pagina_activa) && $pagina_activa == 'reportes') ? 'color: var(--primary-color);' : ''; ?>">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg><span>Reportes</span></a>
+        <li class="menu-item">
+            <a href="../vistas/reportes.php" class="enlace-menu" aria-label="Reportes" style="<?php echo (isset($pagina_activa) && $pagina_activa == 'reportes') ? 'color: var(--primary-color);' : ''; ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Reportes</span>
+            </a>
         </li>
 
         <li class="menu-item">
@@ -97,3 +100,88 @@
 
     </ul>
 </nav>
+
+<script>
+(function() {
+    if (sessionStorage.getItem('animarTransicionModulo') === 'true') {
+        const style = document.createElement('style');
+        style.id = 'style-intermedio-fouc';
+        style.innerHTML = 'main.contenido { opacity: 0; transform: translateY(15px); }';
+        document.head.appendChild(style);
+    }
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+    const contenidoPrincipal = document.querySelector("main.contenido");
+    const estiloFouc = document.getElementById('style-intermedio-fouc');
+
+    if (typeof gsap !== 'undefined' && contenidoPrincipal) {
+        if (sessionStorage.getItem('animarTransicionModulo') === 'true') {
+            sessionStorage.removeItem('animarTransicionModulo');
+            
+            if (estiloFouc) estiloFouc.remove();
+
+            gsap.fromTo(contenidoPrincipal, 
+                { opacity: 0, y: 15 },
+                { 
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 0.3, 
+                    ease: "power2.out",
+                    clearProps: "all"
+                }
+            );
+        } else {
+            if (estiloFouc) estiloFouc.remove();
+            contenidoPrincipal.style.opacity = "1";
+            contenidoPrincipal.style.transform = "translateY(0)";
+        }
+
+        // 2. INTERCEPTAR CLICS DEL MENÚ (CON PROTECCIÓN DE MÓDULO ACTUAL)
+        const enlacesMenu = document.querySelectorAll('.enlace-menu'); 
+        
+        enlacesMenu.forEach(enlace => {
+            enlace.addEventListener('click', function(e) {
+                const destino = this.getAttribute('href');
+                
+                if (!destino || destino === '#' || destino.startsWith('javascript') || this.target === '_blank' || destino.includes('cerrar_sesion.php')) {
+                    return;
+                }
+
+                // ── NUEVA VALIDACIÓN: ¿Ya estamos en esta página? ──
+                // Obtenemos el nombre del archivo actual desde la URL de la ventana (ej: "ConfiguracionAsistencia.php")
+                const paginaActual = window.location.pathname.split("/").pop();
+                // Obtenemos el nombre del archivo de destino del enlace limpio
+                const paginaDestino = destino.split("/").pop();
+
+                // Si coinciden, cancelamos la recarga y la animación por completo
+                if (paginaActual === paginaDestino) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Si es un módulo diferente, procedemos con la transición fluida
+                e.preventDefault(); 
+                
+                sessionStorage.setItem('animarTransicionModulo', 'true');
+                
+                gsap.to(contenidoPrincipal, { 
+                    opacity: 0, 
+                    y: -10,
+                    duration: 0.22, 
+                    ease: "power2.in",
+                    onComplete: () => { 
+                        window.location.href = destino; 
+                    }
+                });
+            });
+        });
+    } else {
+        if (estiloFouc) estiloFouc.remove();
+        if (contenidoPrincipal) {
+            contenidoPrincipal.style.opacity = "1";
+            contenidoPrincipal.style.transform = "translateY(0)";
+        }
+    }
+});
+</script>
