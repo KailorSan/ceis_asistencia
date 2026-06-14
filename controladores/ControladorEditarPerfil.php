@@ -53,6 +53,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $cambiar_password = true;
     }
 
+    // ── Validación de Preguntas y Respuestas de Seguridad (BACKEND) ───────────
+    $preguntas_recibidas = [];
+    for ($i = 1; $i <= 3; $i++) {
+        $preg = $_POST['pregunta_'.$i] ?? '';
+        $resp = trim($_POST['respuesta_'.$i] ?? '');
+        
+        // Guardamos las preguntas recibidas para verificar que no haya duplicadas
+        if (!empty($preg)) {
+            $preguntas_recibidas[] = $preg;
+        }
+
+        // Si el usuario escribió una respuesta nueva, verificamos su longitud
+        if (!empty($resp)) {
+            if (strlen($resp) < 3) {
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => "La respuesta de seguridad $i debe tener al menos 3 caracteres."];
+                header("Location: ../vistas/perfil.php");
+                exit;
+            }
+            if (empty($preg)) {
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => "Falta seleccionar una pregunta para la respuesta $i."];
+                header("Location: ../vistas/perfil.php");
+                exit;
+            }
+        }
+    }
+
+    // Verificar que no enviaron preguntas duplicadas (ej: alterando el HTML)
+    if (count($preguntas_recibidas) === 3 && count(array_unique($preguntas_recibidas)) !== 3) {
+        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'No puedes seleccionar preguntas de seguridad repetidas.'];
+        header("Location: ../vistas/perfil.php");
+        exit;
+    }
+
     try {
         // ── 1. Verificar contraseña actual ────────────────────────────────────
         $stmt_verificar = $conexion->prepare("SELECT password FROM usuarios WHERE id_usuario = ?");
@@ -94,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $params_user[':nuevapass'] = password_hash($nueva_password, PASSWORD_DEFAULT);
         }
 
+        // Actualizamos las preguntas solo si escribieron respuestas
         for ($i = 1; $i <= 3; $i++) {
             if (!empty(trim($_POST['respuesta_'.$i]))) {
                 $sql_update_user .= ", pregunta_$i = :p$i, respuesta_$i = :r$i";
@@ -106,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt_update_user = $conexion->prepare($sql_update_user);
         $stmt_update_user->execute($params_user);
 
-        // ── 5. Procesar foto de perfil (si subió una) ─────────────────────────
+        // ── 5. Procesar foto de perfil (AUTO-CONVERSIÓN A JPG) ────────────────
         $sql_foto = "";
         $params_personal = [
             ':tel'       => $nuevo_telefono,
@@ -117,14 +151,91 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ];
 
         if (isset($_FILES['nueva_foto']) && $_FILES['nueva_foto']['error'] == UPLOAD_ERR_OK) {
-            $ext        = strtolower(pathinfo($_FILES['nueva_foto']['name'], PATHINFO_EXTENSION));
-            $permitidas = ['jpg', 'jpeg', 'png'];
-            if (in_array($ext, $permitidas)) {
-                $nombre_foto              = 'perfil_' . time() . '_' . rand(100, 999) . '.' . $ext;
-                $ruta_destino             = '../recursos/img/perfiles/' . $nombre_foto;
-                move_uploaded_file($_FILES['nueva_foto']['tmp_name'], $ruta_destino);
-                $sql_foto                  = ", foto_perfil = :foto";
-                $params_personal[':foto']  = $nombre_foto;
+            
+            // Límite de 5 MB
+            $limite_peso = 5 * 1024 * 1024;
+            if ($_FILES['nueva_foto']['size'] > $limite_peso) {
+                $conexion->rollBack();
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'La imagen es muy pesada. El límite máximo es de 5 MB.'];
+                header("Location: ../vistas/perfil.php");
+                exit;
+            }
+
+            $tmp = $_FILES['nueva_foto']['tmp_name'];
+            
+            // Verificamos el tipo mime real
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $tipo_real = finfo_file($finfo, $tmp);
+            finfo_close($finfo);
+
+            $tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            
+            if (in_array($tipo_real, $tipos_permitidos, true)) {
+                
+                // FIX MEMORIA: Aumentamos memoria temporalmente para evitar Fatal Error con fotos de alta resolución
+                ini_set('memory_limit', '256M');
+
+                // Creamos la imagen en memoria GD
+                $imagen_gd = match($tipo_real) {
+                    'image/jpeg' => imagecreatefromjpeg($tmp),
+                    'image/png'  => imagecreatefrompng($tmp),
+                    'image/webp' => imagecreatefromwebp($tmp),
+                    'image/gif'  => imagecreatefromgif($tmp),
+                    default      => false
+                };
+
+                if ($imagen_gd) {
+                    $ancho_original = imagesx($imagen_gd);
+                    $alto_original  = imagesy($imagen_gd);
+                    $max_px = 600; // Redimensionamos un poco para optimizar
+
+                    $ratio = min($max_px / $ancho_original, $max_px / $alto_original);
+                    $ratio = $ratio < 1 ? $ratio : 1; 
+                    $nuevo_ancho = (int)($ancho_original * $ratio);
+                    $nuevo_alto  = (int)($alto_original  * $ratio);
+
+                    // Lienzo en blanco
+                    $imagen_final = imagecreatetruecolor($nuevo_ancho, $nuevo_alto);
+                    $fondo_blanco = imagecolorallocate($imagen_final, 255, 255, 255);
+                    imagefill($imagen_final, 0, 0, $fondo_blanco);
+
+                    imagecopyresampled($imagen_final, $imagen_gd, 0, 0, 0, 0, $nuevo_ancho, $nuevo_alto, $ancho_original, $alto_original);
+                    imagedestroy($imagen_gd);
+
+                    // Guardamos estrictamente como .jpg
+                    $nombre_foto  = 'perfil_' . time() . '_' . rand(100, 999) . '.jpg';
+                    $ruta_destino = '../recursos/img/perfiles/' . $nombre_foto;
+
+                    if (imagejpeg($imagen_final, $ruta_destino, 85)) { 
+                        
+                        // FIX ARCHIVOS HUÉRFANOS: Eliminar foto vieja
+                        $stmt_foto_vieja = $conexion->prepare("SELECT foto_perfil FROM personal WHERE id_usuario = ?");
+                        $stmt_foto_vieja->execute([$id_usuario]);
+                        $foto_anterior = $stmt_foto_vieja->fetchColumn();
+
+                        if ($foto_anterior && $foto_anterior !== 'default.png') {
+                            $ruta_anterior = '../recursos/img/perfiles/' . $foto_anterior;
+                            if (file_exists($ruta_anterior)) {
+                                unlink($ruta_anterior);
+                            }
+                        }
+
+                        $sql_foto = ", foto_perfil = :foto";
+                        $params_personal[':foto'] = $nombre_foto;
+                    } else {
+                        // Evitar fallos silenciosos si no se pudo guardar
+                        $conexion->rollBack();
+                        $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Error de permisos al guardar la foto en el servidor.'];
+                        header("Location: ../vistas/perfil.php");
+                        exit;
+                    }
+                    imagedestroy($imagen_final);
+                }
+            } else {
+                $conexion->rollBack();
+                $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Formato de imagen no válido. Sube un JPG, PNG, WEBP o GIF.'];
+                header("Location: ../vistas/perfil.php");
+                exit;
             }
         }
 

@@ -34,6 +34,21 @@ if ($id_rol != 1 && $id_rol != 2) {
 $meses_es = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 $nombre_mes = ($mes === 'todos') ? "TODO EL AÑO" : $meses_es[$mes - 1];
 
+// 🌟 Obtener los feriados hábiles (lunes a viernes) del período solicitado
+$feriados_array = [];
+try {
+    if ($mes === 'todos') {
+        $stmt_fer = $conexion->prepare("SELECT fecha FROM feriados WHERE YEAR(fecha) = ? AND DAYOFWEEK(fecha) NOT IN (1, 7)");
+        $stmt_fer->execute([$anio]);
+    } else {
+        $stmt_fer = $conexion->prepare("SELECT fecha FROM feriados WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? AND DAYOFWEEK(fecha) NOT IN (1, 7)");
+        $stmt_fer->execute([$mes, $anio]);
+    }
+    while ($row = $stmt_fer->fetch(PDO::FETCH_ASSOC)) {
+        $feriados_array[] = $row['fecha'];
+    }
+} catch (PDOException $e) {}
+
 $cedula_log = $id_personal;
 if ($id_personal != 'todos') {
     $stmt_ced = $conexion->prepare("SELECT cedula FROM personal WHERE id_personal = ?");
@@ -141,7 +156,7 @@ if ($id_personal != 'todos') {
     $stmt_emp->execute([$id_personal]);
     $emp = $stmt_emp->fetch(PDO::FETCH_ASSOC);
 
-    $fecha_ing_emp = $emp['fecha_ingreso'] ?: '2000-01-01'; // Respaldo por si falla el SQL
+    $fecha_ing_emp = $emp['fecha_ingreso'] ?: '2000-01-01';
 
     $ruta_foto = '../recursos/img/perfiles/' . $emp['foto_perfil'];
     if (!file_exists($ruta_foto) || empty($emp['foto_perfil'])) { $ruta_foto = '../recursos/img/perfiles/default.png'; }
@@ -185,12 +200,14 @@ if ($id_personal != 'todos') {
 
         for ($d = 1; $d <= $dias_del_mes; $d++) {
             $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-            if ($fecha_ciclo > $fecha_hoy) break;
+            
+            // 🚀 FIX: Comentado para permitir en el PDF justificaciones a futuro
+            // if ($fecha_ciclo > $fecha_hoy) break;
 
             $dia_semana = date('N', strtotime($fecha_ciclo)); 
             if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
 
-            $dias_evaluados++;
+            $es_feriado = in_array($fecha_ciclo, $feriados_array);
             $fecha_format = date('d/m/Y', strtotime($fecha_ciclo));
 
             if (isset($registros_reales[$fecha_ciclo])) {
@@ -198,6 +215,13 @@ if ($id_personal != 'todos') {
                 $estado = $a['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $a['estado'];
                 $motivo = !empty($a['motivo_justificacion']) ? htmlspecialchars($a['motivo_justificacion']) : '-';
                 
+                // Si tiene marca de Feriado manual, lo saltamos del porcentaje
+                if (strpos($estado, 'Feriado') !== false) {
+                    $tabla_html .= "<tr><td>{$fecha_format}</td><td style='color:#7e22ce; font-weight:bold;'>Feriado / Día Libre</td><td class='texto-izq'>Omitido del cálculo</td></tr>";
+                    continue;
+                }
+
+                $dias_evaluados++;
                 if (strpos($estado, 'Puntual') !== false) $p++;
                 if (strpos($estado, 'Retraso') !== false) $r++;
                 if (strpos($estado, 'Falta') !== false) $f++;
@@ -209,7 +233,14 @@ if ($id_personal != 'todos') {
                 $tabla_html .= "<tr><td>{$fecha_format}</td><td {$color}>{$estado}</td><td class='texto-izq'>{$motivo}</td></tr>";
             } else {
                 if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
-                    $f++; $tabla_html .= "<tr><td>{$fecha_format}</td><td class='alerta-roja'>Falta</td><td class='texto-izq alerta-roja'>Inasistencia automática</td></tr>";
+                    // Evitamos marcar falta si es un feriado general
+                    if ($es_feriado) {
+                        $tabla_html .= "<tr><td>{$fecha_format}</td><td style='color:#7e22ce; font-weight:bold;'>Día Libre</td><td class='texto-izq'>Feriado nacional / regional (Omitido)</td></tr>";
+                    } else {
+                        $dias_evaluados++;
+                        $f++; 
+                        $tabla_html .= "<tr><td>{$fecha_format}</td><td class='alerta-roja'>Falta</td><td class='texto-izq alerta-roja'>Inasistencia automática</td></tr>";
+                    }
                 }
             }
         }
@@ -247,7 +278,7 @@ if ($id_personal != 'todos') {
 
         $stmt_total_personal = $conexion->query("SELECT COUNT(*) FROM personal INNER JOIN usuarios ON personal.id_usuario = usuarios.id_usuario WHERE usuarios.estado = 'Activo'");
         $total_empleados = $stmt_total_personal->fetchColumn();
-        $stmt_media = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? AND estado NOT LIKE '%Falta%'");
+        $stmt_media = $conexion->prepare("SELECT COUNT(*) FROM asistencias WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? AND estado NOT LIKE '%Falta%' AND estado NOT LIKE '%Feriado%'");
         $stmt_media->execute([$mes, $anio]);
         $total_asistencias_institucion = $stmt_media->fetchColumn();
         
@@ -255,7 +286,7 @@ if ($id_personal != 'todos') {
         $porc_media_inst = $dias_evaluados > 0 ? round(($media_institucional_asistencias / $dias_evaluados) * 100) : 0;
         if($porc_media_inst > 100) $porc_media_inst = 100;
         
-        $porc_emp_efectiva = round((($p + $r + $j) / $dias_evaluados) * 100);
+        $porc_emp_efectiva = $dias_evaluados > 0 ? round((($p + $r + $j) / $dias_evaluados) * 100) : 0;
         if($porc_emp_efectiva > 100) $porc_emp_efectiva = 100;
         
         $color_emp = $porc_emp_efectiva < $porc_media_inst ? "#ef4444" : ($porc_emp_efectiva == $porc_media_inst ? "#f59e0b" : "#10b981");
@@ -276,7 +307,6 @@ if ($id_personal != 'todos') {
         
         $fecha_hoy = date('Y-m-d');
         
-        // Buscamos todos los registros del año de una sola vez
         $stmt_stats = $conexion->prepare("SELECT fecha, estado, estado_justificacion FROM asistencias WHERE id_personal = ? AND YEAR(fecha) = ?");
         $stmt_stats->execute([$id_personal, $anio]);
         $registros_reales = [];
@@ -284,21 +314,25 @@ if ($id_personal != 'todos') {
             $registros_reales[$row['fecha']] = $row;
         }
 
-        // Iteramos sobre los 12 meses
         for($m = 1; $m <= 12; $m++) {
             $p = 0; $r = 0; $f = 0; $j = 0; $st = 0; $si = 0;
             $dias_del_mes = cal_days_in_month(CAL_GREGORIAN, $m, $anio);
             
-            // Iteramos sobre los días del mes actual para detectar las faltas silenciosas
             for ($d = 1; $d <= $dias_del_mes; $d++) {
                 $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
-                if ($fecha_ciclo > $fecha_hoy) break;
+                
+                // 🚀 FIX: Comentado para PDF anual
+                // if ($fecha_ciclo > $fecha_hoy) break;
 
                 $dia_semana = date('N', strtotime($fecha_ciclo)); 
                 if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
 
+                $es_feriado = in_array($fecha_ciclo, $feriados_array);
+
                 if (isset($registros_reales[$fecha_ciclo])) {
                     $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
+                    if (strpos($estado, 'Feriado') !== false) continue; // Omitir
+
                     if (strpos($estado, 'Puntual') !== false) $p++;
                     if (strpos($estado, 'Retraso') !== false) $r++;
                     if (strpos($estado, 'Falta') !== false) $f++;
@@ -306,9 +340,10 @@ if ($id_personal != 'todos') {
                     if (strpos($estado, 'Salida Temprana') !== false) $st++;
                     if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
-                    // Contamos la inasistencia si es un día laborable pasado desde que ingresó
                     if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
-                        $f++;
+                        if (!$es_feriado) { // Solo falta si NO es feriado
+                            $f++;
+                        }
                     }
                 }
             }
@@ -347,7 +382,7 @@ if ($id_personal != 'todos') {
 
     foreach ($personal as $per) {
         $id_p = $per['id_personal'];
-        $fecha_ing_per = $per['fecha_ingreso'] ?: '2000-01-01'; // Respaldo seguro
+        $fecha_ing_per = $per['fecha_ingreso'] ?: '2000-01-01'; 
         
         $p = 0; $r = 0; $f = 0; $st = 0; $si = 0; $j = 0;
 
@@ -363,13 +398,18 @@ if ($id_personal != 'todos') {
                 $dias_del_mes_ciclo = cal_days_in_month(CAL_GREGORIAN, $m, $anio);
                 for ($d = 1; $d <= $dias_del_mes_ciclo; $d++) {
                     $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
-                    if ($fecha_ciclo > $fecha_hoy) break;
+                    
+                    // 🚀 FIX: Comentado para PDF general anual
+                    // if ($fecha_ciclo > $fecha_hoy) break;
 
                     $dia_semana = date('N', strtotime($fecha_ciclo)); 
                     if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
+                    $es_feriado = in_array($fecha_ciclo, $feriados_array);
 
                     if (isset($registros_reales[$fecha_ciclo])) {
                         $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
+                        if (strpos($estado, 'Feriado') !== false) continue; // Omitir
+
                         if (strpos($estado, 'Puntual') !== false) $p++;
                         if (strpos($estado, 'Retraso') !== false) $r++;
                         if (strpos($estado, 'Falta') !== false) $f++;
@@ -378,7 +418,9 @@ if ($id_personal != 'todos') {
                         if (strpos($estado, 'Salida Irregular') !== false) $si++;
                     } else {
                         if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
-                            $f++;
+                            if (!$es_feriado) { // Solo sumar falta si no es feriado
+                                $f++;
+                            }
                         }
                     }
                 }
@@ -394,13 +436,18 @@ if ($id_personal != 'todos') {
 
             for ($d = 1; $d <= $dias_del_mes; $d++) {
                 $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-                if ($fecha_ciclo > $fecha_hoy) break;
+                
+                // 🚀 FIX: Comentado para PDF general mensual
+                // if ($fecha_ciclo > $fecha_hoy) break;
 
                 $dia_semana = date('N', strtotime($fecha_ciclo)); 
                 if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
+                $es_feriado = in_array($fecha_ciclo, $feriados_array);
 
                 if (isset($registros_reales[$fecha_ciclo])) {
                     $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
+                    if (strpos($estado, 'Feriado') !== false) continue; // Omitir
+
                     if (strpos($estado, 'Puntual') !== false) $p++;
                     if (strpos($estado, 'Retraso') !== false) $r++;
                     if (strpos($estado, 'Falta') !== false) $f++;
@@ -409,7 +456,9 @@ if ($id_personal != 'todos') {
                     if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
                     if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
-                        $f++; 
+                        if (!$es_feriado) { // Solo sumar falta si no es feriado
+                            $f++; 
+                        }
                     }
                 }
             }
@@ -481,5 +530,7 @@ $dompdf->render();
 $identificador = ($id_personal == 'todos') ? ($filtro_cargo == 'todos' ? "General" : "Filtrado") : $emp['cedula'];
 
 ob_end_clean(); 
-$dompdf->stream("Reporte_{$identificador}_{$nombre_mes}_{$anio}.pdf", array("Attachment" => false));
+// Al poner true, forzamos la descarga directa con el nombre correcto y extensión .pdf
+$dompdf->stream("Reporte_{$identificador}_{$nombre_mes}_{$anio}.pdf", array("Attachment" => true));
+exit; 
 ?>

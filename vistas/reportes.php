@@ -69,14 +69,97 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
     <title>Reportes - CEIS Julian Yánez</title>
     <link rel="icon" href="../recursos/img/logo_ceis_transparente.png" type="image/png">
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
-    <script src="../recursos/js/chart.min.js"></script>
     <script>
         (function() {
             const idUsr = "<?php echo $_SESSION['id_usuario']; ?>";
             document.documentElement.setAttribute('data-theme', localStorage.getItem('tema_usuario_' + idUsr) || 'light');
         })();
     </script>
-    <!-- Estilos migrados a principal.css — sección "PÁGINA: REPORTES" -->
+    <style>
+        /* ================================================================
+           AJUSTES DEL MODAL Y TARJETA FLOTANTE (SIN SCROLL)
+           ================================================================ */
+        
+        /* Ocultamos el scroll del modal por completo y mostramos desbordamiento de la tarjeta si hace falta */
+        #modalContenidoResumen {
+            overflow: visible !important;
+            max-height: max-content !important; 
+            padding-bottom: 1.5rem !important;
+        }
+
+        /* Estilos del botón pequeño de Feriados */
+        .btn-alerta-feriado {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid #c084fc;
+            color: #9333ea;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            outline: none;
+            margin-left: 8px;
+        }
+
+        .btn-alerta-feriado:hover {
+            background: rgba(168, 85, 247, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Tarjeta flotante que se despliega al hacer clic */
+        .tarjeta-info-feriados {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(15px);
+            width: 280px;
+            background-color: var(--navbar-bg);
+            border: 1px solid #c084fc;
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.25);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            text-align: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+
+        /* Flechita superior de la tarjeta flotante */
+        .tarjeta-info-feriados::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 10px;
+            height: 10px;
+            background-color: var(--navbar-bg);
+            border-left: 1px solid #c084fc;
+            border-top: 1px solid #c084fc;
+        }
+
+        /* Clase activa para mostrar la tarjeta */
+        .tarjeta-info-feriados.activa {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(8px);
+            pointer-events: auto;
+        }
+
+        [data-theme="dark"] .tarjeta-info-feriados {
+            background-color: #1e293b;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        [data-theme="dark"] .tarjeta-info-feriados::before {
+            background-color: #1e293b;
+        }
+    </style>
 </head>
 <body>
 
@@ -142,7 +225,6 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="grid-perfiles" id="directorio-personal">
                 <?php foreach ($lista_personal as $emp): ?>
-                    <!-- Se agregó la clase item-filtrable para estandarizar con CSS de paginación -->
                     <div class="tarjeta-perfil item-filtrable" data-cargo="<?php echo $emp['id_cargo']; ?>">
                         <div class="banner-tarjeta banner-tarjeta--reportes"></div>
                         <div class="contenedor-avatar contenedor-avatar--reportes">
@@ -189,11 +271,31 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
             <div class="resumen-encabezado">
                 <h3 id="resumen-nombre" class="resumen-nombre">Cargando...</h3>
                 <span id="resumen-cargo" class="resumen-cargo"></span>
-                <p id="resumen-periodo" class="resumen-periodo"></p>
+                
+                <div style="display: flex; align-items: center; justify-content: center; margin-top: 5px; position: relative;">
+                    <p id="resumen-periodo" class="resumen-periodo" style="margin: 0;"></p>
+                    
+                    <!-- BOTÓN Y TARJETA FLOTANTE DE FERIADOS -->
+                    <div id="btn-info-feriados" style="display: none; position: relative;">
+                        <button type="button" class="btn-alerta-feriado" onclick="toggleTarjetaFeriados(event)" title="Información de feriados omitidos">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01" />
+                            </svg>
+                        </button>
+                        <div class="tarjeta-info-feriados" id="tarjeta-info-feriados">
+                            <strong style="color: #a855f7; display: block; margin-bottom: 5px;">Precisión Activada</strong>
+                            El sistema omitió automáticamente <strong id="cantidad-feriados-omitidos" style="color: #a855f7; font-size: 1.1rem;">0</strong> día(s) feriado(s) para mantener el cálculo exacto de la asistencia.
+                        </div>
+                    </div>
+                </div>
+
             </div>
+            
             <div id="cargando-resumen" class="resumen-cargando">
                 <svg class="animacion-vibrar" xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--primary-color)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
+
             <div class="contenedor-grafico" id="contenedor-grafico-resumen"><canvas id="miGraficoDona"></canvas></div>
             
             <div class="grid-resumen grid-resumen--oculto" id="datos-resumen">
@@ -207,198 +309,18 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <!-- EL PUENTE: Transfiere configuración de PHP a JS -->
     <script>
-        const periodosActivos = <?php echo $periodos_json; ?>;
-        const selectAnio = document.getElementById('anio_global');
-        const selectMes = document.getElementById('mes_global');
-        const nombresMeses = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-        const esDirectivo = <?php echo $es_directivo ? 'true' : 'false'; ?>;
-
-        function actualizarMesesDisponibles() {
-            const anio = selectAnio.value;
-            const mesesDelAnio = periodosActivos[anio] || [];
-            selectMes.innerHTML = '<option value="todos" style="font-weight:bold; color:var(--primary-color);">Todo el Año</option>';
-            
-            if (mesesDelAnio.length > 0) {
-                mesesDelAnio.sort((a,b) => a - b);
-                mesesDelAnio.forEach(mesNum => {
-                    const opt = document.createElement('option');
-                    opt.value = mesNum; opt.textContent = nombresMeses[mesNum];
-                    selectMes.appendChild(opt);
-                });
-                selectMes.value = mesesDelAnio[mesesDelAnio.length - 1];
-            } else {
-                selectMes.innerHTML += '<option value="" disabled>Sin datos</option>';
-            }
-        }
-        if(Object.keys(periodosActivos).length > 0) {
-            selectAnio.addEventListener('change', actualizarMesesDisponibles);
-            actualizarMesesDisponibles();
-        }
-
-        const btnCambiarTema = document.getElementById('btnCambiarTema');
-        if(btnCambiarTema) {
-            btnCambiarTema.addEventListener('click', function(e) {
-                e.preventDefault();
-                const html = document.documentElement;
-                const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                html.setAttribute('data-theme', nuevoTema);
-                localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
-            });
-        }
-
-        // ==========================================
-        // SISTEMA DE FILTRADO Y PAGINACIÓN INFINITA
-        // ==========================================
-        const inputBuscador = document.getElementById('buscador-empleados');
-        let cargoActivo = 'todos'; 
-        
-        const itemsPorCarga = 8;
-        let limiteActual = itemsPorCarga;
-
-        if (esDirectivo) {
-            function aplicarFiltrosCombinados(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
-                if (reiniciarPaginacion) {
-                    limiteActual = itemsPorCarga;
-                }
-
-                if (idCargo !== null) {
-                    cargoActivo = idCargo;
-                    document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
-                    if(botonSeleccionado) botonSeleccionado.classList.add('activo');
-                }
-                
-                const textoBusqueda = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
-                let coincidentes = 0;
-
-                document.querySelectorAll('.item-filtrable').forEach(tarjeta => {
-                    const coincideCargo = cargoActivo === 'todos' || tarjeta.getAttribute('data-cargo') == cargoActivo;
-                    const nombre = tarjeta.querySelector('.nombre-empleado').innerText.toLowerCase();
-                    const cargo = tarjeta.querySelector('.cargo-empleado').innerText.toLowerCase();
-                    const coincideTexto = nombre.includes(textoBusqueda) || cargo.includes(textoBusqueda);
-                    
-                    if (coincideCargo && coincideTexto) {
-                        tarjeta.classList.remove('oculto-por-filtro');
-                        coincidentes++;
-                        
-                        if (coincidentes > limiteActual) {
-                            tarjeta.classList.add('oculto-por-paginacion');
-                            tarjeta.classList.remove('animacion-aparecer');
-                        } else {
-                            if (tarjeta.classList.contains('oculto-por-paginacion')) {
-                                tarjeta.classList.remove('oculto-por-paginacion');
-                                void tarjeta.offsetWidth; 
-                                tarjeta.classList.add('animacion-aparecer');
-                            } else if (reiniciarPaginacion) {
-                                tarjeta.classList.remove('animacion-aparecer');
-                                void tarjeta.offsetWidth; 
-                                tarjeta.classList.add('animacion-aparecer');
-                            }
-                        }
-                    } else {
-                        tarjeta.classList.add('oculto-por-filtro');
-                        tarjeta.classList.remove('oculto-por-paginacion');
-                        tarjeta.classList.remove('animacion-aparecer');
-                    }
-                });
-
-                const contenedorVerMas = document.getElementById('contenedor-ver-mas-reportes');
-                if (contenedorVerMas) {
-                    if (coincidentes > limiteActual) {
-                        contenedorVerMas.style.display = 'block';
-                    } else {
-                        contenedorVerMas.style.display = 'none';
-                    }
-                }
-            }
-
-            if (inputBuscador) {
-                inputBuscador.addEventListener('input', () => aplicarFiltrosCombinados(null, null, true));
-            }
-
-            const btnVerMas = document.getElementById('btn-ver-mas-reportes');
-            if (btnVerMas) {
-                btnVerMas.addEventListener('click', () => {
-                    limiteActual += itemsPorCarga;
-                    aplicarFiltrosCombinados(cargoActivo, document.querySelector('.btn-filtro.activo'), false); 
-                });
-            }
-
-            // Aplicar el límite visual la primera vez que se carga la página
-            document.addEventListener('DOMContentLoaded', () => {
-                aplicarFiltrosCombinados(null, null, true);
-            });
-        }
-
-        let chartInstancia = null;
-        function abrirResumen(idPersonal, nombre, cargo) {
-            document.getElementById('modalOverlayResumen').classList.add('activo');
-            document.getElementById('modalContenidoResumen').classList.add('activo'); 
-            document.getElementById('resumen-nombre').innerText = nombre;
-            document.getElementById('resumen-cargo').innerText = cargo;
-            
-            const mes = selectMes.value;
-            const anio = selectAnio.value;
-            const nombreMes = selectMes.options[selectMes.selectedIndex].text;
-            
-            document.getElementById('resumen-periodo').innerText = `Período: ${nombreMes} ${anio}`;
-            document.getElementById('datos-resumen').style.display = 'none';
-            document.getElementById('contenedor-grafico-resumen').style.display = 'none';
-            document.getElementById('cargando-resumen').style.display = 'block';
-
-            fetch(`../controladores/ControladorResumenMensual.php?id=${idPersonal}&mes=${mes}&anio=${anio}`)
-                .then(async response => {
-                    const texto = await response.text(); 
-                    try { return JSON.parse(texto); } 
-                    catch (err) { throw new Error("Error del servidor."); }
-                })
-                .then(data => {
-                    if(data.error) throw new Error(data.error);
-                    document.getElementById('num-puntual').innerText = data.puntual;
-                    document.getElementById('num-retraso').innerText = data.retraso;
-                    document.getElementById('num-salida-temp').innerText = data.salida_temprana;
-                    document.getElementById('num-salida-irreg').innerText = data.salida_irregular;
-                    document.getElementById('num-falta').innerText = data.falta;
-                    document.getElementById('num-justificado').innerText = data.justificado;
-                    
-                    document.getElementById('cargando-resumen').style.display = 'none';
-                    document.getElementById('datos-resumen').style.display = 'grid';
-                    
-                    document.getElementById('contenedor-grafico-resumen').style.display = 'flex';
-
-                    if(chartInstancia) { chartInstancia.destroy(); } 
-                    const ctx = document.getElementById('miGraficoDona').getContext('2d');
-                    chartInstancia = new Chart(ctx, {
-                        type: 'doughnut', 
-                        data: {
-                            labels: ['Puntuales', 'Retrasos', 'Salidas Tempranas', 'Salidas Irregulares', 'Faltas', 'Justificadas'],
-                            datasets: [{
-                                data: [data.puntual, data.retraso, data.salida_temprana, data.salida_irregular, data.falta, data.justificado],
-                                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#991b1b', '#ef4444', '#64748b'], hoverOffset: 4
-                            }]
-                        }, options: { responsive: true, plugins: { legend: { display: false } } }
-                    });
-                })
-                .catch(error => { document.getElementById('cargando-resumen').innerHTML = `<p style="color:#ef4444; font-weight:bold;">${error.message}</p>`; });
-        }
-
-        function cerrarResumen() {
-            document.getElementById('modalOverlayResumen').classList.remove('activo');
-            document.getElementById('modalContenidoResumen').classList.remove('activo');
-        }
-
-        function descargarPDF(idPersonal) {
-            const mes = selectMes.value;
-            const anio = selectAnio.value;
-            if(!mes || mes === "") { Swal.fire('Atención', 'Seleccione un periodo válido.', 'warning'); return; }
-            document.getElementById('pdf_id_personal').value = idPersonal;
-            document.getElementById('pdf_mes').value = mes;
-            document.getElementById('pdf_anio').value = anio;
-            document.getElementById('pdf_id_cargo').value = cargoActivo; 
-            
-            document.getElementById('formGenerarPDF').submit();
-        }
+        window.ReportesConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            esDirectivo: <?php echo $es_directivo ? 'true' : 'false'; ?>,
+            periodosActivos: <?php echo $periodos_json; ?>
+        };
     </script>
+
+    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <script src="../recursos/js/chart.min.js"></script>
+    <script src="../recursos/js/reportes.js?v=<?php echo time(); ?>"></script>
+
 </body>
 </html>

@@ -2,7 +2,7 @@
 session_start();
 require_once '../configuracion/conexion.php';
 
-// 1. BLINDAJE DE ZONA HORARIA: PHP dicta la hora exacta, no MySQL.
+// 1. BLINDAJE DE ZONA HORARIA
 date_default_timezone_set('America/Caracas');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -21,11 +21,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $telefono = trim($_POST['telefono'] ?? '');
     $id_cargo = $_POST['id_cargo'] ?? '';
 
-    // Recibir datos de usuario y aplicar sanitización estricta para espacios y minúsculas
     $nuevo_usuario = strtolower(preg_replace('/\s+/', '', trim($_POST['nuevo_usuario'] ?? '')));
     $nueva_password = $_POST['nueva_password'] ?? '';
 
-    // Recibir preguntas
     $pregunta_1 = $_POST['pregunta_1'] ?? '';
     $respuesta_1 = trim($_POST['respuesta_1'] ?? '');
     $pregunta_2 = $_POST['pregunta_2'] ?? '';
@@ -37,7 +35,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($cedula) || empty($nombres) || empty($apellidos) || empty($id_cargo) || 
         empty($nuevo_usuario) || empty($nueva_password) || 
         empty($respuesta_1) || empty($respuesta_2) || empty($respuesta_3)) {
-        
         $_SESSION['error_login'] = "Error de seguridad: Faltan datos obligatorios. Inténtalo de nuevo.";
         header("Location: ../vistas/login.php");
         exit;
@@ -50,7 +47,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Mínimo 3 caracteres por respuesta
     if (mb_strlen($respuesta_1, 'UTF-8') < 3 || mb_strlen($respuesta_2, 'UTF-8') < 3 || mb_strlen($respuesta_3, 'UTF-8') < 3) {
         $_SESSION['error_login'] = "Error de seguridad: Las respuestas deben tener al menos 3 caracteres.";
         header("Location: ../vistas/login.php");
@@ -88,17 +84,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Lógica para subir Foto de Perfil
+    // 🛡️ LÓGICA DE FOTO BLINDADA CON GD (MATA-VIRUS)
     $nombre_foto = 'default.png'; 
     
     if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] == UPLOAD_ERR_OK) {
-        $ext = strtolower(pathinfo($_FILES['foto_perfil']['name'], PATHINFO_EXTENSION));
-        $permitidas = ['jpg', 'jpeg', 'png'];
-        
-        if (in_array($ext, $permitidas)) {
-            $nombre_foto = 'perfil_' . time() . '_' . rand(100, 999) . '.' . $ext;
-            $ruta_destino = '../recursos/img/perfiles/' . $nombre_foto;
-            move_uploaded_file($_FILES['foto_perfil']['tmp_name'], $ruta_destino);
+        $tamano_maximo = 10 * 1024 * 1024; // 10MB
+        if ($_FILES['foto_perfil']['size'] <= $tamano_maximo) {
+            
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $tipo_real = finfo_file($finfo, $_FILES['foto_perfil']['tmp_name']);
+            finfo_close($finfo);
+
+            $tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+            if (in_array($tipo_real, $tipos_permitidos, true)) {
+                $tmp = $_FILES['foto_perfil']['tmp_name'];
+
+                // Creamos imagen en memoria a partir del original (ignora metadatos PHP)
+                $imagen_gd = match($tipo_real) {
+                    'image/jpeg' => imagecreatefromjpeg($tmp),
+                    'image/png'  => imagecreatefrompng($tmp),
+                    'image/webp' => imagecreatefromwebp($tmp),
+                    'image/gif'  => imagecreatefromgif($tmp),
+                    default      => false
+                };
+
+                if ($imagen_gd) {
+                    $ancho_original = imagesx($imagen_gd);
+                    $alto_original  = imagesy($imagen_gd);
+                    $max_px = 800; // Redimensionado de seguridad
+
+                    $ratio = min($max_px / $ancho_original, $max_px / $alto_original);
+                    $ratio = $ratio < 1 ? $ratio : 1; 
+                    $nuevo_ancho = (int)($ancho_original * $ratio);
+                    $nuevo_alto  = (int)($alto_original  * $ratio);
+
+                    $imagen_final = imagecreatetruecolor($nuevo_ancho, $nuevo_alto);
+                    $blanco = imagecolorallocate($imagen_final, 255, 255, 255);
+                    imagefill($imagen_final, 0, 0, $blanco);
+
+                    imagecopyresampled($imagen_final, $imagen_gd, 0, 0, 0, 0, $nuevo_ancho, $nuevo_alto, $ancho_original, $alto_original);
+                    imagedestroy($imagen_gd);
+
+                    $nombre_foto_tmp = 'perfil_' . time() . '_' . rand(100, 999) . '.jpg';
+                    $ruta_destino = '../recursos/img/perfiles/' . $nombre_foto_tmp;
+
+                    // Compilar como JPG puro y limpio
+                    if (imagejpeg($imagen_final, $ruta_destino, 85)) {
+                        $nombre_foto = $nombre_foto_tmp;
+                    }
+                    imagedestroy($imagen_final);
+                }
+            }
         }
     }
 
@@ -140,8 +177,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ]);
 
         $id_usuario_nuevo = $conexion->lastInsertId();
-
-        // 2. INYECCIÓN EXACTA DE FECHA: Calculamos hoy e insertamos explícitamente en fecha_ingreso
         $fecha_registro_oficial = date('Y-m-d');
 
         $sql_insert_personal = "INSERT INTO personal (cedula, nombres, apellidos, telefono, id_cargo, id_usuario, foto_perfil, fecha_ingreso) 
@@ -159,7 +194,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ]);
 
         $conexion->commit();
-        // Limpiamos los intentos al tener éxito
         unset($_SESSION['intentos_registro']);
         $_SESSION['registro_exito'] = true;
         header("Location: ../vistas/login.php");

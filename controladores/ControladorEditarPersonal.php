@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    
     $id_rol_raw = $_POST['id_rol'] ?? null;
     $id_rol = filter_var($id_rol_raw, FILTER_VALIDATE_INT);
     if ($id_rol === false || $id_rol === null || $id_rol <= 0) {
@@ -104,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt_u = $conexion->prepare("UPDATE usuarios SET nombre_usuario = ?, estado = ?, id_rol = ? WHERE id_usuario = ?");
         $stmt_u->execute([$usuario, $estado, $id_rol, $id_usuario]);
 
-        // 2. Procesamiento de foto de perfil
+        // 2. Procesamiento de foto de perfil (AUTO-CONVERSIÓN A JPG)
         $foto_actualizada = false;
         $nombre_foto = "";
         
@@ -130,11 +129,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit;
             }
 
+            // FIX MEMORIA: Ampliar capacidad para fotos grandes
+            ini_set('memory_limit', '256M');
+
             $nombre_foto  = "perfil_" . $id_personal . "_" . time() . ".jpg";
             $ruta_destino = "../recursos/img/perfiles/" . $nombre_foto;
 
-            $tamano_objetivo = 2 * 1024 * 1024; // 2 MB
-            $tmp             = $_FILES['foto_perfil']['tmp_name'];
+            $tmp = $_FILES['foto_perfil']['tmp_name'];
 
             $imagen_gd = match($tipo_real) {
                 'image/jpeg' => imagecreatefromjpeg($tmp),
@@ -155,30 +156,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $alto_original  = imagesy($imagen_gd);
             $max_px         = 800;
 
-            if ($ancho_original > $max_px || $alto_original > $max_px) {
-                $ratio = min($max_px / $ancho_original, $max_px / $alto_original);
-                $nuevo_ancho = (int)($ancho_original * $ratio);
-                $nuevo_alto  = (int)($alto_original  * $ratio);
+            $ratio = min($max_px / $ancho_original, $max_px / $alto_original);
+            $ratio = $ratio < 1 ? $ratio : 1; 
+            $nuevo_ancho = (int)($ancho_original * $ratio);
+            $nuevo_alto  = (int)($alto_original  * $ratio);
 
-                $imagen_redim = imagecreatetruecolor($nuevo_ancho, $nuevo_alto);
+            // Lienzo blanco para matar las transparencias de los PNG y evitar que se pongan negras
+            $imagen_final = imagecreatetruecolor($nuevo_ancho, $nuevo_alto);
+            $blanco = imagecolorallocate($imagen_final, 255, 255, 255);
+            imagefill($imagen_final, 0, 0, $blanco);
 
-                imagealphablending($imagen_redim, false);
-                imagesavealpha($imagen_redim, true);
-                $transparente = imagecolorallocatealpha($imagen_redim, 0, 0, 0, 127);
-                imagefill($imagen_redim, 0, 0, $transparente);
+            imagecopyresampled($imagen_final, $imagen_gd, 0, 0, 0, 0, $nuevo_ancho, $nuevo_alto, $ancho_original, $alto_original);
+            imagedestroy($imagen_gd);
 
-                imagecopyresampled($imagen_redim, $imagen_gd, 0, 0, 0, 0, $nuevo_ancho, $nuevo_alto, $ancho_original, $alto_original);
-                imagedestroy($imagen_gd);
-                $imagen_gd = $imagen_redim;
-            }
-
+            // Lógica de guardado y compresión
             $calidad    = 85;
             $calidad_min = 30;
             $guardado   = false;
+            $tamano_objetivo = 5 * 1024 * 1024; // 5 MB max
 
             while ($calidad >= $calidad_min) {
                 ob_start();
-                imagejpeg($imagen_gd, null, $calidad);
+                imagejpeg($imagen_final, null, $calidad);
                 $buffer = ob_get_clean();
 
                 if (strlen($buffer) <= $tamano_objetivo || $calidad === $calidad_min) {
@@ -187,14 +186,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                     break;
                 }
-
                 $calidad -= 5;
             }
 
-            imagedestroy($imagen_gd);
+            imagedestroy($imagen_final);
 
             if ($guardado) {
+                // FIX ARCHIVOS HUÉRFANOS: Eliminar la foto vieja del usuario administrado
+                $stmt_foto_vieja = $conexion->prepare("SELECT foto_perfil FROM personal WHERE id_personal = ?");
+                $stmt_foto_vieja->execute([$id_personal]);
+                $foto_anterior = $stmt_foto_vieja->fetchColumn();
+
+                if ($foto_anterior && $foto_anterior !== 'default.png') {
+                    $ruta_anterior = '../recursos/img/perfiles/' . $foto_anterior;
+                    if (file_exists($ruta_anterior)) {
+                        unlink($ruta_anterior);
+                    }
+                }
+                
                 $foto_actualizada = true;
+            } else {
+                $conexion->rollBack();
+                $_SESSION['alerta_personal'] = ['tipo' => 'error', 'mensaje' => 'Error al guardar el archivo de la foto.'];
+                header("Location: ../vistas/personal.php");
+                exit;
             }
         }
 

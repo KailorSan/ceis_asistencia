@@ -362,15 +362,21 @@
         <p class="transicion-subtexto" id="trans-sub">CEIS Julián Yánez · Ciudad Bolívar</p>
     </div>
 
-    <!-- ══════════════════════════════════════
-         HERO (FONDO LIMPIO)
-    ══════════════════════════════════════ -->
     <header class="relative flex items-center justify-center overflow-hidden clip-path-slant bg-gray-900"
             style="min-height: 92vh; padding: 80px 16px;">
 
         <div class="absolute inset-0" style="z-index:0;">
-            <img src="recursos/img/fondoindex.jpeg" alt="Fachada CEIS"
-                 class="w-full h-full object-cover" style="opacity:0.38;">
+            <picture>
+                <!-- Imagen para pantallas móviles (hasta 768px). Optimizada a WebP -->
+                <source media="(max-width: 768px)" srcset="recursos/img/movil1.webp">
+                
+                <!-- Imagen para computadoras/tablets (más de 768px) -->
+                <source media="(min-width: 769px)" srcset="recursos/img/inxdex22.webp">
+                
+                <!-- Imagen de respaldo (fallback) con las clases de Tailwind actualizadas -->
+                <img src="recursos/img/inxdex22.webp" alt="Fachada CEIS"
+                     class="w-full h-full object-cover object-center" style="opacity:0.38;">
+            </picture>
             <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 40%, rgba(74,14,26,0.88) 100%);"></div>
             <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(74,14,26,0.65) 0%, transparent 55%);"></div>
         </div>
@@ -414,7 +420,7 @@
         <div style="max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:64px;">
             <div class="gs-about-img" style="flex:1; min-width:280px;">
                 <div class="about-frame">
-                    <img src="recursos/img/simoncito.jpg" alt="Niños en el CEIS" style="width:100%; height:auto; display:block; object-fit:cover;">
+                    <img src="recursos/img/logo mejorado.webp" alt="Niños en el CEIS" style="width:100%; height:auto; display:block; object-fit:cover;">
                 </div>
             </div>
             <div class="gs-about-text" style="flex:1; min-width:280px;">

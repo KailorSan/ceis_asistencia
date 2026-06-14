@@ -180,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (estiloFouc) estiloFouc.remove();
         if (contenidoPrincipal) {
             contenidoPrincipal.style.opacity = "1";
-            contenidoPrincipal.style.transform = "translateY(0)";
+            contenidoPrincipal.style.transform = "none";
         }
     }
 });

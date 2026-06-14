@@ -17,10 +17,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 date_default_timezone_set('America/Caracas');
 $id_usuario = (int) $_SESSION['id_usuario'];
 
-if (date('N') >= 6) {
-    ControladorBitacora::registrar($conexion, $id_usuario, 'Seguridad', 'Intento de evasión (Fin de Semana)', "El usuario intentó forzar el registro de asistencia en un día no laborable.");
+// ==========================================
+// BARRERA DE SEGURIDAD: FIN DE SEMANA Y FERIADOS
+// ==========================================
+$es_fin_semana = (date('N') >= 6);
+
+$stmt_fer = $conexion->prepare("SELECT id_feriado FROM feriados WHERE fecha = CURDATE()");
+$stmt_fer->execute();
+$es_feriado = $stmt_fer->fetchColumn();
+
+if ($es_fin_semana || $es_feriado) {
+    $tipo_evasion = $es_fin_semana ? 'Fin de Semana' : 'Día Feriado';
+    ControladorBitacora::registrar($conexion, $id_usuario, 'Seguridad', "Intento de evasión ($tipo_evasion)", "El usuario intentó forzar el registro de asistencia en un día no laborable.");
     
-    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Operación denegada. No se puede registrar asistencia los fines de semana.'];
+    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Operación denegada. No se puede registrar asistencia en días no laborables.'];
     header("Location: ../vistas/principal.php");
     exit;
 }
@@ -97,10 +107,8 @@ if ($accion === 'marcar_entrada') {
     if ($registro) {
         if ($registro['hora_salida'] === null) {
             // MEJORA: Verificamos si la salida es temprana y no tiene justificación aprobada.
-            // Esto evita que alguien marque salida antes de tiempo sin haber justificado previamente.
             $es_salida_temprana = (strtotime($hora_actual) < strtotime($hora_salida_esperada));
             if ($es_salida_temprana) {
-                // Verificamos si ya tiene una justificación de salida temprana pendiente o aprobada
                 $stmt_just_salida = $conexion->prepare(
                     "SELECT id_asistencia FROM asistencias 
                      WHERE id_personal = ? AND fecha = CURDATE() 

@@ -44,7 +44,7 @@ $stmt = $conexion->prepare("SELECT fecha_ingreso FROM personal WHERE id_personal
 $stmt->execute([$id_personal]);
 $fechaIngreso = $stmt->fetchColumn();
 if (!$fechaIngreso) {
-    $fechaIngreso = $hoy; // fallback: si no tiene fecha de ingreso, asumimos hoy
+    $fechaIngreso = $hoy; // fallback
 }
 
 // Validar que el rango no incluya fechas anteriores al ingreso
@@ -53,25 +53,44 @@ if ($fecha_fin < $fechaIngreso) {
     exit;
 }
 if ($fecha_inicio < $fechaIngreso) {
-    $fecha_inicio = $fechaIngreso; // ajustar inicio al día de ingreso
+    $fecha_inicio = $fechaIngreso; 
 }
 
-// Procesar archivos subidos (evidencias)
+// 🛡️ PROTECCIÓN RCE FLEXIBILIZADA
 $archivos = isset($_FILES['evidencias']) ? $_FILES['evidencias'] : null;
 $rutas_archivos = [];
+
 if ($archivos && isset($archivos['error'][0]) && $archivos['error'][0] !== UPLOAD_ERR_NO_FILE) {
     $carpeta_evidencias = '../recursos/evidencias/';
     if (!is_dir($carpeta_evidencias)) {
         mkdir($carpeta_evidencias, 0777, true);
     }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE); 
+    
+    // Variantes MIME para PDFs y Documentos
+    $mimes_permitidos = [
+        'image/jpeg', 'image/png', 
+        'application/pdf', 'application/x-pdf', 'application/acrobat', 'text/pdf', 'text/x-pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    $exts_permitidas = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+
     for ($i = 0; $i < count($archivos['name']); $i++) {
         if ($archivos['error'][$i] === UPLOAD_ERR_OK) {
-            $nombre = uniqid() . '_' . basename($archivos['name'][$i]);
-            if (move_uploaded_file($archivos['tmp_name'][$i], $carpeta_evidencias . $nombre)) {
-                $rutas_archivos[] = $nombre;
+            $ext = strtolower(pathinfo($archivos['name'][$i], PATHINFO_EXTENSION));
+            $mime = finfo_file($finfo, $archivos['tmp_name'][$i]);
+
+            // Misma regla de flexibilidad
+            if (in_array($ext, $exts_permitidas) && (in_array($mime, $mimes_permitidos) || $mime === 'application/octet-stream')) {
+                $nombre = uniqid() . '_' . basename($archivos['name'][$i]);
+                if (move_uploaded_file($archivos['tmp_name'][$i], $carpeta_evidencias . $nombre)) {
+                    $rutas_archivos[] = $nombre;
+                }
             }
         }
     }
+    finfo_close($finfo);
 }
 $archivos_guardados = implode(',', $rutas_archivos);
 
@@ -81,7 +100,6 @@ $current = strtotime($fecha_inicio);
 $end = strtotime($fecha_fin);
 while ($current <= $end) {
     $fecha = date('Y-m-d', $current);
-    // Excluir fines de semana (1 a 5 son de Lunes a Viernes)
     if (date('N', $current) < 6) { 
         $fechas[] = $fecha;
     }
@@ -90,23 +108,19 @@ while ($current <= $end) {
 
 $insertados = 0;
 $errores = 0;
-$estado_justificacion = 'Aprobado'; 
 
 foreach ($fechas as $fecha) {
-    // Validación: que no sea anterior a su ingreso (ahora permitimos > $hoy)
-    if ($fecha < $fechaIngreso) {
-        continue;
-    }
-    // Verificar si ya existe registro ese día
+    if ($fecha < $fechaIngreso) continue;
+
     $stmt_check = $conexion->prepare("SELECT id_asistencia FROM asistencias WHERE id_personal = ? AND fecha = ?");
     $stmt_check->execute([$id_personal, $fecha]);
+    
     if ($stmt_check->fetch()) {
-        // Actualizar: agregar motivo al existente y cambiar estado a Justificado
         $sql_upd = "UPDATE asistencias 
                     SET estado = 'Justificado', 
                         motivo_justificacion = CONCAT(IFNULL(motivo_justificacion, ''), '; ', ?), 
                         archivo_evidencia = IF(? != '', CONCAT(IFNULL(archivo_evidencia, ''), ',', ?), archivo_evidencia),
-                        estado_justificacion = 'Aprobado'
+                        estado_justificacion = 'Aprobada'
                     WHERE id_personal = ? AND fecha = ?";
         $stmt_upd = $conexion->prepare($sql_upd);
         if ($stmt_upd->execute([$motivo, $archivos_guardados, $archivos_guardados, $id_personal, $fecha])) {
@@ -115,9 +129,8 @@ foreach ($fechas as $fecha) {
             $errores++;
         }
     } else {
-        // Insertar nuevo registro de asistencia justificada a futuro
         $sql_ins = "INSERT INTO asistencias (id_personal, fecha, estado, motivo_justificacion, archivo_evidencia, estado_justificacion, hora_entrada) 
-                    VALUES (?, ?, 'Justificado', ?, ?, 'Aprobado', NULL)";
+                    VALUES (?, ?, 'Justificado', ?, ?, 'Aprobada', NULL)";
         $stmt_ins = $conexion->prepare($sql_ins);
         if ($stmt_ins->execute([$id_personal, $fecha, $motivo, $archivos_guardados])) {
             $insertados++;

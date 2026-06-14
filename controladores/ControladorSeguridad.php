@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../configuracion/conexion.php';
-require_once '../controladores/ControladorBitacora.php'; // NUEVO: Inclusión de la Bitácora
+require_once '../controladores/ControladorBitacora.php'; // Inclusión de la Bitácora
 
 // 1. Verificación de seguridad
 if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
@@ -94,22 +94,31 @@ if ($accion === 'generar') {
         $sql_dump .= "-- Generado el: " . date('d/m/Y h:i:s A') . "\n";
         $sql_dump .= "-- Generado por: " . $_SESSION['usuario'] . "\n\n";
         $sql_dump .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+    
+        $tablas_sin_datos = ['notificaciones'];
 
         foreach ($tablas as $tabla) {
+            // Guardamos la estructura del CREATE TABLE para que la tabla pueda reconstruirse
             $stmt = $conexion->query("SHOW CREATE TABLE `$tabla`");
             $row = $stmt->fetch(PDO::FETCH_NUM);
             $sql_dump .= "DROP TABLE IF EXISTS `$tabla`;\n";
             $sql_dump .= $row[1] . ";\n\n";
 
-            $stmt = $conexion->query("SELECT * FROM `$tabla`");
-            $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($filas as $fila) {
-                $valores = array_map(function($val) use ($conexion) {
-                    return is_null($val) ? "NULL" : $conexion->quote($val);
-                }, array_values($fila));
-                $sql_dump .= "INSERT INTO `$tabla` VALUES(" . implode(", ", $valores) . ");\n";
+            // Si la tabla no está en la lista de exclusión, volcamos todos sus registros
+            if (!in_array($tabla, $tablas_sin_datos)) {
+                $stmt = $conexion->query("SELECT * FROM `$tabla`");
+                $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($filas as $fila) {
+                    $valores = array_map(function($val) use ($conexion) {
+                        return is_null($val) ? "NULL" : $conexion->quote($val);
+                    }, array_values($fila));
+                    $sql_dump .= "INSERT INTO `$tabla` VALUES(" . implode(", ", $valores) . ");\n";
+                }
+                $sql_dump .= "\n\n";
+            } else {
+                // Comentario de control para indicar la optimización en el archivo SQL
+                $sql_dump .= "-- 🚀 Datos omitidos para la tabla `$tabla` (Archivada solo estructura).\n\n";
             }
-            $sql_dump .= "\n\n";
         }
         $sql_dump .= "SET FOREIGN_KEY_CHECKS=1;\n";
 
@@ -121,15 +130,15 @@ if ($accion === 'generar') {
             file_put_contents($ruta_completa, $sql_dump);
             limpiarHistorialAntiguo($carpeta_respaldos);
             
-            // NUEVO: Registrar en Bitácora (Local)
-            ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Generación de Respaldo', "Guardó el archivo: $nombre_archivo en el servidor.");
+            // Registrar en Bitácora (Local)
+            ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Security', 'Generación de Respaldo', "Guardó el archivo: $nombre_archivo en el servidor.");
 
             $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Respaldo guardado en el historial.'];
             header("Location: ../vistas/seguridad.php");
             exit();
         } else if ($tipo === 'descargar') {
             
-            // NUEVO: Registrar en Bitácora (Descarga)
+            // Registrar en Bitácora (Descarga)
             ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Descarga de Respaldo Inmediata', "Generó y descargó: $nombre_archivo");
 
             header('Content-Type: application/sql');
@@ -154,7 +163,7 @@ else if ($accion === 'eliminar') {
     if (file_exists($ruta_archivo) && is_file($ruta_archivo)) {
         unlink($ruta_archivo);
         
-        // NUEVO: Registrar en Bitácora
+        // Registrar en Bitácora
         ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Eliminación de Respaldo', "Eliminó el archivo: " . basename($archivo) . " del servidor.");
 
         $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Respaldo eliminado del historial.'];
@@ -174,7 +183,7 @@ else if ($accion === 'descargar_historial') {
 
     if (file_exists($ruta_archivo) && is_file($ruta_archivo)) {
         
-        // NUEVO: Registrar en Bitácora
+        // Registrar en Bitácora
         ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Descarga desde Historial', "Descargó el archivo: " . basename($archivo));
 
         header('Content-Description: File Transfer');
@@ -215,8 +224,6 @@ else if ($accion === 'restaurar') {
     }
 
     // ── VALIDACIÓN DEL NOMBRE DE ARCHIVO (anti path-traversal) ──
-    // basename() elimina rutas, luego verificamos extensión y que el archivo
-    // realmente exista dentro de la carpeta permitida (realpath).
     $archivo_seguro  = basename($archivo_raw);
     $extension_arch  = strtolower(pathinfo($archivo_seguro, PATHINFO_EXTENSION));
 
@@ -241,9 +248,8 @@ else if ($accion === 'restaurar') {
         $stmt_pass->execute([':id' => $id_usuario_actual]);
         $hash_db = $stmt_pass->fetchColumn();
 
-        // ── SOLO password_verify() — sin fallback MD5 ni texto plano ──
+        // ── SOLO password_verify() ──
         if (!$hash_db || !password_verify($password_recibida, $hash_db)) {
-
             // Registrar intento fallido
             ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Intento de Restauración Fallido', "Contraseña incorrecta al intentar restaurar: " . $archivo_seguro);
 
@@ -310,7 +316,7 @@ else if ($accion === 'subir_externo') {
 
                 limpiarHistorialAntiguo($carpeta_respaldos);
                 
-                // NUEVO: Registrar en Bitácora
+                // Registrar en Bitácora
                 ControladorBitacora::registrar($conexion, $_SESSION['id_usuario'], 'Seguridad', 'Subida de Archivo SQL', "Subió el archivo externo: $nombre_original y se renombró a: $nuevo_nombre");
 
                 $_SESSION['alerta_principal'] = ['tipo' => 'success', 'mensaje' => 'Archivo cargado al historial. Usa el botón de restaurar cuando desees aplicarlo.'];

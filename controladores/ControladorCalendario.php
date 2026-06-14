@@ -37,7 +37,7 @@ $mes_ingreso  = (int)date('n', strtotime($fecha_ingreso_empleado));
 // Consultar asistencias del mes
 $asistencias = [];
 try {
-    $sql = "SELECT fecha, estado, motivo_justificacion, archivo_evidencia 
+    $sql = "SELECT fecha, hora_entrada, hora_salida, estado, motivo_justificacion, archivo_evidencia 
             FROM asistencias 
             WHERE id_personal = :id AND MONTH(fecha) = :mes AND YEAR(fecha) = :anio";
     $stmt = $conexion->prepare($sql);
@@ -47,12 +47,27 @@ try {
         $estado_limpio = trim(str_replace(' (Pendiente)', '', $row['estado']));
         $asistencias[$row['fecha']] = [
             'estado'  => $estado_limpio,
+            'hora_entrada' => $row['hora_entrada'], 
+            'hora_salida'  => $row['hora_salida'],  
             'motivo'  => $row['motivo_justificacion'] ?? '',
             'archivo' => $row['archivo_evidencia'] ?? ''
         ];
     }
 } catch (PDOException $e) {
     die("<p style='text-align:center; color:red;'>Error al consultar la BD.</p>");
+}
+
+// ── NUEVA CONSULTA: Obtener feriados generales de este mes ──
+$feriados_mes = [];
+try {
+    $sql_feriados = "SELECT fecha, descripcion FROM feriados WHERE MONTH(fecha) = :mes AND YEAR(fecha) = :anio";
+    $stmt_feriados = $conexion->prepare($sql_feriados);
+    $stmt_feriados->execute([':mes' => $mes, ':anio' => $anio]);
+    while ($rowF = $stmt_feriados->fetch(PDO::FETCH_ASSOC)) {
+        $feriados_mes[$rowF['fecha']] = $rowF['descripcion'];
+    }
+} catch (PDOException $e) {
+    // Failsafe en caso de problemas con la tabla feriados
 }
 
 // -------------------------------------------------------------------------
@@ -68,6 +83,7 @@ function resolverEstado(string $est): array
     $ico_x        = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
     $ico_warn     = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
     $ico_mixed    = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+    $ico_feriado  = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /><rect x="8" y="11" width="4" height="4" rx="1" ry="1"/></svg>';
 
     // --- Estados simples ---
     switch ($est) {
@@ -83,6 +99,8 @@ function resolverEstado(string $est): array
             return ['estado-salida-irregular',   $ico_warn,  'Salida Irregular'];
         case 'Salida Temprana':
             return ['estado-retraso',            $ico_mixed, 'Salida Temprana'];
+        case 'Feriado':
+            return ['estado-feriado',            $ico_feriado, 'Feriado o Día Libre'];
 
         // --- Estados combinados: Retraso + salida ---
         case 'Retraso y Salida Temprana':
@@ -113,6 +131,7 @@ function resolverEstado(string $est): array
     $tiene_sal_irreg   = (stripos($est, 'Salida Irregular') !== false);
     $tiene_sal_temp    = (stripos($est, 'Salida Temprana')  !== false);
     $tiene_salida      = ($tiene_sal_irreg || $tiene_sal_temp);
+    $tiene_feriado     = (stripos($est, 'Feriado')     !== false);
 
     if ($tiene_retraso     && $tiene_salida) return ['estado-retraso-salida',     $ico_mixed, $est];
     if ($tiene_puntual     && $tiene_salida) return ['estado-puntual-salida',     $ico_mixed, $est];
@@ -122,7 +141,8 @@ function resolverEstado(string $est): array
     if ($tiene_puntual)                      return ['estado-puntual',            $ico_ok,    $est];
     if ($tiene_justificado)                  return ['estado-justificado',        $ico_doc,   $est];
     if ($tiene_falta)                        return ['estado-falta',              $ico_x,     $est];
-
+    if ($tiene_feriado)                      return ['estado-feriado',            $ico_feriado, $est];
+    
     // Estado desconocido: clase genérica
     return ['estado-mixto', $ico_mixed, $est];
 }
@@ -179,6 +199,13 @@ for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
     $estado_texto = '';
     $motivo_texto = '';
     $archivo_texto = '';
+    
+    // Novedad: Variables inicializadas para el onclick
+    $hora_entrada_txt = '--:--';
+    $hora_salida_txt = '--:--';
+
+    // Verificar si la fecha actual está registrada como feriado global
+    $es_feriado_global = isset($feriados_mes[$fecha_ciclo]);
 
     if ($es_fin_semana) {
         $clase_estado = 'estado-fin-semana';
@@ -192,13 +219,20 @@ for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
         $est           = $asistencias[$fecha_ciclo]['estado'];
         $motivo_texto  = htmlspecialchars(addslashes($asistencias[$fecha_ciclo]['motivo']), ENT_QUOTES);
         $archivo_texto = htmlspecialchars(addslashes($asistencias[$fecha_ciclo]['archivo']), ENT_QUOTES);
+        
+        // Formateo de las horas
+        $hora_entrada_txt = $asistencias[$fecha_ciclo]['hora_entrada'] ? date('h:i A', strtotime($asistencias[$fecha_ciclo]['hora_entrada'])) : '--:--';
+        $hora_salida_txt = $asistencias[$fecha_ciclo]['hora_salida'] ? date('h:i A', strtotime($asistencias[$fecha_ciclo]['hora_salida'])) : '--:--';
 
         [$clase_estado, $icono, $estado_texto] = resolverEstado($est);
 
+    } elseif ($es_feriado_global) {
+        $clase_estado = 'estado-feriado';
+        $icono        = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /><rect x="8" y="11" width="4" height="4" rx="1" ry="1"/></svg>';
+        $estado_texto = 'Día Libre: ' . htmlspecialchars($feriados_mes[$fecha_ciclo]);
+
     } else {
-        // Sin registro en BD
         if ($fecha_ciclo < $fecha_hoy_str) {
-            // Día laboral pasado sin registro → falta injustificada
             $clase_estado = 'estado-falta';
             $icono        = '<svg class="icono-estado" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
             $estado_texto = 'Falta Injustificada';
@@ -207,21 +241,20 @@ for ($dia = 1; $dia <= $dias_en_mes; $dia++) {
         }
     }
 
-    // Cliclable si es admin, no es fin de semana, no es anterior al ingreso,
-    // Y además: si el día es futuro, solo se permite editar si YA tiene un registro en la BD.
     $attr_click      = '';
     $clase_clickable = '';
     $es_futuro        = ($fecha_ciclo > $fecha_hoy_str);
     $tiene_registro   = isset($asistencias[$fecha_ciclo]);
 
+    // AQUÍ SE CORRIGIÓ: Se añadieron 'hora_entrada_txt' y 'hora_salida_txt'
     if ($es_admin && !$es_fin_semana && !$es_anterior_ingreso) {
-        if (!$es_futuro || $tiene_registro) {
+        if (!$es_futuro || $tiene_registro || $es_feriado_global) {
             $clase_clickable = 'clickable';
-            $attr_click = "onclick=\"editarDia('{$fecha_ciclo}', '{$fecha_display}', '{$estado_texto}', '{$motivo_texto}', '{$archivo_texto}')\"";
+            $attr_click = "onclick=\"editarDia('{$fecha_ciclo}', '{$fecha_display}', '{$estado_texto}', '{$motivo_texto}', '{$archivo_texto}', '{$hora_entrada_txt}', '{$hora_salida_txt}')\"";
         }
     }
 
-    $html .= "<div class=\"dia-celda {$clase_estado} {$clase_clickable}\" {$attr_click} title=\"{$estado_texto}\">";
+    $html .= "<div class=\"dia-celda {$clase_estado} {$clase_clickable}\" {$attr_click} data-estado=\"{$estado_texto}\" data-entrada=\"{$hora_entrada_txt}\" data-salida=\"{$hora_salida_txt}\">";
     $html .= "<span class=\"numero-dia\">{$dia}</span>";
     $html .= $icono;
     $html .= "</div>";

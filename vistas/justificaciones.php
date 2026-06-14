@@ -2,8 +2,9 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-// Solo Director (1) o Subdirector (2) pueden ver esto
+// 🛡️ PROTECCIÓN DE URL: SOLO DIRECTOR (1) Y SUBDIRECTOR (2)
 if ($_SESSION['id_rol'] != 1 && $_SESSION['id_rol'] != 2) { 
+    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Acceso denegado. Este módulo es exclusivo para directivos.'];
     header("Location: principal.php"); 
     exit; 
 }
@@ -12,12 +13,6 @@ $nombre = $_SESSION['usuario'];
 $rol    = $_SESSION['rol'];
 
 try {
-    // =====================================================================
-    // CORRECCIÓN: Se agrega el filtro "AND p.id_usuario != ?"
-    // para que el Director o Subdirector autenticado NO pueda ver
-    // ni procesar sus propias justificaciones pendientes.
-    // Solo otro Director o Subdirector podrá revisarlas.
-    // =====================================================================
     $sql = "SELECT a.id_asistencia, a.fecha, a.estado, a.motivo_justificacion, a.archivo_evidencia,
                    p.nombres, p.apellidos, p.foto_perfil, c.nombre_cargo 
             FROM asistencias a 
@@ -30,10 +25,6 @@ try {
     $stmt->execute([$_SESSION['id_usuario']]);
     $pendientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // =====================================================================
-    // NUEVO: Verificamos si el propio revisor tiene justificaciones pendientes
-    // para mostrarle un aviso informativo en la bandeja.
-    // =====================================================================
     $sql_propias = "SELECT COUNT(*) FROM asistencias a
                     INNER JOIN personal p ON a.id_personal = p.id_personal
                     WHERE a.estado_justificacion = 'Pendiente'
@@ -91,9 +82,6 @@ try {
             gap: 5px;
         }
 
-        /* =====================================================================
-           NUEVO: Estilo para el aviso de justificaciones propias pendientes
-           ===================================================================== */
         .aviso-propias {
             display: flex;
             align-items: center;
@@ -143,10 +131,6 @@ try {
             <h1 style="margin-block-end: 25px;">Justificaciones Pendientes</h1>
 
             <?php if ($cantidad_propias > 0): ?>
-            <!-- =====================================================================
-                 NUEVO: Aviso informativo cuando el propio revisor tiene justificaciones
-                 pendientes que otro Director/Subdirector debe procesar.
-                 ===================================================================== -->
             <div class="aviso-propias">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -215,116 +199,27 @@ try {
         </main>
     </div>
 
-    <?php if(isset($_SESSION['alerta_justificacion'])): ?>
-        <script>
-            Swal.fire({
-                title: '<?php echo $_SESSION['alerta_justificacion']['tipo'] == 'success' ? '¡Completado!' : '¡Error!'; ?>',
-                text: '<?php echo $_SESSION['alerta_justificacion']['mensaje']; ?>',
-                icon: '<?php echo $_SESSION['alerta_justificacion']['tipo']; ?>',
-                confirmButtonColor: '<?php echo $_SESSION['alerta_justificacion']['tipo'] == 'success' ? '#10b981' : '#ef4444'; ?>',
-                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
-            });
-        </script>
-        <?php unset($_SESSION['alerta_justificacion']); ?>
-    <?php endif; ?>
+    <script>
+        window.JustificacionesConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            alerta: <?php
+                if(isset($_SESSION['alerta_justificacion'])) {
+                    echo json_encode([
+                        'mostrar' => true,
+                        'tipo'    => $_SESSION['alerta_justificacion']['tipo'] == 'success' ? 'success' : 'error',
+                        'titulo'  => $_SESSION['alerta_justificacion']['tipo'] == 'success' ? '¡Completado!' : '¡Error!',
+                        'mensaje' => addslashes($_SESSION['alerta_justificacion']['mensaje'])
+                    ]);
+                    unset($_SESSION['alerta_justificacion']);
+                } else {
+                    echo json_encode(['mostrar' => false]);
+                }
+            ?>
+        };
+    </script>
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
-    <script>
-        const btnCambiarTema = document.getElementById('btnCambiarTema');
-        const html = document.documentElement;
-        if(btnCambiarTema) {
-            btnCambiarTema.addEventListener('click', function(e) {
-                e.preventDefault();
-                const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                html.setAttribute('data-theme', nuevoTema);
-                localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
-            });
-        }
-
-        function procesar(id, accion, tipo, estado_base) {
-            let textoAlerta = '';
-            
-            if (accion === 'aprobar') {
-                if (tipo === 'Llegada Tardía') {
-                    textoAlerta = "La incidencia se registrará oficialmente como 'Retraso'.";
-                } else if (tipo === 'Salida Temprana') {
-                    let nuevo_estado = (estado_base === 'Retraso' || estado_base === 'Puntual') ? (estado_base + ' y Salida Temprana') : 'Salida Temprana';
-                    textoAlerta = "El registro se actualizará a '" + nuevo_estado + "'.";
-                } else {
-                    textoAlerta = "La inasistencia se convertirá en 'Justificado'.";
-                }
-            } else {
-                if (tipo === 'Llegada Tardía' || tipo === 'Inasistencia') {
-                    textoAlerta = "La incidencia se marcará definitivamente como 'Falta'.";
-                } else if (tipo === 'Salida Temprana') {
-                    let nuevo_estado = (estado_base === 'Retraso' || estado_base === 'Puntual') ? (estado_base + ' y Salida Irregular') : 'Salida Irregular';
-                    textoAlerta = "Se denegará la salida y se marcará como '" + nuevo_estado + "'.";
-                } else {
-                    textoAlerta = "La incidencia se marcará como Falta.";
-                }
-            }
-
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: textoAlerta,
-                icon: 'warning', 
-                showCancelButton: true,
-                confirmButtonColor: accion === 'aprobar' ? '#10b981' : '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, ' + accion,
-                cancelButtonText: 'Cancelar',
-                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    
-                    if (accion === 'rechazar') {
-                        Swal.fire({
-                            title: 'Motivo del Rechazo',
-                            text: 'Por favor, indica a continuación por qué se rechaza esta justificación:',
-                            input: 'textarea',
-                            inputPlaceholder: 'Escribe el motivo aquí...',
-                            inputAttributes: {
-                                maxlength: '250',
-                                'aria-label': 'Motivo del rechazo'
-                            },
-                            showCancelButton: true,
-                            confirmButtonColor: '#ef4444',
-                            cancelButtonColor: '#64748b',
-                            confirmButtonText: 'Rechazar y Enviar Observación',
-                            cancelButtonText: 'Cancelar',
-                            background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                            color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333',
-                            inputValidator: (value) => {
-                                if (!value) {
-                                    return '¡Necesitas escribir un motivo para poder rechazarlo!';
-                                }
-                            }
-                        }).then((motivoResult) => {
-                            if (motivoResult.isConfirmed) {
-                                const formData = new FormData();
-                                formData.append('id',             id);
-                                formData.append('accion',         accion);
-                                formData.append('motivo_rechazo', motivoResult.value);
-
-                                fetch('../controladores/ControladorProcesarJustificacion.php', {
-                                    method: 'POST',
-                                    body: formData
-                                }).then(() => {
-                                    window.location.href = '../vistas/justificaciones.php';
-                                }).catch(() => {
-                                    Swal.fire('Error', 'No se pudo conectar con el servidor. Intenta de nuevo.', 'error');
-                                });
-                            }
-                        });
-                    } else {
-                        window.location.href = '../controladores/ControladorProcesarJustificacion.php?id=' + id + '&accion=' + accion;
-                    }
-                }
-            });
-        }
-    </script>
+    <script src="../recursos/js/justificaciones.js?v=<?php echo time(); ?>"></script>
 
 </body>
 </html>

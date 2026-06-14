@@ -23,62 +23,6 @@ try {
         'minutos_tolerancia'   => 15
     ];
 
-    if ($dia_semana_hoy <= 5) {
-        $clave_flag_faltas = 'auto_faltas_ejecutado_' . date('Y-m-d');
-
-        if (empty($_SESSION[$clave_flag_faltas])) {
-            $sql_ausentes = "SELECT p.id_personal, p.hora_entrada_personalizada, p.hora_salida_personalizada 
-                             FROM personal p
-                             INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
-                             WHERE u.estado = 'Activo' 
-                             AND p.fecha_ingreso <= CURDATE()
-                             AND p.id_personal NOT IN (SELECT id_personal FROM asistencias WHERE fecha = CURDATE())";
-            $ausentes = $conexion->query($sql_ausentes)->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($ausentes as $aus) {
-                $h_entrada_p = !empty($aus['hora_entrada_personalizada']) ? $aus['hora_entrada_personalizada'] : $config_global['hora_entrada_general'];
-                $h_salida_p  = !empty($aus['hora_salida_personalizada'])  ? $aus['hora_salida_personalizada']  : $config_global['hora_salida_general'];
-
-                if ($hora_actual_sec > $h_salida_p) {
-                    $ins_falta = $conexion->prepare("INSERT INTO asistencias (id_personal, fecha, hora_esperada, estado) VALUES (?, CURDATE(), ?, 'Falta')");
-                    $ins_falta->execute([$aus['id_personal'], $h_entrada_p]);
-                }
-            }
-
-            $_SESSION[$clave_flag_faltas] = true;
-        }
-
-        $sql_incompletos = "SELECT a.id_asistencia, a.estado, a.fecha, p.hora_salida_personalizada 
-                            FROM asistencias a
-                            INNER JOIN personal p ON a.id_personal = p.id_personal
-                            WHERE a.hora_salida IS NULL 
-                            AND a.estado != 'Falta'
-                            AND a.estado NOT LIKE '%Salida Irregular%'
-                            AND (a.estado_justificacion IS NULL OR a.estado_justificacion != 'Pendiente')";
-        $incompletos = $conexion->query($sql_incompletos)->fetchAll(PDO::FETCH_ASSOC);
-
-        $fecha_hoy_comparar = date('Y-m-d');
-
-        foreach ($incompletos as $inc) {
-            $h_salida_p    = !empty($inc['hora_salida_personalizada']) ? $inc['hora_salida_personalizada'] : $config_global['hora_salida_general'];
-            $limite_salida = date('H:i:s', strtotime("+60 minutes", strtotime($h_salida_p)));
-
-            if ($inc['fecha'] < $fecha_hoy_comparar || ($inc['fecha'] == $fecha_hoy_comparar && $hora_actual_sec > $limite_salida)) {
-                $estado_actual = $inc['estado'];
-                $nuevo_estado  = 'Salida Irregular';
-                
-                if (strpos($estado_actual, 'Retraso') !== false) {
-                    $nuevo_estado = 'Retraso y Salida Irregular';
-                } elseif (strpos($estado_actual, 'Puntual') !== false) {
-                    $nuevo_estado = 'Puntual y Salida Irregular';
-                }
-
-                $upd_irr = $conexion->prepare("UPDATE asistencias SET estado = ?, observacion = 'El sistema cerró la jornada automáticamente por omisión de salida.' WHERE id_asistencia = ?");
-                $upd_irr->execute([$nuevo_estado, $inc['id_asistencia']]);
-            }
-        }
-    }
-
     $stmt_emp = $conexion->prepare("SELECT id_personal, hora_entrada_personalizada, hora_salida_personalizada FROM personal WHERE id_usuario = :id_user");
     $stmt_emp->execute([':id_user' => $id_usuario]);
     $empleado   = $stmt_emp->fetch(PDO::FETCH_ASSOC);
@@ -92,7 +36,13 @@ try {
     $ya_justifico_entrada     = false;
     $ya_justifico_salida      = false;
 
+    // VALIDACIÓN DE FINES DE SEMANA Y FERIADOS
     $es_fin_semana = ($dia_semana_hoy >= 6);
+    
+    $stmt_feriado_hoy = $conexion->prepare("SELECT descripcion FROM feriados WHERE fecha = CURDATE()");
+    $stmt_feriado_hoy->execute();
+    $feriado_hoy_desc = $stmt_feriado_hoy->fetchColumn();
+    $es_feriado_hoy = ($feriado_hoy_desc !== false);
 
     $hora_esperada       = (!empty($empleado['hora_entrada_personalizada'])) ? $empleado['hora_entrada_personalizada'] : $config['hora_entrada_general'];
     $hora_salida_esperada = (!empty($empleado['hora_salida_personalizada'])) ? $empleado['hora_salida_personalizada']  : $config['hora_salida_general'];
@@ -230,6 +180,7 @@ if (empty($_SESSION['csrf_token'])) {
 <body>
 
     <div id="cortina-transicion" style="position: fixed; inset: 0; z-index: 999999; pointer-events: none;"></div>
+    
     <script>
         (function() {
             const tema = localStorage.getItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>') || 'light';
@@ -249,12 +200,21 @@ if (empty($_SESSION['csrf_token'])) {
             <div class="panel-asistencia">
                 <h1>Registro Diario</h1>
                 <div class="botones-asistencia">
+                    
                     <?php if ($es_fin_semana): ?>
                         <div class="mensaje-fin-semana">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display: block; margin: 0 auto 10px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             ¡Feliz Fin de Semana!<br>
                             <span>El sistema de registros y justificaciones está deshabilitado hasta el lunes.</span>
                         </div>
+
+                    <?php elseif ($es_feriado_hoy): ?>
+                        <div class="mensaje-fin-semana" style="color: #9333ea;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display: block; margin: 0 auto 10px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            ¡Hoy es Feriado! Mejor ve a descansar.<br>
+                            <span>(<?php echo htmlspecialchars($feriado_hoy_desc); ?>) Las asistencias y justificaciones están desactivadas.</span>
+                        </div>
+
                     <?php else: ?>
                         <?php if (!$asistencia_hoy): ?>
                             <?php if ($es_tarde && !$ya_justifico_entrada): ?>
@@ -304,6 +264,8 @@ if (empty($_SESSION['csrf_token'])) {
                     <?php 
                         if ($es_fin_semana) {
                             echo "Los reportes y los demas módulos están habilitados, pero el registro de asistencia y justificaciones se encuentra pausado.";
+                        } elseif ($es_feriado_hoy) {
+                            echo "¡Disfruta tu día libre! El sistema de asistencia está pausado por el feriado.";
                         } else {
                             if (!$asistencia_hoy) {
                                 if ($es_tarde && !$ya_justifico_entrada) {
@@ -335,7 +297,7 @@ if (empty($_SESSION['csrf_token'])) {
                 <div class="tarjeta" style="border-block-end-color: #ef4444;"><h3><?php echo htmlspecialchars($valor_tarjeta_3); ?></h3><p><?php echo htmlspecialchars($titulo_tarjeta_3); ?></p></div>
             </div>
 
-            <?php if ($es_fin_semana): ?>
+            <?php if ($es_fin_semana || $es_feriado_hoy): ?>
                 <div class="banner-pausa">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="banner-pausa-icono">
                         <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM9 8.25a.75.75 0 0 0-.75.75v6c0 .414.336.75.75.75h.75a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75H9Zm5.25 0a.75.75 0 0 0-.75.75v6c0 .414.336.75.75.75H15a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75h-.75Z" clip-rule="evenodd" />
@@ -365,7 +327,6 @@ if (empty($_SESSION['csrf_token'])) {
             
             <form action="../controladores/ControladorJustificacion.php" method="POST" enctype="multipart/form-data" id="formJustificacion" novalidate>
                 <input type="hidden" name="id_personal" value="<?php echo $id_personal; ?>">
-
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                 
                 <p style="font-size: 0.85rem; margin-block-end: 15px; color: var(--text-color);">Detalla el motivo de tu incidencia y adjunta una prueba si es necesario.</p>
@@ -415,310 +376,43 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
     </div>
 
+    <script>
+        window.PrincipalConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            esPausado: <?php echo ($es_fin_semana || $es_feriado_hoy) ? 'true' : 'false'; ?>,
+            idRol: <?php echo $id_rol; ?>,
+            tarjetas: {
+                t1: parseInt("<?php echo is_numeric($valor_tarjeta_1) ? $valor_tarjeta_1 : 0; ?>") || 0,
+                t2: parseInt("<?php echo is_numeric($valor_tarjeta_2) ? $valor_tarjeta_2 : 0; ?>") || 0,
+                t3: parseInt("<?php echo is_numeric($valor_tarjeta_3) ? $valor_tarjeta_3 : 0; ?>") || 0
+            },
+            graficos: {
+                retrasosHoy: parseInt("<?php echo isset($retrasos_hoy) && is_numeric($retrasos_hoy) ? $retrasos_hoy : 0; ?>") || 0,
+                puntualesHoy: parseInt("<?php echo isset($puntuales_hoy) && is_numeric($puntuales_hoy) ? $puntuales_hoy : 0; ?>") || 0,
+                justPendientes: parseInt("<?php echo isset($just_pendientes) && is_numeric($just_pendientes) ? $just_pendientes : 0; ?>") || 0,
+                faltasInjustificadas: parseInt("<?php echo isset($faltas_injustificadas) && is_numeric($faltas_injustificadas) ? $faltas_injustificadas : 0; ?>") || 0
+            },
+            alerta: <?php
+                if(isset($_SESSION['alerta_principal'])) {
+                    echo json_encode([
+                        'mostrar' => true,
+                        'tipo'    => $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error',
+                        'titulo'  => $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : 'Aviso',
+                        'mensaje' => addslashes($_SESSION['alerta_principal']['mensaje'])
+                    ]);
+                    unset($_SESSION['alerta_principal']);
+                } else {
+                    echo json_encode(['mostrar' => false]);
+                }
+            ?>
+        };
+    </script>
+
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/chart.min.js"></script>
     <script src="../recursos/librerias/gsap.min.js"></script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const cortina = document.getElementById("cortina-transicion");
-            
-            if (typeof gsap !== 'undefined' && sessionStorage.getItem('mostrarAnimacionEntrada') === 'true') {
-                sessionStorage.removeItem('mostrarAnimacionEntrada');
-                
-                const tl = gsap.timeline();
-                tl.to(cortina, { 
-                    opacity: 0, 
-                    duration: 0.7, 
-                    ease: "power2.inOut",
-                    onComplete: () => { cortina.style.display = "none"; }
-                })
-                .from(".contenido h1, .contenido p, .panel-asistencia, .grid-tarjetas, .grid-graficos, .banner-pausa", { 
-                    y: 30, 
-                    opacity: 0, 
-                    duration: 0.6, 
-                    stagger: 0.1, 
-                    ease: "back.out(1.2)" 
-                }, "-=0.4");
-            } else {
-                if (cortina) {
-                    cortina.style.display = "none";
-                }
-            }
-        });
+    <script src="../recursos/js/principal.js?v=<?php echo time(); ?>"></script>
 
-        const html = document.documentElement;
-
-        const ToastSwal = Swal.mixin({
-            toast: true,
-            position: 'top',
-            showConfirmButton: false,
-            timer: 5000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.onmouseenter = Swal.stopTimer;
-                toast.onmouseleave = Swal.resumeTimer;
-            }
-        });
-
-        function mostrarToast(tipo, titulo, mensaje) {
-            ToastSwal.fire({
-                icon: tipo === 'success' ? 'success' : 'error',
-                title: titulo,
-                html: mensaje
-            });
-        }
-
-        <?php if(isset($_SESSION['alerta_principal'])): 
-            $tipo_t   = $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error';
-            $titulo_t = $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : 'Aviso';
-        ?>
-            mostrarToast('<?php echo $tipo_t; ?>', '<?php echo $titulo_t; ?>', '<?php echo $_SESSION['alerta_principal']['mensaje']; ?>');
-            <?php unset($_SESSION['alerta_principal']); ?>
-        <?php endif; ?>
-
-        const inputMotivo = document.getElementById('modal_j_motivo');
-        const errorMotivo = document.getElementById('error-motivo');
-        const formJ       = document.getElementById('formJustificacion');
-
-        if(inputMotivo) {
-            inputMotivo.addEventListener('input', function() {
-                if (this.value.trim().length > 0 && this.value.trim().length < 15) {
-                    this.classList.add('input-error');
-                    errorMotivo.style.display = 'block';
-                } else {
-                    this.classList.remove('input-error');
-                    errorMotivo.style.display = 'none';
-                }
-            });
-        }
-
-        if(formJ) {
-            formJ.addEventListener('submit', function(e) {
-                let errores = [];
-                const valFecha = document.getElementById('modal_j_fecha').value;
-                const valTipo  = document.getElementById('modal_j_tipo').value;
-                
-                inputMotivo.classList.remove('input-error');
-                errorMotivo.style.display = 'none';
-
-                if (!valFecha) errores.push("• Debes seleccionar la fecha de la incidencia.");
-                if (!valTipo)  errores.push("• Debes seleccionar un tipo de incidencia.");
-                if (inputMotivo.value.trim().length < 15) {
-                    inputMotivo.classList.add('input-error');
-                    errorMotivo.style.display = 'block';
-                    errores.push("• El motivo debe tener al menos 15 caracteres.");
-                }
-
-                if (errores.length > 0) {
-                    e.preventDefault(); 
-                    mostrarToast('error', 'Datos Incompletos', errores.join('<br>'));
-                }
-            });
-        }
-
-        const modalOverlay      = document.getElementById('modalOverlay');
-        const modalJustificacion = document.getElementById('modalJustificacion');
-        const fechaInput        = document.getElementById('modal_j_fecha');
-
-        window.abrirModalJustificacion = function(tipo = '') {
-            const hoy = new Date();
-            if(hoy.getDay() !== 0 && hoy.getDay() !== 6) {
-                fechaInput.valueAsDate = hoy;
-            } else {
-                fechaInput.value = '';
-            }
-            const selectTipo = document.getElementById('modal_j_tipo');
-            if(tipo) { selectTipo.value = tipo; } else { selectTipo.selectedIndex = 0; }
-
-            const motivo   = document.getElementById('modal_j_motivo');
-            const errorMot = document.getElementById('error-motivo');
-            if(motivo)   { motivo.value = ''; motivo.classList.remove('input-error'); }
-            if(errorMot) { errorMot.style.display = 'none'; }
-            document.getElementById('texto-archivo').textContent = 'Seleccionar archivo...';
-            const archivoInp = document.getElementById('modal_j_archivo');
-            if(archivoInp) archivoInp.value = '';
-
-            modalJustificacion.scrollTop = 0;
-            modalJustificacion.classList.remove('cerrando');
-            modalOverlay.classList.remove('cerrando');
-            modalOverlay.classList.add('activo');
-            modalJustificacion.classList.add('activo');
-        };
-
-        window.cerrarModales = function() {
-            modalJustificacion.classList.add('cerrando');
-            modalOverlay.classList.add('cerrando');
-            setTimeout(function() {
-                modalOverlay.classList.remove('activo', 'cerrando');
-                modalJustificacion.classList.remove('activo', 'cerrando');
-            }, 220);
-        };
-
-        if(modalOverlay) {
-            modalOverlay.addEventListener('click', function(e) {
-                if (e.target === modalOverlay) cerrarModales();
-            });
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modalOverlay.classList.contains('activo')) {
-                cerrarModales();
-            }
-        });
-
-        const archivoInput = document.getElementById('modal_j_archivo');
-        if (archivoInput) {
-            archivoInput.addEventListener('change', function(e) {
-                var nombreArchivo = e.target.files[0] ? e.target.files[0].name : 'Seleccionar archivo...';
-                document.getElementById('texto-archivo').textContent = nombreArchivo;
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const btnCambiarTema = document.getElementById('btnCambiarTema');
-            
-            if (btnCambiarTema) {
-                btnCambiarTema.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    this.classList.add('girando'); 
-                    
-                    const temaActual = html.getAttribute('data-theme');
-                    const nuevoTema  = temaActual === 'light' ? 'dark' : 'light';
-                    html.setAttribute('data-theme', nuevoTema);
-                    localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
-
-                    const nuevoColorTexto = nuevoTema === 'dark' ? '#cbd5e1' : '#64748b';
-                    const nuevoColorGrid  = nuevoTema === 'dark' ? '#334155' : '#e2e8f0';
-
-                    if (typeof Chart !== 'undefined') {
-                        for (let id in Chart.instances) {
-                            let chart = Chart.instances[id];
-                            
-                            if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
-                                chart.options.plugins.legend.labels.color = nuevoColorTexto;
-                            }
-                            if (chart.options.scales) {
-                                if (chart.options.scales.x) chart.options.scales.x.ticks.color = nuevoColorTexto;
-                                if (chart.options.scales.y) {
-                                    chart.options.scales.y.ticks.color = nuevoColorTexto;
-                                    if(chart.options.scales.y.grid) chart.options.scales.y.grid.color = nuevoColorGrid;
-                                }
-                                if (chart.options.scales.r) { 
-                                    if(chart.options.scales.r.grid) chart.options.scales.r.grid.color = nuevoColorGrid;
-                                }
-                            }
-                            chart.update();
-                        }
-                    }
-
-                    setTimeout(() => { this.classList.remove('girando'); }, 500);
-                });
-            }
-
-            try {
-                const esFinSemana = <?php echo $es_fin_semana ? 'true' : 'false'; ?>;
-                if (esFinSemana) return; 
-
-                const rolUser     = <?php echo $id_rol; ?>;
-                const colorTexto  = html.getAttribute('data-theme') === 'dark' ? '#cbd5e1' : '#64748b';
-                const colorGrid   = html.getAttribute('data-theme') === 'dark' ? '#334155' : '#e2e8f0';
-                
-                const t1 = parseInt("<?php echo is_numeric($valor_tarjeta_1) ? $valor_tarjeta_1 : 0; ?>") || 0; 
-                const t2 = parseInt("<?php echo is_numeric($valor_tarjeta_2) ? $valor_tarjeta_2 : 0; ?>") || 0; 
-                const t3 = parseInt("<?php echo is_numeric($valor_tarjeta_3) ? $valor_tarjeta_3 : 0; ?>") || 0; 
-
-                const retrasosHoy        = parseInt("<?php echo isset($retrasos_hoy) && is_numeric($retrasos_hoy) ? $retrasos_hoy : 0; ?>") || 0;
-                const puntualesHoy       = parseInt("<?php echo isset($puntuales_hoy) && is_numeric($puntuales_hoy) ? $puntuales_hoy : 0; ?>") || 0;
-                const justPendientes     = parseInt("<?php echo isset($just_pendientes) && is_numeric($just_pendientes) ? $just_pendientes : 0; ?>") || 0;
-                const faltasInjustificadas = parseInt("<?php echo isset($faltas_injustificadas) && is_numeric($faltas_injustificadas) ? $faltas_injustificadas : 0; ?>") || 0;
-
-                let d_labels_1 = [], d_data_1 = [], d_colors_1 = [];
-                let d_labels_2 = [], d_data_2 = [], d_colors_2 = [];
-                let d_labels_3 = [], d_data_3 = [], d_colors_3 = [];
-
-                if (rolUser == 1 || rolUser == 2) {
-                    document.getElementById('tituloGrafico1').innerText = "Asistencia General Hoy";
-                    document.getElementById('tituloGrafico2').innerText = "Bandeja de Justificaciones";
-                    document.getElementById('tituloGrafico3').innerText = "Calidad de Llegada Hoy";
-
-                    d_labels_1 = ['Presentes', 'Ausentes/Faltas'];
-                    d_data_1   = [t2, t3];
-                    d_colors_1 = ['#3b82f6', '#ef4444'];
-
-                    d_labels_2 = ['Pendientes (Revisar)', 'Aprobadas'];
-                    d_data_2   = [justPendientes, t2]; 
-                    d_colors_2 = ['#f59e0b', '#10b981'];
-
-                    d_labels_3 = ['Llegaron Puntuales', 'Llegaron Tarde'];
-                    d_data_3   = [puntualesHoy, retrasosHoy];
-                    d_colors_3 = ['#10b981', '#f59e0b'];
-                } else {
-                    document.getElementById('tituloGrafico1').innerText = "Mis Llegadas (Mes)";
-                    document.getElementById('tituloGrafico2').innerText = "Balance del Mes";
-                    document.getElementById('tituloGrafico3').innerText = "Mis Inasistencias (Mes)";
-
-                    const puntuales   = (t1 - t3) > 0 ? (t1 - t3) : 0;
-                    const totalFaltas = t2 + faltasInjustificadas;
-
-                    d_labels_1 = ['Llegadas Puntuales', 'Retrasos'];
-                    d_data_1   = [puntuales, t3];
-                    d_colors_1 = ['#10b981', '#f59e0b'];
-
-                    d_labels_2 = ['Días Asistidos', 'Total Faltas'];
-                    d_data_2   = [t1, totalFaltas];
-                    d_colors_2 = ['#3b82f6', '#ef4444'];
-
-                    d_labels_3 = ['Faltas Justificadas', 'Faltas Sin Justificar'];
-                    d_data_3   = [t2, faltasInjustificadas];
-                    d_colors_3 = ['#8b5cf6', '#ef4444'];
-                }
-
-                const opcionesComunes = {
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: colorTexto, font: { size: 11, family: "'Montserrat', sans-serif" } } } }
-                };
-
-                const hayDatos = d_data_1.reduce((a, b) => a + b, 0) > 0 || d_data_2.reduce((a, b) => a + b, 0) > 0 || d_data_3.reduce((a, b) => a + b, 0) > 0;
-
-                if (hayDatos) {
-                    new Chart(document.getElementById('grafico1').getContext('2d'), {
-                        type: 'doughnut',
-                        data: { labels: d_labels_1, datasets: [{ data: d_data_1, backgroundColor: d_colors_1, borderWidth: 0, hoverOffset: 4 }] },
-                        options: { ...opcionesComunes, cutout: '70%' }
-                    });
-
-                    new Chart(document.getElementById('grafico2').getContext('2d'), {
-                        type: 'bar',
-                        data: { labels: d_labels_2, datasets: [{ label: 'Cantidad', data: d_data_2, backgroundColor: d_colors_2, borderRadius: 6 }] },
-                        options: {
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { 
-                                y: { beginAtZero: true, grid: { color: colorGrid }, ticks: { color: colorTexto, stepSize: 1 } },
-                                x: { grid: { display: false }, ticks: { color: colorTexto } }
-                            }
-                        }
-                    });
-
-                    new Chart(document.getElementById('grafico3').getContext('2d'), {
-                        type: 'polarArea',
-                        data: { labels: d_labels_3, datasets: [{ data: d_data_3, backgroundColor: d_colors_3, borderWidth: 0 }] },
-                        options: {
-                            ...opcionesComunes,
-                            scales: { r: { ticks: { display: false }, grid: { color: colorGrid } } }
-                        }
-                    });
-                } else {
-                    document.querySelector('.grid-graficos').innerHTML = '<div style="width: 100%; text-align: center; padding: 40px; color: var(--text-color); font-weight: bold;">Aún no hay suficientes datos registrados para generar las gráficas.</div>';
-                }
-
-            } catch(e) {
-                console.error(e);
-            }
-        });
-    </script>
 </body>
 </html>

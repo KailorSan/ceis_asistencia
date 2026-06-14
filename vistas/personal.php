@@ -2,7 +2,8 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-if ($_SESSION['id_rol'] != 1 && $_SESSION['id_rol'] != 2) {
+if ($_SESSION['id_rol'] != 1) {
+    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Acceso denegado. Área exclusiva de Dirección.'];
     header("Location: principal.php");
     exit;
 }
@@ -42,7 +43,6 @@ try {
     <title>Gestión de Personal - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
 
-    
     <script>
         (function() {
             const idUsr = "<?php echo $_SESSION['id_usuario']; ?>";
@@ -185,7 +185,6 @@ try {
 
                 <input type="hidden" name="id_usuario"  id="modal_e_id_usuario">
                 <input type="hidden" name="id_personal" id="modal_e_id_personal">
-                <!-- Inputs ocultos que envían estado y rol cuando los selects están disabled -->
                 <input type="hidden" name="estado"  id="modal_e_estado_hidden">
                 <input type="hidden" name="id_rol"   id="modal_e_rol_hidden">
                 
@@ -260,8 +259,6 @@ try {
                             <span id="aviso-estado-bloqueado" style="display:none; font-size:0.7rem; color:var(--primary-color); font-weight:600; margin-inline-start:6px;">(no puedes desactivar tu propia cuenta)</span>
                         </label>
                         <div class="input-con-icono">
-                            <!-- ✅ CAMBIO: name corregido de "estado_display" → "estado_display" se mantiene visual,
-                                 pero ahora sincroniza el hidden "estado" al cambiar -->
                             <select name="estado_display" id="modal_e_estado"
                                 onchange="document.getElementById('modal_e_estado_hidden').value = this.value;"
                                 style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
@@ -278,7 +275,6 @@ try {
                             <span id="aviso-rol-bloqueado" style="display:none; font-size:0.7rem; color:var(--primary-color); font-weight:600; margin-inline-start:6px;">(no puedes cambiar tu propio rol)</span>
                         </label>
                         <div class="input-con-icono">
-                            <!-- ✅ CAMBIO: ahora sincroniza el hidden "id_rol" al cambiar el select -->
                             <select name="id_rol_display" id="modal_e_rol"
                                 onchange="document.getElementById('modal_e_rol_hidden').value = this.value;"
                                 style="inline-size: 100%; padding: 12px 15px; border: 2px solid var(--bg-light); border-radius: 10px; background-color: var(--bg-light); color: var(--text-color); font-family: 'Montserrat'; font-weight: 600;">
@@ -301,7 +297,7 @@ try {
                         <span class="mensaje-error-campo" id="err-foto">Solo JPG, PNG, WEBP o GIF. Máximo 2 MB.</span>
                     </div>
 
-                </div><!-- /grid-edicion -->
+                </div>
 
                 <div class="botones-accion-formulario" style="align-items: center; justify-content: space-between;">
                     <button type="button" id="btn-eliminar-empleado" class="btn-eliminar-usuario" onclick="confirmarEliminacion()" style="margin: 0; inline-size: auto; border: none; background: transparent;">
@@ -312,303 +308,30 @@ try {
                 </div>
             </form>
         </div>
-    </div><!-- /modal-overlay -->
+    </div>
 
-    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <!-- EL PUENTE: Transfiere variables y alertas de PHP al entorno JS -->
     <script>
-        const inputBuscadorUniv = document.getElementById('buscador-universal');
-        let cargoActivoUniv = 'todos'; 
-        const itemsPorCarga = 8;
-        let limiteActual = itemsPorCarga;
-
-        // ── Filtro y paginación ─────────────────────────────────────────
-        function aplicarFiltroUniversal(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
-            if (reiniciarPaginacion) limiteActual = itemsPorCarga;
-            if (idCargo !== null) {
-                cargoActivoUniv = idCargo;
-                document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('activo'));
-                if (botonSeleccionado) botonSeleccionado.classList.add('activo');
-            }
-            const textoBusqueda = inputBuscadorUniv ? inputBuscadorUniv.value.toLowerCase().trim() : '';
-            let coincidentes = 0;
-            document.querySelectorAll('.item-filtrable').forEach(item => {
-                const coincideCargo  = (cargoActivoUniv === 'todos') || (item.getAttribute('data-cargo') == cargoActivoUniv);
-                const nombre = (item.querySelector('.nombre-empleado')?.innerText || '').toLowerCase();
-                const cargo  = (item.querySelector('.cargo-empleado')?.innerText  || '').toLowerCase();
-                const coincideTexto  = nombre.includes(textoBusqueda) || cargo.includes(textoBusqueda);
-                if (coincideCargo && coincideTexto) {
-                    item.classList.remove('oculto-por-filtro');
-                    coincidentes++;
-                    if (coincidentes > limiteActual) {
-                        item.classList.add('oculto-por-paginacion');
-                        item.classList.remove('animacion-aparecer');
-                    } else {
-                        item.classList.remove('oculto-por-paginacion');
-                        item.classList.add('animacion-aparecer');
-                    }
+        window.PersonalConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            alerta: <?php
+                if(isset($_SESSION['alerta_personal'])) {
+                    echo json_encode([
+                        'mostrar' => true,
+                        'tipo'    => $_SESSION['alerta_personal']['tipo'] == 'success' ? 'success' : 'error',
+                        'titulo'  => $_SESSION['alerta_personal']['tipo'] == 'success' ? 'Éxito' : 'Error',
+                        'mensaje' => addslashes($_SESSION['alerta_personal']['mensaje'])
+                    ]);
+                    unset($_SESSION['alerta_personal']);
                 } else {
-                    item.classList.add('oculto-por-filtro');
-                    item.classList.remove('oculto-por-paginacion', 'animacion-aparecer');
+                    echo json_encode(['mostrar' => false]);
                 }
-            });
-            const btnVerMas = document.getElementById('contenedor-ver-mas-personal');
-            if (btnVerMas) btnVerMas.style.display = coincidentes > limiteActual ? 'block' : 'none';
-        }
-
-        if (inputBuscadorUniv) inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal(null, null, true));
-        const btnCargarMas = document.getElementById('btn-ver-mas-personal');
-        if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-            limiteActual += itemsPorCarga;
-            aplicarFiltroUniversal(cargoActivoUniv, document.querySelector('.btn-filtro.activo'), false);
-        });
-        document.addEventListener('DOMContentLoaded', () => aplicarFiltroUniversal(null, null, true));
-
-        // ── Tema ─────────────────────────────────────────────────────────
-        const btnCambiarTema = document.getElementById('btnCambiarTema');
-        const html = document.documentElement;
-        if (btnCambiarTema) {
-            btnCambiarTema.addEventListener('click', function(e) {
-                e.preventDefault();
-                const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                html.setAttribute('data-theme', nuevoTema);
-                localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
-            });
-        }
-
-        // ── Modales ───────────────────────────────────────────────────────
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalHorario = document.getElementById('modalHorario');
-        const modalEditar  = document.getElementById('modalEditar');
-
-        function abrirModalHorario(btn) {
-            document.getElementById('modal_h_id_personal').value = btn.dataset.id;
-            document.getElementById('modal_h_nombre').textContent = "Horario: " + btn.dataset.nombre.split(' ')[0];
-            document.getElementById('modal_h_entrada').value = btn.dataset.entrada;
-            document.getElementById('modal_h_salida').value  = btn.dataset.salida;
-            modalOverlay.classList.add('activo');
-            modalHorario.classList.add('activo');
-        }
-
-        function abrirModalEditar(btn) {
-            const MI_ID    = "<?php echo $_SESSION['id_usuario']; ?>";
-            const esElMismo = (btn.dataset.idusuario == MI_ID);
-
-            document.getElementById('modal_e_id_usuario').value  = btn.dataset.idusuario;
-            document.getElementById('modal_e_id_personal').value = btn.dataset.idpersonal;
-            document.getElementById('modal_e_nombres').value     = btn.dataset.nombres;
-            document.getElementById('modal_e_apellidos').value   = btn.dataset.apellidos;
-            document.getElementById('modal_e_cedula').value      = btn.dataset.cedula;
-            document.getElementById('modal_e_telefono').value    = btn.dataset.telefono;
-            document.getElementById('modal_e_usuario').value     = btn.dataset.usuario;
-            document.getElementById('modal_e_cargo').value       = btn.dataset.cargo;
-            document.getElementById('modal_e_estado').value      = btn.dataset.estado;
-            document.getElementById('modal_e_rol').value         = btn.dataset.rol;
-
-            document.getElementById('modal_e_estado_hidden').value = btn.dataset.estado;
-            document.getElementById('modal_e_rol_hidden').value    = btn.dataset.rol;
-
-            document.getElementById('modal_e_nombre').textContent = "Editar: " + btn.dataset.nombres.split(' ')[0];
-            document.getElementById('modalEditar').setAttribute('data-nombre-eliminar', btn.dataset.nombres + ' ' + btn.dataset.apellidos);
-            document.getElementById('modal_e_foto').value = '';
-            document.getElementById('texto-archivo-editar').textContent = 'Seleccionar nueva imagen...';
-
-            // Limpiar estado de validación al abrir
-            limpiarValidaciones();
-
-            // Bloqueos de protección propia
-            const selectEstado = document.getElementById('modal_e_estado');
-            const selectRol    = document.getElementById('modal_e_rol');
-            const avisoEstado  = document.getElementById('aviso-estado-bloqueado');
-            const avisoRol     = document.getElementById('aviso-rol-bloqueado');
-            const btnEliminar  = document.getElementById('btn-eliminar-empleado');
-
-            if (esElMismo) {
-                selectEstado.disabled = true;
-                selectEstado.style.opacity = '0.5';
-                selectEstado.style.cursor  = 'not-allowed';
-                selectRol.disabled = true;
-                selectRol.style.opacity = '0.5';
-                selectRol.style.cursor  = 'not-allowed';
-                avisoEstado.style.display = 'inline';
-                avisoRol.style.display    = 'inline';
-                btnEliminar.style.display = 'none';
-            } else {
-                selectEstado.disabled = false;
-                selectEstado.style.opacity = '';
-                selectEstado.style.cursor  = '';
-                selectRol.disabled = false;
-                selectRol.style.opacity = '';
-                selectRol.style.cursor  = '';
-                avisoEstado.style.display = 'none';
-                avisoRol.style.display    = 'none';
-                btnEliminar.style.display = '';
-            }
-
-            modalOverlay.classList.add('activo');
-            modalEditar.classList.add('activo');
-        }
-
-        function cerrarModales() {
-            const modalActivo = document.querySelector('.modal-contenido.activo');
-            if (modalActivo) modalActivo.classList.add('cerrando');
-            modalOverlay.classList.add('cerrando');
-            setTimeout(function() {
-                modalOverlay.classList.remove('activo', 'cerrando');
-                modalHorario.classList.remove('activo', 'cerrando');
-                modalEditar.classList.remove('activo', 'cerrando');
-            }, 220);
-        }
-
-        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) cerrarModales(); });
-
-        // ══════════════════════════════════════════════════════════════════
-        // VALIDACIÓN JS ─ helpers
-        // ══════════════════════════════════════════════════════════════════
-
-        // Muestra o quita el estado de error en un campo y su mensaje
-        function setError(inputId, errorId, mostrar) {
-            const campo  = document.getElementById(inputId);
-            const mensaje = document.getElementById(errorId);
-            if (mostrar) {
-                campo.classList.add('input-error');
-                campo.classList.remove('input-ok');
-                mensaje.classList.add('visible');
-            } else {
-                campo.classList.remove('input-error');
-                campo.classList.add('input-ok');
-                mensaje.classList.remove('visible');
-            }
-            return !mostrar; // true = válido
-        }
-
-        // Limpia todos los estados de validación del formulario
-        function limpiarValidaciones() {
-            ['modal_e_nombres','modal_e_apellidos','modal_e_cedula','modal_e_telefono','modal_e_usuario','modal_e_foto']
-                .forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) { el.classList.remove('input-error','input-ok'); }
-                });
-            document.querySelectorAll('.mensaje-error-campo').forEach(el => el.classList.remove('visible'));
-        }
-
-        // ── Reglas de validación ──────────────────────────────────────────
-        const REGEX = {
-            nombres:   /^[\u00C0-\u024Fa-zA-Z\s\-'\.]+$/,   // letras, tildes, espacios, guion, punto, apóstrofe
-            cedula:    /^\d{6,12}$/,
-            telefono:  /^[\d\s\-\+\(\)]{7,15}$/,
-            usuario:   /^[a-zA-Z0-9_\.]{4,30}$/
+            ?>
         };
-
-        function validarCampo(inputId, errorId, regex, valorMinLen = 1) {
-            const valor = document.getElementById(inputId).value.trim();
-            const invalido = valor.length < valorMinLen || (regex && !regex.test(valor));
-            return setError(inputId, errorId, invalido);
-        }
-
-        // Validación en tiempo real al salir del campo (blur)
-        document.getElementById('modal_e_nombres').addEventListener('blur',    () => validarCampo('modal_e_nombres',   'err-nombres',   REGEX.nombres,   2));
-        document.getElementById('modal_e_apellidos').addEventListener('blur',  () => validarCampo('modal_e_apellidos', 'err-apellidos', REGEX.nombres,   2));
-        document.getElementById('modal_e_cedula').addEventListener('blur',     () => validarCampo('modal_e_cedula',    'err-cedula',    REGEX.cedula,    6));
-        document.getElementById('modal_e_telefono').addEventListener('blur',   () => validarCampo('modal_e_telefono',  'err-telefono',  REGEX.telefono,  7));
-        document.getElementById('modal_e_usuario').addEventListener('blur',    () => validarCampo('modal_e_usuario',   'err-usuario',   REGEX.usuario,   4));
-
-        // Quitar error mientras el usuario corrige (input event)
-        ['modal_e_nombres','modal_e_apellidos','modal_e_cedula','modal_e_telefono','modal_e_usuario'].forEach(id => {
-            document.getElementById(id).addEventListener('input', function() {
-                if (this.classList.contains('input-error')) {
-                    this.classList.remove('input-error');
-                    const errId = 'err-' + id.replace('modal_e_','');
-                    const errEl = document.getElementById(errId);
-                    if (errEl) errEl.classList.remove('visible');
-                }
-            });
-        });
-
-        // Validación de foto al seleccionar
-        function validarFoto(input) {
-            const nombre = input.files[0] ? input.files[0].name : 'Seleccionar nueva imagen...';
-            document.getElementById('texto-archivo-editar').textContent = nombre;
-
-            if (!input.files[0]) return true;
-
-            const tiposPermitidos = ['image/jpeg','image/png','image/webp','image/gif'];
-            const tamanoMax = 2 * 1024 * 1024; // 2 MB
-            const archivo = input.files[0];
-            const invalido = !tiposPermitidos.includes(archivo.type) || archivo.size > tamanoMax;
-            return setError('modal_e_foto', 'err-foto', invalido);
-        }
-
-        // ── Validación completa al enviar ─────────────────────────────────
-        document.getElementById('form-editar-personal').addEventListener('submit', function(e) {
-            const checks = [
-                validarCampo('modal_e_nombres',   'err-nombres',   REGEX.nombres,   2),
-                validarCampo('modal_e_apellidos', 'err-apellidos', REGEX.nombres,   2),
-                validarCampo('modal_e_cedula',    'err-cedula',    REGEX.cedula,    6),
-                validarCampo('modal_e_telefono',  'err-telefono',  REGEX.telefono,  7),
-                validarCampo('modal_e_usuario',   'err-usuario',   REGEX.usuario,   4),
-            ];
-
-            // Si hay foto seleccionada, validarla también
-            const inputFoto = document.getElementById('modal_e_foto');
-            if (inputFoto.files[0]) {
-                checks.push(validarFoto(inputFoto));
-            }
-
-            const formularioValido = checks.every(Boolean);
-
-            if (!formularioValido) {
-                e.preventDefault();
-                // Animación shake en el botón de guardar
-                const btnGuardar = document.getElementById('btn-guardar-empleado');
-                btnGuardar.classList.add('sacudir');
-                btnGuardar.addEventListener('animationend', () => btnGuardar.classList.remove('sacudir'), { once: true });
-                // Hacer scroll al primer error dentro del modal
-                const primerError = modalEditar.querySelector('.input-error');
-                if (primerError) primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-
-        // ── Eliminación ───────────────────────────────────────────────────
-        function confirmarEliminacion() {
-            const idUsr  = document.getElementById('modal_e_id_usuario').value;
-            const nombre = document.getElementById('modalEditar').getAttribute('data-nombre-eliminar');
-            cerrarModales();
-            Swal.fire({
-                title: '¿Eliminar a ' + nombre + '?',
-                text: "Esta acción borrará todo su historial. Es definitiva.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, Eliminar Todo',
-                cancelButtonText: 'Cancelar',
-                background: html.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color:      html.getAttribute('data-theme') === 'dark' ? '#fff'    : '#333'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '../controladores/ControladorEliminarPersonal.php?id=' + idUsr;
-                } else {
-                    modalOverlay.classList.remove('cerrando');
-                    modalEditar.classList.remove('cerrando');
-                    modalOverlay.classList.add('activo');
-                    modalEditar.classList.add('activo');
-                }
-            });
-        }
     </script>
 
-    <?php if(isset($_SESSION['alerta_personal'])): ?>
-        <script>
-            Swal.fire({
-                title: '<?php echo $_SESSION['alerta_personal']['tipo'] == 'success' ? 'Éxito' : 'Error'; ?>',
-                text: '<?php echo addslashes($_SESSION['alerta_personal']['mensaje']); ?>',
-                icon: '<?php echo $_SESSION['alerta_personal']['tipo']; ?>',
-                background: html.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color: html.getAttribute('data-theme') === 'dark' ? '#fff' : '#333',
-                confirmButtonColor: '<?php echo $_SESSION['alerta_personal']['tipo'] == 'success' ? '#10b981' : '#ef4444'; ?>'
-            });
-        </script>
-        <?php unset($_SESSION['alerta_personal']); ?>
-    <?php endif; ?>
+    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <script src="../recursos/js/personal.js?v=<?php echo time(); ?>"></script>
+
 </body>
 </html>

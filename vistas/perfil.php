@@ -37,6 +37,11 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Perfil - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <style>
+        /* Efecto hover para el ojito */
+        .icono-alternar:hover { color: #0f172a !important; }
+        html[data-theme='dark'] .icono-alternar:hover { color: #f8fafc !important; }
+    </style>
     <script>
         (function() {
             const idUsr = "<?php echo $_SESSION['id_usuario']; ?>";
@@ -54,11 +59,8 @@ try {
 
         <main class="contenido-perfil">
             <div class="perfil-panel">
-                <form action="../controladores/ControladorEditarPerfil.php" method="POST" enctype="multipart/form-data" class="perfil-form" id="form-perfil" novalidate>
+                <form action="../controladores/ControladorEditarPerfil.php" method="POST" enctype="multipart/form-data" class="perfil-form" id="form-perfil" autocomplete="off" novalidate>
 
-                    <!-- ══════════════════════════════════
-                         COLUMNA IZQUIERDA — foto
-                    ═══════════════════════════════════════ -->
                     <aside class="perfil-col-foto">
                         <img
                             src="../recursos/img/perfiles/<?php echo htmlspecialchars($datos_usuario['foto_perfil']); ?>"
@@ -75,12 +77,8 @@ try {
                         </div>
                     </aside>
 
-                    <!-- ══════════════════════════════════
-                         COLUMNA DERECHA — campos
-                    ═══════════════════════════════════════ -->
                     <div class="perfil-col-campos">
 
-                        <!-- ── Datos Personales ── -->
                         <p class="perfil-seccion-titulo">Datos Personales</p>
                         <div class="grid-formulario">
 
@@ -90,7 +88,7 @@ try {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     <input type="text" name="nombres" id="nombres"
                                            value="<?php echo htmlspecialchars($datos_usuario['nombres']); ?>"
-                                           required maxlength="100"
+                                           required maxlength="100" autocomplete="off"
                                            oninput="this.value=this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g,'')">
                                 </div>
                                 <span class="perfil-msg-ajax" id="msg_nombres"></span>
@@ -102,7 +100,7 @@ try {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                     <input type="text" name="apellidos" id="apellidos"
                                            value="<?php echo htmlspecialchars($datos_usuario['apellidos']); ?>"
-                                           required maxlength="100"
+                                           required maxlength="100" autocomplete="off"
                                            oninput="this.value=this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g,'')">
                                 </div>
                                 <span class="perfil-msg-ajax" id="msg_apellidos"></span>
@@ -114,7 +112,7 @@ try {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2"/></svg>
                                     <input type="text" name="cedula" id="cedula"
                                            value="<?php echo htmlspecialchars($datos_usuario['cedula']); ?>"
-                                           maxlength="8" required
+                                           maxlength="8" required autocomplete="off"
                                            oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </div>
                                 <span class="perfil-msg-ajax" id="msg_cedula"></span>
@@ -126,7 +124,7 @@ try {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                                     <input type="text" name="telefono" id="telefono"
                                            value="<?php echo htmlspecialchars($datos_usuario['telefono']); ?>"
-                                           maxlength="11" required
+                                           maxlength="11" required autocomplete="off"
                                            oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </div>
                                 <span class="perfil-msg-ajax" id="msg_telefono"></span>
@@ -134,7 +132,6 @@ try {
 
                         </div>
 
-                        <!-- ── Datos de Acceso ── -->
                         <p class="perfil-seccion-titulo perfil-seccion-sep">Datos de Acceso</p>
                         <div class="grid-formulario">
 
@@ -144,7 +141,7 @@ try {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zM12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
                                     <input type="text" name="nombre_usuario" id="input_nombre_usuario"
                                            value="<?php echo htmlspecialchars($datos_usuario['nombre_usuario']); ?>"
-                                           required maxlength="50"
+                                           required maxlength="50" autocomplete="off"
                                            oninput="this.value=this.value.replace(/\s+/g,'').toLowerCase()">
                                 </div>
                                 <span id="mensaje_usuario_ajax" class="perfil-msg-ajax"></span>
@@ -155,6 +152,10 @@ try {
                                 <div class="input-con-icono">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                     <input type="password" name="nueva_password" id="nueva_password" placeholder="Mín. 6 caracteres" autocomplete="new-password">
+                                    <span class="icono-alternar" onclick="alternarVisibilidad('nueva_password', this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
+                                    </span>
                                 </div>
                                 <div class="medidor-fuerza-contenedor">
                                     <div class="barra-fuerza" id="barra_fuerza"></div>
@@ -167,13 +168,16 @@ try {
                                 <div class="input-con-icono">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                     <input type="password" name="confirmar_password" id="confirmar_password" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+                                    <span class="icono-alternar" onclick="alternarVisibilidad('confirmar_password', this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
+                                    </span>
                                 </div>
                                 <span id="msg_confirmar_pass" class="perfil-msg-ajax"></span>
                             </div>
 
                         </div>
 
-                        <!-- ── Preguntas de Seguridad ── -->
                         <p class="perfil-seccion-titulo perfil-seccion-sep perfil-seccion-advertencia">
                             Preguntas de Seguridad
                             <small class="perfil-label-opcional">(deja en blanco para conservarlas)</small>
@@ -184,19 +188,19 @@ try {
                             <div class="grupo-input">
                                 <label>Pregunta <?php echo $i; ?></label>
                                 <div class="input-con-icono">
-                                    <select name="pregunta_<?php echo $i; ?>" class="perfil-select">
+                                    <select name="pregunta_<?php echo $i; ?>" id="perfil_pregunta_<?php echo $i; ?>" class="perfil-select">
                                         <?php foreach ($preguntas_seguridad as $k => $v): ?>
                                             <option value="<?php echo $k; ?>" <?php echo ($datos_usuario['pregunta_'.$i] == $k) ? 'selected' : ''; ?>><?php echo $v; ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <input type="text" name="respuesta_<?php echo $i; ?>" class="perfil-input-respuesta" placeholder="Nueva respuesta">
+                                <input type="text" name="respuesta_<?php echo $i; ?>" id="perfil_respuesta_<?php echo $i; ?>" class="perfil-input-respuesta" placeholder="Nueva respuesta" autocomplete="off">
+                                <span class="perfil-msg-ajax" id="msg_respuesta_<?php echo $i; ?>"></span>
                             </div>
                             <?php endfor; ?>
 
                         </div>
 
-                        <!-- ── Confirmar identidad ── -->
                         <div class="perfil-bloque-confirmar">
                             <p class="perfil-confirmar-titulo">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -204,12 +208,15 @@ try {
                             </p>
                             <div class="input-con-icono perfil-confirmar-input">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                <input type="password" name="password_actual" id="password_actual" placeholder="Tu contraseña actual" required>
+                                <input type="password" name="password_actual" id="password_actual" placeholder="Tu contraseña actual" autocomplete="new-password" required>
+                                <span class="icono-alternar" onclick="alternarVisibilidad('password_actual', this)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ver" viewBox="0 0 512 512"><path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/><circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icono-svg icono-ocultar oculto" viewBox="0 0 512 512"><path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/><path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/></svg>
+                                </span>
                             </div>
                             <span id="msg_pass_actual" class="perfil-msg-ajax"></span>
                         </div>
 
-                        <!-- ── Botón guardar ── -->
                         <div class="botones-accion-formulario">
                             <button type="submit" class="btn-guardar">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
@@ -217,234 +224,34 @@ try {
                             </button>
                         </div>
 
-                    </div><!-- /perfil-col-campos -->
-
+                    </div>
                 </form>
-            </div><!-- /perfil-panel -->
+            </div>
         </main>
     </div>
 
-    <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script>
-    // ── Previsualización de foto ──────────────────────────────────────────────
-    document.getElementById('perfil_foto').addEventListener('change', function(e) {
-        const archivo = e.target.files[0];
-        document.getElementById('texto-foto').textContent = archivo ? archivo.name : 'Cambiar foto...';
-        if (archivo) {
-            const reader = new FileReader();
-            reader.onload = ev => { document.getElementById('vista-previa-foto').src = ev.target.result; };
-            reader.readAsDataURL(archivo);
-        }
-    });
-
-    // ── Helper: muestra / limpia mensajes inline ──────────────────────────────
-    function setMsg(id, texto, tipo) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = texto;
-        el.className = 'perfil-msg-ajax' + (tipo ? ' perfil-msg-' + tipo : '');
-    }
-    function clearMsg(id) { setMsg(id, '', ''); }
-
-    // ── Validación en tiempo real ─────────────────────────────────────────────
-    document.getElementById('nombres').addEventListener('blur', function() {
-        this.value.trim().length < 2
-            ? setMsg('msg_nombres', '❌ Nombre inválido (mín. 2 letras).', 'error')
-            : clearMsg('msg_nombres');
-    });
-
-    document.getElementById('apellidos').addEventListener('blur', function() {
-        this.value.trim().length < 2
-            ? setMsg('msg_apellidos', '❌ Apellido inválido (mín. 2 letras).', 'error')
-            : clearMsg('msg_apellidos');
-    });
-
-    document.getElementById('cedula').addEventListener('input', function() {
-        this.value.length > 0 && this.value.length < 6
-            ? setMsg('msg_cedula', '❌ Mín. 6 dígitos.', 'error')
-            : clearMsg('msg_cedula');
-    });
-
-    document.getElementById('telefono').addEventListener('input', function() {
-        this.value.length > 0 && this.value.length < 11
-            ? setMsg('msg_telefono', '❌ Debe tener 11 dígitos.', 'error')
-            : clearMsg('msg_telefono');
-    });
-
-    document.getElementById('password_actual').addEventListener('input', function() {
-        if (this.value.length > 0) clearMsg('msg_pass_actual');
-    });
-
-    // ── Validación AJAX del nombre de usuario ─────────────────────────────────
-    const inputUsuario    = document.getElementById('input_nombre_usuario');
-    const usuarioOriginal = inputUsuario.value;
-
-    inputUsuario.addEventListener('keyup', function() {
-        this.value = this.value.replace(/\s+/g, '').toLowerCase();
-        const val = this.value;
-
-        if (val === usuarioOriginal) {
-            clearMsg('mensaje_usuario_ajax');
-            inputUsuario.classList.remove('campo-error', 'input-exito');
-            return;
-        }
-        if (val.length >= 3) {
-            fetch('../controladores/validar_usuario.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'usuario=' + encodeURIComponent(val)
-            })
-            .then(r => r.json())
-            .then(data => {
-                inputUsuario.classList.remove('campo-error', 'input-exito');
-                if (data.existe) {
-                    setMsg('mensaje_usuario_ajax', '❌ Este usuario ya está en uso.', 'error');
-                    inputUsuario.classList.add('campo-error');
-                    inputUsuario.dataset.disponible = 'false';
+        window.PerfilConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            usuarioOriginal: "<?php echo htmlspecialchars($datos_usuario['nombre_usuario']); ?>",
+            alerta: <?php
+                if (isset($_SESSION['alerta_principal'])) {
+                    echo json_encode([
+                        'mostrar' => true,
+                        'tipo'    => $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error',
+                        'titulo'  => $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : '¡Error!',
+                        'mensaje' => addslashes($_SESSION['alerta_principal']['mensaje'])
+                    ]);
+                    unset($_SESSION['alerta_principal']);
                 } else {
-                    setMsg('mensaje_usuario_ajax', '✅ Usuario disponible.', 'exito');
-                    inputUsuario.classList.add('input-exito');
-                    inputUsuario.dataset.disponible = 'true';
+                    echo json_encode(['mostrar' => false]);
                 }
-            })
-            .catch(err => console.error(err));
-        } else {
-            clearMsg('mensaje_usuario_ajax');
-            inputUsuario.classList.remove('campo-error', 'input-exito');
-            inputUsuario.dataset.disponible = 'false';
-        }
-    });
-
-    // ── Medidor de fuerza de contraseña ──────────────────────────────────────
-    const inputNuevaPass = document.getElementById('nueva_password');
-    const barraFuerza    = document.getElementById('barra_fuerza');
-    const textoFuerza    = document.getElementById('texto_fuerza');
-
-    inputNuevaPass.addEventListener('input', function() {
-        const val           = this.value;
-        const tieneLetras   = /[a-zA-Z]/.test(val);
-        const tieneNumeros  = /[0-9]/.test(val);
-        const tieneSimbolos = /[^a-zA-Z0-9]/.test(val);
-
-        barraFuerza.className = 'barra-fuerza';
-        barraFuerza.style.width = '';
-        barraFuerza.style.inlineSize = '';
-        textoFuerza.className = 'texto-fuerza perfil-texto-fuerza';
-
-        if (val.length === 0) {
-            textoFuerza.textContent = '';
-        } else if (val.length < 6) {
-            barraFuerza.classList.add('fuerza-mala');
-            textoFuerza.textContent = 'Seguridad: Mala (mín. 6 caracteres)';
-            textoFuerza.classList.add('perfil-fuerza-mala');
-        } else if (tieneLetras && tieneNumeros && tieneSimbolos) {
-            barraFuerza.classList.add('fuerza-excelente');
-            textoFuerza.textContent = 'Seguridad: Excelente';
-            textoFuerza.classList.add('perfil-fuerza-excelente');
-        } else if ((tieneLetras && tieneNumeros) || (tieneLetras && tieneSimbolos) || (tieneNumeros && tieneSimbolos)) {
-            barraFuerza.classList.add('fuerza-buena');
-            textoFuerza.textContent = 'Seguridad: Buena';
-            textoFuerza.classList.add('perfil-fuerza-buena');
-        } else {
-            barraFuerza.classList.add('fuerza-mala');
-            textoFuerza.textContent = 'Seguridad: Mala (combina letras y números)';
-            textoFuerza.classList.add('perfil-fuerza-mala');
-        }
-        verificarCoincidencia();
-    });
-
-    // ── Verificación de coincidencia de contraseñas ───────────────────────────
-    const inputConfirmar = document.getElementById('confirmar_password');
-
-    function verificarCoincidencia() {
-        if (inputConfirmar.value === '') { clearMsg('msg_confirmar_pass'); return; }
-        inputNuevaPass.value === inputConfirmar.value
-            ? setMsg('msg_confirmar_pass', '✅ Las contraseñas coinciden.', 'exito')
-            : setMsg('msg_confirmar_pass', '❌ Las contraseñas no coinciden.', 'error');
-    }
-    inputConfirmar.addEventListener('input', verificarCoincidencia);
-
-    // ── Validación completa antes de enviar ───────────────────────────────────
-    document.getElementById('form-perfil').addEventListener('submit', function(e) {
-        let valido = true;
-
-        if (document.getElementById('nombres').value.trim().length < 2) {
-            setMsg('msg_nombres', '❌ Nombre inválido (mín. 2 letras).', 'error');
-            valido = false;
-        }
-        if (document.getElementById('apellidos').value.trim().length < 2) {
-            setMsg('msg_apellidos', '❌ Apellido inválido (mín. 2 letras).', 'error');
-            valido = false;
-        }
-        if (document.getElementById('cedula').value.length < 6) {
-            setMsg('msg_cedula', '❌ Mín. 6 dígitos.', 'error');
-            valido = false;
-        }
-        if (document.getElementById('telefono').value.length < 11) {
-            setMsg('msg_telefono', '❌ Debe tener 11 dígitos.', 'error');
-            valido = false;
-        }
-        if (document.getElementById('password_actual').value === '') {
-            setMsg('msg_pass_actual', '❌ Debes confirmar tu contraseña actual.', 'error');
-            valido = false;
-        }
-
-        const nuevaPass    = inputNuevaPass.value;
-        const confirmaPass = inputConfirmar.value;
-
-        if (nuevaPass !== '' || confirmaPass !== '') {
-            if (nuevaPass.length < 6 || !/[A-Za-z]/.test(nuevaPass) || !/[0-9]/.test(nuevaPass)) {
-                e.preventDefault();
-                Swal.fire({ title: 'Contraseña débil', text: 'Debe tener al menos 6 caracteres, letras y números.', icon: 'warning', confirmButtonColor: '#cc0000', heightAuto: false });
-                return;
-            }
-            if (nuevaPass !== confirmaPass) {
-                e.preventDefault();
-                Swal.fire({ title: 'Error', text: 'Las contraseñas nuevas no coinciden.', icon: 'error', confirmButtonColor: '#cc0000', heightAuto: false });
-                return;
-            }
-        }
-
-        if (inputUsuario.value !== usuarioOriginal && inputUsuario.dataset.disponible === 'false') {
-            e.preventDefault();
-            Swal.fire({ title: 'Usuario no disponible', text: 'El nombre de usuario elegido ya está en uso.', icon: 'error', confirmButtonColor: '#cc0000', heightAuto: false });
-            return;
-        }
-
-        if (!valido) {
-            e.preventDefault();
-            Swal.fire({ title: 'Campos inválidos', text: 'Revisa los campos marcados antes de guardar.', icon: 'warning', confirmButtonColor: '#f59e0b', heightAuto: false });
-        }
-    });
-
-    // ── Tema ──────────────────────────────────────────────────────────────────
-    const btnCambiarTema = document.getElementById('btnCambiarTema');
-    const html = document.documentElement;
-    const claveTema = 'tema_usuario_<?php echo $_SESSION['id_usuario']; ?>';
-
-    if (btnCambiarTema) {
-        btnCambiarTema.addEventListener('click', function(e) {
-            e.preventDefault();
-            const nuevoTema = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', nuevoTema);
-            localStorage.setItem(claveTema, nuevoTema);
-        });
-    }
+            ?>
+        };
     </script>
 
-    <?php if (isset($_SESSION['alerta_principal'])): ?>
-        <script>
-            Swal.fire({
-                title: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : '¡Error!'; ?>',
-                text: '<?php echo addslashes($_SESSION['alerta_principal']['mensaje']); ?>',
-                icon: '<?php echo $_SESSION['alerta_principal']['tipo']; ?>',
-                confirmButtonColor: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '#10b981' : '#ef4444'; ?>',
-                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
-            });
-        </script>
-        <?php unset($_SESSION['alerta_principal']); ?>
-    <?php endif; ?>
+    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <script src="../recursos/js/perfil.js?v=<?php echo time(); ?>"></script>
 
 </body>
 </html>

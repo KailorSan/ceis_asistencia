@@ -1,12 +1,10 @@
 <?php
-// =======================================================
-// 1. CONFIGURACIÓN INICIAL Y SEGURIDAD
-// =======================================================
 require_once '../configuracion/seguridad.php'; 
 require_once '../configuracion/conexion.php';  
 require_once '../controladores/ControladorBitacora.php';
 
 if ($_SESSION['id_rol'] != 1) {
+    $_SESSION['alerta_principal'] = ['tipo' => 'error', 'mensaje' => 'Acceso de alta seguridad denegado. Área restringida.'];
     header("Location: principal.php");
     exit();
 }
@@ -14,7 +12,6 @@ if ($_SESSION['id_rol'] != 1) {
 $nombre = $_SESSION['usuario'];
 $rol = $_SESSION['rol'];
 
-// -- LÓGICA PARA LÍMITES DIARIOS --
 date_default_timezone_set('America/Caracas');
 $fecha_hoy = date('d-m-Y');
 $carpeta_respaldos = '../respaldos/';
@@ -41,8 +38,6 @@ $restantes_subir = max(0, $limite_subir - $limites['subidos']);
 $restantes_restaurar = max(0, $limite_restaurar - $limites['restaurados']);
 $registros_bitacora = ControladorBitacora::obtenerHistorial($conexion);
 
-// -- FECHAS VÁLIDAS PARA EL FILTRO DE BITÁCORA --
-// 1. Feriados registrados en BD (formato YYYY-MM-DD)
 $feriados_set = [];
 $res_feriados = $conexion->query("SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS f FROM feriados");
 if ($res_feriados) {
@@ -51,22 +46,19 @@ if ($res_feriados) {
     }
 }
 
-// 2. Fechas que SÍ tienen registros en la bitácora
 $fechas_con_registros = [];
 foreach ($registros_bitacora as $reg) {
     $fecha_iso = date('Y-m-d', strtotime($reg['fecha_hora']));
     $fechas_con_registros[$fecha_iso] = true;
 }
 
-// 3. Solo fechas con registros, excluyendo fines de semana y feriados
 $fechas_validas = [];
 foreach (array_keys($fechas_con_registros) as $fecha_iso) {
-    $dow = (int) date('N', strtotime($fecha_iso)); // 6=sáb, 7=dom
+    $dow = (int) date('N', strtotime($fecha_iso)); 
     if ($dow < 6 && !isset($feriados_set[$fecha_iso])) {
         $fechas_validas[$fecha_iso] = true;
     }
 }
-// Pasar al JS como JSON (array de strings "YYYY-MM-DD")
 $fechas_validas_json = json_encode(array_keys($fechas_validas));
 ?>
 
@@ -96,15 +88,31 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
 
         <main class="contenido">
             
-            <div class="wrapper-btn-bitacora" style="margin-block-end: 20px;">
-                <button type="button" class="btn-guardar btn-bitacora-seg" style="padding: 7px 16px; font-size: 0.85rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(64, 111, 243, 0.3); display: inline-flex; align-items: center; gap: 7px; width: fit-content; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="abrirModalBitacora()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Ver Registro de Auditoría
-                </button>
-            </div>
+            <div class="wrapper-btn-bitacora" style="margin-block-end: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+    
+    <!-- Botón original de Auditoría -->
+    <button type="button" class="btn-guardar btn-bitacora-seg" style="padding: 7px 16px; font-size: 0.85rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(64, 111, 243, 0.3); display: inline-flex; align-items: center; gap: 7px; width: fit-content; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="abrirModalBitacora()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Ver Registro de Auditoría
+    </button>
 
+    <!-- NUEVO: Botón de Descarga del Manual Técnico (Validado Solo Admin) -->
+    <?php if ($_SESSION['id_rol'] == 1): ?>
+    <a href="../recursos/documentos/Manual_Tecnico.pdf" download="Manual_Tecnico_CEIS.pdf" class="btn-guardar" style="background-color: #8b5cf6; padding: 7px 16px; font-size: 0.85rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 7px; width: fit-content; transition: transform 0.2s; text-decoration: none; color: white;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <!-- SVG idéntico al reader-outline que proporcionaste -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 512 512">
+            <rect x="96" y="48" width="320" height="416" rx="48" ry="48" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="32"/>
+            <line x1="176" y1="176" x2="336" y2="176" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+            <line x1="176" y1="256" x2="336" y2="256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+            <line x1="176" y1="336" x2="256" y2="336" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+        </svg>
+        Descargar Manual Técnico
+    </a>
+    <?php endif; ?>
+
+</div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-block-end: 25px; flex-wrap: wrap; gap: 15px;">
                 
                 <div style="flex: 1; min-inline-size: 250px;">
@@ -172,6 +180,7 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
 
                         <form id="form-subir" action="../controladores/ControladorSeguridad.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="accion" value="subir_externo">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                             <div class="contenedor-archivo">
                                 <input type="file" name="archivo_sql" id="archivo_sql" accept=".sql" class="input-file-oculto" onchange="document.getElementById('form-subir').submit();" <?php echo $restantes_subir == 0 ? 'disabled' : ''; ?>>
                                 <label for="archivo_sql" class="btn-subir-archivo" style="justify-content: center; padding: 8px; font-size: 0.82rem; <?php echo $restantes_subir == 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
@@ -279,32 +288,32 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                     <div class="modal-bitacora-sidebar" style="inline-size: 220px; flex-shrink: 0; background: var(--navbar-bg); border-inline-end: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto;">
                         <h3 style="padding: 0 25px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-color); opacity: 0.5; margin-block-end: 15px; letter-spacing: 1px;">Filtrar por Módulo</h3>
                         
-                        <button class="btn-tab-bitacora activo" onclick="cambiarTabBitacora(this, 'Todos')">
+                        <button class="btn-tab-bitacora activo" data-filtro="Todos" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                             Todos los Registros
                         </button>
                         
-                        <button class="btn-tab-bitacora" onclick="cambiarTabBitacora(this, 'Asistencia')">
+                        <button class="btn-tab-bitacora" data-filtro="Asistencia" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                             Asistencia
                         </button>
 
-                        <button class="btn-tab-bitacora" onclick="cambiarTabBitacora(this, 'Usuarios')">
+                        <button class="btn-tab-bitacora" data-filtro="Usuarios" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             Usuarios y Perfiles
                         </button>
 
-                        <button class="btn-tab-bitacora" onclick="cambiarTabBitacora(this, 'Reportes')">
+                        <button class="btn-tab-bitacora" data-filtro="Reportes" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                             Descarga de Reportes
                         </button>
                         
-                        <button class="btn-tab-bitacora" onclick="cambiarTabBitacora(this, 'Configuracion')">
+                        <button class="btn-tab-bitacora" data-filtro="Configuracion" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             Configuración
                         </button>
 
-                        <button class="btn-tab-bitacora" onclick="cambiarTabBitacora(this, 'Seguridad')">
+                        <button class="btn-tab-bitacora" data-filtro="Seguridad" onclick="cambiarTabBitacora(this)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             Base de Datos (BD)
                         </button>
@@ -316,13 +325,12 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                             
                             <div style="position: relative; flex: 1; min-inline-size: 250px; max-inline-size: 400px;">
                                 <svg style="position: absolute; inset-inline-start: 15px; inset-block-start: 50%; transform: translateY(-50%); color: var(--text-color); opacity: 0.5; inline-size: 20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                <input type="text" id="busqueda-bitacora" placeholder="Buscar registro específico..." oninput="filtrarBitacora()" style="inline-size: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
+                                <input type="text" id="busqueda-bitacora" placeholder="Buscar registro específico..." style="inline-size: 100%; padding: 10px 15px 10px 45px; border-radius: 50px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none;">
                             </div>
 
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <svg style="color: var(--text-color); opacity: 0.6; inline-size: 20px; margin-inline-end: 5px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 
-                                <!-- ── Dropdown personalizado: DÍA ── -->
                                 <div class="cdd-wrap" id="cdd-dia">
                                     <input type="hidden" id="filtro-dia" value="">
                                     <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-dia')">
@@ -332,23 +340,14 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                                     <div class="cdd-panel">
                                         <div class="cdd-item cdd-placeholder" onclick="seleccionarCdd('cdd-dia','','Día')">Día</div>
                                         <?php
-                                        $dias_validos = [];
-                                        foreach (array_keys($fechas_validas) as $f) {
-                                            $dias_validos[(int)date('d', strtotime($f))] = true;
-                                        }
                                         for ($i = 1; $i <= 31; $i++) {
                                             $val = str_pad($i, 2, '0', STR_PAD_LEFT);
-                                            if (isset($dias_validos[$i])) {
-                                                echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-dia','$val','$val')\">$val</div>";
-                                            } else {
-                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este día'>$val</div>";
-                                            }
+                                            echo "<div class='cdd-item cdd-available' data-val='$val'>$val</div>";
                                         }
                                         ?>
                                     </div>
                                 </div>
 
-                                <!-- ── Dropdown personalizado: MES ── -->
                                 <div class="cdd-wrap" id="cdd-mes">
                                     <input type="hidden" id="filtro-mes" value="">
                                     <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-mes')">
@@ -358,26 +357,16 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                                     <div class="cdd-panel">
                                         <div class="cdd-item cdd-placeholder" onclick="seleccionarCdd('cdd-mes','','Mes')">Mes</div>
                                         <?php
-                                        $meses_validos = [];
-                                        foreach (array_keys($fechas_validas) as $f) {
-                                            $meses_validos[(int)date('m', strtotime($f))] = true;
-                                        }
-                                        $nombres_meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                                                           'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                                        $nombres_meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
                                         for ($i = 1; $i <= 12; $i++) {
                                             $val = str_pad($i, 2, '0', STR_PAD_LEFT);
                                             $nombre = $nombres_meses[$i];
-                                            if (isset($meses_validos[$i])) {
-                                                echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-mes','$val','$nombre')\">$nombre</div>";
-                                            } else {
-                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este mes'>$nombre</div>";
-                                            }
+                                            echo "<div class='cdd-item cdd-available' data-val='$val' data-nombre='$nombre'>$nombre</div>";
                                         }
                                         ?>
                                     </div>
                                 </div>
 
-                                <!-- ── Dropdown personalizado: AÑO ── -->
                                 <div class="cdd-wrap" id="cdd-anio">
                                     <input type="hidden" id="filtro-anio" value="">
                                     <button type="button" class="cdd-trigger" onclick="toggleCdd('cdd-anio')">
@@ -392,13 +381,12 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                                             $anios_validos[date('Y', strtotime($f))] = true;
                                         }
                                         arsort($anios_validos);
+                                        // Añadimos los años base para asegurar que existan los contenedores
+                                        if(!isset($anios_validos['2026'])) $anios_validos['2026'] = true;
+                                        if(!isset($anios_validos['2025'])) $anios_validos['2025'] = true;
+                                        
                                         foreach (array_keys($anios_validos) as $anio_v) {
-                                            echo "<div class='cdd-item cdd-available' onclick=\"seleccionarCdd('cdd-anio','$anio_v','$anio_v')\">$anio_v</div>";
-                                        }
-                                        foreach (['2026','2025'] as $anio_ref) {
-                                            if (!isset($anios_validos[$anio_ref])) {
-                                                echo "<div class='cdd-item cdd-disabled' title='Sin registros este año'>$anio_ref</div>";
-                                            }
+                                            echo "<div class='cdd-item cdd-available' data-val='$anio_v'>$anio_v</div>";
                                         }
                                         ?>
                                     </div>
@@ -417,7 +405,6 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                         <div class="modal-bitacora-tabla-wrap" style="flex: 1; overflow-y: auto; padding-inline-end: 5px;">
                             <div id="contador-resultados" style="font-size: 0.8rem; color: var(--text-color); opacity: 0.6; margin-block-end: 8px; padding-inline-start: 5px;"></div>
 
-                            <!-- Mensaje cuando la fecha no tiene registros válidos -->
                             <div id="mensaje-sin-registros" style="display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 12px; text-align: center;">
                                 <span class="msg-icono" style="font-size: 2.5rem;">📅</span>
                                 <p class="msg-texto" style="margin: 0; font-size: 0.95rem; color: var(--text-color); opacity: 0.7; max-inline-size: 380px; line-height: 1.5;"></p>
@@ -444,11 +431,9 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach($registros_bitacora as $reg): 
-                                            // Formatear Fecha y Hora
                                             $fecha = date("d/m/Y", strtotime($reg['fecha_hora']));
                                             $hora = date("h:i A", strtotime($reg['fecha_hora']));
                                             
-                                            // Configurar Estilos Visuales según el Módulo
                                             $modulo = $reg['modulo'];
                                             $estilo = [];
                                             switch($modulo) {
@@ -458,7 +443,6 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
                                                     $estilo = ['bg' => 'rgba(239, 68, 68, 0.1)', 'color' => '#ef4444']; break;
                                                 case 'Reportes': 
                                                     $estilo = ['bg' => 'rgba(64, 111, 243, 0.1)', 'color' => '#406ff3']; break;
-                                                // NUEVO: Color morado para Configuración
                                                 case 'Configuracion': 
                                                     $estilo = ['bg' => 'rgba(139, 92, 246, 0.1)', 'color' => '#8b5cf6']; break;
                                                 case 'Seguridad': 
@@ -503,396 +487,29 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
 
     </div>
 
-    <script src="../recursos/js/sweetalert2.all.min.js"></script>
-    
     <script>
-        // Token CSRF generado por el servidor — solo lectura desde JS
-        const CSRF_TOKEN = "<?php echo $_SESSION['csrf_token']; ?>";
-
-        // Fechas laborables que SÍ tienen registros (excluye fines de semana y feriados)
-        const FECHAS_VALIDAS = new Set(<?php echo $fechas_validas_json; ?>);
-
-        const btnCambiarTema = document.getElementById('btnCambiarTema');
-        const html = document.documentElement;
-        if(btnCambiarTema) {
-            btnCambiarTema.addEventListener('click', function(e) {
-                e.preventDefault();
-                this.classList.add('girando');
-                const temaActual = html.getAttribute('data-theme');
-                const nuevoTema = temaActual === 'light' ? 'dark' : 'light';
-                html.setAttribute('data-theme', nuevoTema);
-                localStorage.setItem('tema_usuario_<?php echo $_SESSION['id_usuario']; ?>', nuevoTema);
-                setTimeout(() => { this.classList.remove('girando'); }, 500);
-            });
-        }
-
-        function generarRespaldo(tipo, restantes) {
-            if (restantes <= 0) {
-                Swal.fire('Límite alcanzado', 'Ya has generado el máximo de respaldos permitidos por hoy (4).', 'warning');
-                return;
-            }
-
-            let textoMensaje = tipo === 'local' 
-                ? 'El respaldo se guardará en el servidor y aparecerá en tu historial.'
-                : 'El respaldo se generará y se descargará automáticamente a tu equipo.';
-                
-            Swal.fire({
-                title: '¿Generar copia de seguridad?', text: textoMensaje, icon: 'info',
-                showCancelButton: true, confirmButtonColor: '#406ff3', cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, generar', cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if (tipo === 'local') {
-                        Swal.fire({
-                            title: 'Procesando...', text: 'Generando y guardando archivo SQL.',
-                            allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }
-                        });
-                        window.location.href = '../controladores/ControladorSeguridad.php?accion=generar&tipo=local';
-                    } else {
-                        Swal.fire({
-                            title: '¡Preparando Descarga!', text: 'El archivo SQL se descargará en breve.',
-                            icon: 'success', timer: 3000, showConfirmButton: false
-                        });
-                        setTimeout(() => { window.location.href = '../controladores/ControladorSeguridad.php?accion=generar&tipo=descargar'; }, 800);
-                    }
-                }
-            });
-        }
-
-        function pedirPasswordRestaurar(nombreArchivo, restantes) {
-            if (restantes <= 0) {
-                Swal.fire('Límite alcanzado', 'Ya has utilizado el máximo de 2 restauraciones permitidas por hoy.', 'warning');
-                return;
-            }
-
-            // ── PASO 1: advertencia crítica con doble confirmación ──
-            Swal.fire({
-                title: '⚠️ ADVERTENCIA CRÍTICA',
-                html: `<p style="margin:0 0 10px;">Esta operación <strong>reemplazará toda la base de datos</strong> con el respaldo seleccionado.</p>
-                       <p style="margin:0; color:#ef4444; font-size:0.9rem;">Esta acción <u>no se puede deshacer</u>. Asegúrate de que el archivo es correcto.</p>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Entiendo, continuar',
-                cancelButtonText: 'Cancelar'
-            }).then((paso1) => {
-                if (!paso1.isConfirmed) return;
-
-                // ── PASO 2: pedir contraseña con validaciones ──
-                Swal.fire({
-                    title: 'Confirma tu identidad',
-                    html: `<p style="margin:0 0 15px; font-size:0.9rem;">Ingresa tu contraseña de administrador para autorizar la restauración del archivo:<br>
-                           <code style="font-size:0.8rem; background:rgba(0,0,0,0.1); padding:3px 8px; border-radius:5px;">${nombreArchivo}</code></p>`,
-                    icon: 'warning',
-                    input: 'password',
-                    inputAttributes: {
-                        autocomplete: 'off',
-                        autocapitalize: 'off',
-                        autocorrect: 'off',
-                        spellcheck: 'false',
-                        'data-form-type': 'other',
-                        'data-lpignore': 'true',
-                        'data-1p-ignore': '',
-                        minlength: '6',
-                        placeholder: 'Introduce tu contraseña'
-                    },
-                    didOpen: () => {
-                        const inp = Swal.getInput();
-                        if (inp) {
-                            inp.setAttribute('autocomplete', 'off');
-                            inp.setAttribute('name', 'pwd_' + Math.random().toString(36).slice(2)); // nombre aleatorio evita que el navegador lo reconozca
-                            inp.setAttribute('readonly', 'true');
-                            // Quitar readonly tras un tick para que el usuario pueda escribir,
-                            // pero el navegador ya no pre-rellena porque el campo llegó como readonly
-                            setTimeout(() => inp.removeAttribute('readonly'), 100);
-                        }
-                    },
-                    showCancelButton: true,
-                    confirmButtonColor: '#ef4444',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'CONFIRMAR RESTAURACIÓN',
-                    cancelButtonText: 'Cancelar',
-                    preConfirm: (password) => {
-                        // Validaciones de frontend
-                        if (!password) {
-                            Swal.showValidationMessage('⛔ La contraseña es obligatoria.');
-                            return false;
-                        }
-                        if (password.length < 6) {
-                            Swal.showValidationMessage('⛔ La contraseña debe tener al menos 6 caracteres.');
-                            return false;
-                        }
-                        if (password.length > 128) {
-                            Swal.showValidationMessage('⛔ Contraseña demasiado larga.');
-                            return false;
-                        }
-                        // Sin caracteres de control
-                        if (/[\x00-\x1F\x7F]/.test(password)) {
-                            Swal.showValidationMessage('⛔ La contraseña contiene caracteres no válidos.');
-                            return false;
-                        }
-                        return password;
-                    }
-                }).then((paso2) => {
-                    if (!paso2.isConfirmed) return;
-
-                    // ── Envío seguro vía POST con token CSRF ──
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '../controladores/ControladorSeguridad.php';
-
-                    const campos = {
-                        accion: 'restaurar',
-                        archivo: nombreArchivo,
-                        password_admin: paso2.value,
-                        csrf_token: CSRF_TOKEN          // ← token CSRF incluido
-                    };
-
-                    Object.entries(campos).forEach(([name, value]) => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = name;
-                        input.value = value;
-                        form.appendChild(input);
-                    });
-
-                    document.body.appendChild(form);
-
-                    Swal.fire({
-                        title: 'Restaurando...',
-                        text: 'Verificando credenciales e importando base de datos.',
-                        allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
-                    });
-
-                    form.submit();
-                });
-            });
-        }
-
-        function eliminarRespaldo(nombreArchivo) {
-            Swal.fire({
-                title: '¿Eliminar respaldo?', text: "Ya no podrás utilizar este archivo para restaurar el sistema.", icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) { window.location.href = '../controladores/ControladorSeguridad.php?accion=eliminar&archivo=' + encodeURIComponent(nombreArchivo); }
-            });
-        }
-
-        // ==========================================
-        // FUNCIONES PARA EL MODAL DE BITÁCORA REDISEÑADO
-        // ==========================================
-        function abrirModalBitacora() {
-            const modal = document.getElementById('modalBitacora');
-            const contenedor = modal.querySelector('.modal-bitacora-contenedor');
-            modal.style.display = 'flex';
-            // Reiniciar animación de entrada
-            contenedor.style.animation = 'none';
-            contenedor.offsetHeight; // reflow
-            contenedor.style.animation = 'zoomIn 0.3s ease-out';
-            document.body.style.overflow = 'hidden';
-            // Inicializar contador al abrir
-            filtrarBitacora();
-        }
-
-        function cerrarModalBitacora() {
-            const modal = document.getElementById('modalBitacora');
-            const contenedor = modal.querySelector('.modal-bitacora-contenedor');
-            // Animar salida y luego ocultar
-            contenedor.style.animation = 'zoomOut 0.22s ease-in forwards';
-            setTimeout(() => {
-                modal.style.display = 'none';
-                contenedor.style.animation = '';
-                document.body.style.overflow = 'auto';
-            }, 210);
-        }
-        
-        // Función para filtrar dinámicamente por módulo en la barra lateral
-        function cambiarTabBitacora(btn, moduloFiltro) {
-            // Cambiar el diseño del botón presionado
-            document.querySelectorAll('.btn-tab-bitacora').forEach(b => b.classList.remove('activo'));
-            btn.classList.add('activo');
-            // Delega a filtrarBitacora para respetar texto y fecha activos
-            filtrarBitacora();
-        }
-
-        // ==========================================
-        // FILTRO COMBINADO: texto + fecha + módulo
-        // ==========================================
-        function filtrarBitacora() {
-            const textoBusqueda = (document.getElementById('busqueda-bitacora')?.value || '').toLowerCase().trim();
-            const dia  = document.getElementById('filtro-dia')?.value  || '';
-            const mes  = document.getElementById('filtro-mes')?.value  || '';
-            const anio = document.getElementById('filtro-anio')?.value || '';
-
-            // --- Validar si la fecha seleccionada es laborable y tiene registros ---
-            const mensajeVacio = document.getElementById('mensaje-sin-registros');
-            let fechaEsInvalida = false;
-            if (dia !== '' || mes !== '' || anio !== '') {
-                // Solo validar si tenemos los 3 campos para construir una fecha completa
-                if (dia !== '' && mes !== '' && anio !== '') {
-                    const fechaISO = `${anio}-${mes}-${dia}`;
-                    const objFecha = new Date(fechaISO + 'T00:00:00');
-                    const dow = objFecha.getDay(); // 0=dom, 6=sáb
-                    if (dow === 0 || dow === 6) {
-                        fechaEsInvalida = 'fin_de_semana';
-                    } else if (!FECHAS_VALIDAS.has(fechaISO)) {
-                        fechaEsInvalida = 'sin_registros';
-                    }
-                }
-            }
-
-            // Módulo activo (tab seleccionado en sidebar)
-            const btnActivo = document.querySelector('.btn-tab-bitacora.activo');
-            const labelActivo = btnActivo ? btnActivo.textContent.trim() : 'Todos los Registros';
-
-            const filas = document.querySelectorAll('.fila-bitacora');
-            let visibles = 0;
-            const total = filas.length;
-
-            filas.forEach(fila => {
-                // --- Filtro por módulo ---
-                const moduloFila = fila.getAttribute('data-modulo') || '';
-                const pasaModulo = labelActivo.includes('Todos') || moduloFila === labelActivo;
-
-                // --- Filtro por texto (busca en toda la fila) ---
-                const textoFila = fila.textContent.toLowerCase();
-                const pasaTexto = textoBusqueda === '' || textoFila.includes(textoBusqueda);
-
-                // --- Filtro por fecha (formato dd/mm/YYYY en primer td) ---
-                const celdaFecha = fila.querySelector('td:first-child');
-                const textoCelda = celdaFecha ? celdaFecha.textContent.trim() : '';
-                const matchFecha = textoCelda.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-                let pasaDia = true, pasaMes = true, pasaAnio = true;
-
-                if (matchFecha) {
-                    const [, diaFila, mesFila, anioFila] = matchFecha;
-                    if (dia  !== '') pasaDia  = diaFila  === dia;
-                    if (mes  !== '') pasaMes  = mesFila  === mes;
-                    if (anio !== '') pasaAnio = anioFila === anio;
-                } else if (dia !== '' || mes !== '' || anio !== '') {
-                    pasaDia = pasaMes = pasaAnio = false;
-                }
-
-                const mostrar = pasaModulo && pasaTexto && pasaDia && pasaMes && pasaAnio;
-                fila.style.display = mostrar ? 'table-row' : 'none';
-                if (mostrar) visibles++;
-            });
-
-            // --- Mostrar/ocultar mensaje de fecha inválida o sin registros ---
-            if (mensajeVacio) {
-                if (fechaEsInvalida === 'fin_de_semana') {
-                    mensajeVacio.style.display = 'flex';
-                    mensajeVacio.querySelector('.msg-texto').textContent = 'Los fines de semana no tienen registros de actividad.';
-                    mensajeVacio.querySelector('.msg-icono').textContent = '📅';
-                } else if (fechaEsInvalida === 'sin_registros') {
-                    mensajeVacio.style.display = 'flex';
-                    mensajeVacio.querySelector('.msg-texto').textContent = 'No hubo actividad registrada en esta fecha (puede ser feriado u otro motivo).';
-                    mensajeVacio.querySelector('.msg-icono').textContent = '🗓️';
-                } else if (visibles === 0 && (textoBusqueda !== '' || dia !== '' || mes !== '' || anio !== '')) {
-                    mensajeVacio.style.display = 'flex';
-                    mensajeVacio.querySelector('.msg-texto').textContent = 'No se encontraron registros con los filtros aplicados.';
-                    mensajeVacio.querySelector('.msg-icono').textContent = '🔍';
+        window.SeguridadConfig = {
+            idUsuario: "<?php echo $_SESSION['id_usuario']; ?>",
+            csrfToken: "<?php echo $_SESSION['csrf_token']; ?>",
+            fechasValidas: <?php echo $fechas_validas_json; ?>,
+            alerta: <?php
+                if(isset($_SESSION['alerta_principal'])) {
+                    echo json_encode([
+                        'mostrar' => true,
+                        'tipo'    => $_SESSION['alerta_principal']['tipo'] == 'success' ? 'success' : 'error',
+                        'titulo'  => $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : '¡Error!',
+                        'mensaje' => addslashes($_SESSION['alerta_principal']['mensaje'])
+                    ]);
+                    unset($_SESSION['alerta_principal']);
                 } else {
-                    mensajeVacio.style.display = 'none';
+                    echo json_encode(['mostrar' => false]);
                 }
-            }
-
-            // --- Actualizar contador ---
-            const contador = document.getElementById('contador-resultados');
-            if (contador) {
-                if (total === 0 || fechaEsInvalida) {
-                    contador.textContent = '';
-                } else if (visibles === total) {
-                    contador.textContent = `Mostrando ${total} registro${total !== 1 ? 's' : ''}`;
-                } else {
-                    contador.textContent = `Mostrando ${visibles} de ${total} registro${total !== 1 ? 's' : ''}`;
-                }
-            }
-        }
-
-        // ==========================================
-        // DROPDOWNS PERSONALIZADOS (cdd = custom dropdown)
-        // ==========================================
-        function toggleCdd(id) {
-            const wrap = document.getElementById(id);
-            const isOpen = wrap.classList.contains('cdd-open');
-            // Cerrar todos los abiertos
-            document.querySelectorAll('.cdd-wrap.cdd-open').forEach(w => {
-                w.classList.remove('cdd-open');
-            });
-            if (!isOpen) wrap.classList.add('cdd-open');
-        }
-
-        function seleccionarCdd(wrapId, value, label) {
-            const wrap = document.getElementById(wrapId);
-            // Actualizar input oculto
-            document.getElementById(
-                wrapId === 'cdd-dia'  ? 'filtro-dia'  :
-                wrapId === 'cdd-mes'  ? 'filtro-mes'  : 'filtro-anio'
-            ).value = value;
-            // Actualizar etiqueta del botón
-            wrap.querySelector('.cdd-label').textContent = label || (
-                wrapId === 'cdd-dia' ? 'Día' : wrapId === 'cdd-mes' ? 'Mes' : 'Año'
-            );
-            // Marcar ítem activo
-            wrap.querySelectorAll('.cdd-item').forEach(i => i.classList.remove('cdd-active'));
-            if (value !== '') {
-                // Buscar el item cuyo onclick contiene el value
-                wrap.querySelectorAll('.cdd-available').forEach(i => {
-                    if (i.getAttribute('onclick') && i.getAttribute('onclick').includes("'" + value + "'")) {
-                        i.classList.add('cdd-active');
-                    }
-                });
-            }
-            // Indicador rojo si el trigger queda en placeholder (valor vacío)
-            const trigger = wrap.querySelector('.cdd-trigger');
-            if (value === '') {
-                trigger.classList.remove('cdd-selected');
-            } else {
-                trigger.classList.add('cdd-selected');
-            }
-            wrap.classList.remove('cdd-open');
-            filtrarBitacora();
-        }
-
-        // Cerrar dropdowns al hacer click fuera
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.cdd-wrap')) {
-                document.querySelectorAll('.cdd-wrap.cdd-open').forEach(w => w.classList.remove('cdd-open'));
-            }
-        });
-
-        // ==========================================
-        // LIMPIAR TODOS LOS FILTROS
-        // ==========================================
-        function limpiarFiltrosBitacora() {
-            const input = document.getElementById('busqueda-bitacora');
-            if (input) input.value = '';
-            // Limpiar dropdowns personalizados
-            seleccionarCdd('cdd-dia',  '', 'Día');
-            seleccionarCdd('cdd-mes',  '', 'Mes');
-            seleccionarCdd('cdd-anio', '', 'Año');
-            filtrarBitacora();
-        }
-        
+            ?>
+        };
     </script>
 
-    <?php if(isset($_SESSION['alerta_principal'])): ?>
-        <script>
-            Swal.fire({
-                title: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '¡Éxito!' : '¡Error!'; ?>',
-                text: '<?php echo $_SESSION['alerta_principal']['mensaje']; ?>',
-                icon: '<?php echo $_SESSION['alerta_principal']['tipo']; ?>',
-                confirmButtonColor: '<?php echo $_SESSION['alerta_principal']['tipo'] == 'success' ? '#10b981' : '#ef4444'; ?>',
-                background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#fff',
-                color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#fff' : '#333'
-            });
-        </script>
-        <?php unset($_SESSION['alerta_principal']); ?>
-    <?php endif; ?>
+    <script src="../recursos/js/sweetalert2.all.min.js"></script>
+    <script src="../recursos/js/seguridad.js?v=<?php echo time(); ?>"></script>
 
 </body>
 </html>

@@ -13,6 +13,14 @@ $cantidad_notificaciones = count($notificaciones);
     <div class="acciones-superior">
         <div class="contenedor-iconos-top">
             
+            <?php if ($_SESSION['id_rol'] == 1): ?>
+            <a href="../recursos/documentos/Manual_de_Usuario.pdf" download="Manual_Usuario.pdf" class="btn-tema-top" aria-label="Descargar Manual de Usuario" title="Descargar Manual de Usuario">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32">
+                    <path d="M256 160c16-63.16 76.43-95.41 208-96a15.94 15.94 0 0116 16v288a16 16 0 01-16 16c-128 0-177.45 25.81-208 64-30.55-38.19-80-64-208-64-9.88 0-16-8.05-16-17.93V80a15.94 15.94 0 0116-16c131.57.59 192 32.84 208 96zM256 160v288"/>
+                </svg>
+            </a>
+            <?php endif; ?>
+
             <div class="contenedor-campana">
                 <button class="btn-tema-top" id="btnNotificaciones" aria-label="Notificaciones">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
