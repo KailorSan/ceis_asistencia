@@ -37,6 +37,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Perfil - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
+
     <style>
         /* Efecto hover para el ojito */
         .icono-alternar:hover { color: #0f172a !important; }
@@ -252,6 +254,7 @@ try {
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/perfil.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

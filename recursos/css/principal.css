@@ -639,6 +639,7 @@ input[type=number] {
     border-block-start: 5px solid var(--primary-color);
     max-inline-size: 800px;
     margin: 0 auto;
+    position: relative;
 }
 
 .grid-formulario {
@@ -2827,7 +2828,27 @@ input[type=number] {
     block-size: 18px;
     flex-shrink: 0;
     color: inherit;
-    /* ✅ FIX: hereda el color del botón padre */
+}
+
+/* =========================================
+   BOTÓN EXCLUSIVO: QUITAR HORARIO ESPECIAL
+   ========================================= */
+#modalHorario .btn-eliminar-usuario {
+    background-color: transparent !important;
+    color: #ef4444 !important;
+    border: 2px solid #ef4444 !important;
+    transition: all 0.2s ease !important;
+    padding: 12px !important;
+    font-size: 0.95rem !important;
+}
+
+#modalHorario .btn-eliminar-usuario:hover {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+#modalHorario .btn-eliminar-usuario svg {
+    color: currentColor; 
 }
 
 /* --- Módulo: Bandeja de Justificaciones --- */
@@ -5418,6 +5439,8 @@ input[type=number] {
    La regla original (de otros módulos) se mantiene intacta fuera de este contexto. */
 .tarjeta-formulario-config .btn-flotante-rango-modal {
     position: absolute;
+    inset-block-start: 25px; /* Distancia desde el techo de la tarjeta */
+    inset-inline-end: 25px;
     top: 20px;
     right: 20px;
     width: 48px;
@@ -5617,3 +5640,4 @@ html[data-theme='dark'] .perfil-col-campos .input-con-icono .icono-alternar:hove
 .perfil-col-campos .input-con-icono input.clave-visible {
     padding-inline-end: 45px !important; 
 }
+

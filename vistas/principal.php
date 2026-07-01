@@ -168,6 +168,7 @@ if (empty($_SESSION['csrf_token'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Principal - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
     
     <script>
         (function() {
@@ -411,8 +412,8 @@ if (empty($_SESSION['csrf_token'])) {
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/chart.min.js"></script>
     <script src="../recursos/librerias/gsap.min.js"></script>
-
     <script src="../recursos/js/principal.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

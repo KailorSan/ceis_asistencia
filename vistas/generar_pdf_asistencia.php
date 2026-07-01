@@ -95,7 +95,7 @@ $html = '
     <title>Reporte de Asistencia CEIS Julian Yánez</title>
     <style>
         * { font-family: "Helvetica", "Arial", sans-serif; }
-        body { font-size: 11px; color: #333; margin: 0; padding: 0; padding-bottom: 70px; }
+        body { font-size: 11px; color: #333; margin: 0; padding: 0; padding-bottom: 90px; }
         .encabezado { width: 100%; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
         .tabla-encabezado { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .col-logo-izq { width: 90px; text-align: left; vertical-align: middle; }
@@ -127,6 +127,8 @@ $html = '
         .firmas-footer { position: absolute; bottom: 5px; left: 0; right: 0; width: 100%; text-align: center; }
         .firmas { width: 100%; text-align: center; margin: 0; }
         .linea-firma { border-top: 1px solid #000; width: 220px; margin: 0 auto; padding-top: 5px; font-weight: bold;}
+        /* NUEVO: Estilo para la separación por cargos */
+        .encabezado-cargo { background-color: #475569; color: #ffffff; padding: 7px 10px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-top: 15px; border: 1px solid #475569; border-radius: 4px 4px 0 0; }
     </style>
 </head>
 <body>
@@ -150,6 +152,9 @@ $html = '
 </div>';
 
 if ($id_personal != 'todos') {
+    // ==========================================
+    // REPORTE INDIVIDUAL
+    // ==========================================
     $sql_emp = "SELECT p.nombres, p.apellidos, p.cedula, p.telefono, p.foto_perfil, p.fecha_ingreso, p.hora_entrada_personalizada, p.hora_salida_personalizada, c.nombre_cargo 
                 FROM personal p INNER JOIN cargos c ON p.id_cargo = c.id_cargo WHERE p.id_personal = ?";
     $stmt_emp = $conexion->prepare($sql_emp);
@@ -201,9 +206,6 @@ if ($id_personal != 'todos') {
         for ($d = 1; $d <= $dias_del_mes; $d++) {
             $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
             
-            // 🚀 FIX: Comentado para permitir en el PDF justificaciones a futuro
-            // if ($fecha_ciclo > $fecha_hoy) break;
-
             $dia_semana = date('N', strtotime($fecha_ciclo)); 
             if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
 
@@ -215,7 +217,6 @@ if ($id_personal != 'todos') {
                 $estado = $a['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $a['estado'];
                 $motivo = !empty($a['motivo_justificacion']) ? htmlspecialchars($a['motivo_justificacion']) : '-';
                 
-                // Si tiene marca de Feriado manual, lo saltamos del porcentaje
                 if (strpos($estado, 'Feriado') !== false) {
                     $tabla_html .= "<tr><td>{$fecha_format}</td><td style='color:#7e22ce; font-weight:bold;'>Feriado / Día Libre</td><td class='texto-izq'>Omitido del cálculo</td></tr>";
                     continue;
@@ -233,7 +234,6 @@ if ($id_personal != 'todos') {
                 $tabla_html .= "<tr><td>{$fecha_format}</td><td {$color}>{$estado}</td><td class='texto-izq'>{$motivo}</td></tr>";
             } else {
                 if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
-                    // Evitamos marcar falta si es un feriado general
                     if ($es_feriado) {
                         $tabla_html .= "<tr><td>{$fecha_format}</td><td style='color:#7e22ce; font-weight:bold;'>Día Libre</td><td class='texto-izq'>Feriado nacional / regional (Omitido)</td></tr>";
                     } else {
@@ -320,9 +320,6 @@ if ($id_personal != 'todos') {
             
             for ($d = 1; $d <= $dias_del_mes; $d++) {
                 $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
-                
-                // 🚀 FIX: Comentado para PDF anual
-                // if ($fecha_ciclo > $fecha_hoy) break;
 
                 $dia_semana = date('N', strtotime($fecha_ciclo)); 
                 if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
@@ -331,7 +328,7 @@ if ($id_personal != 'todos') {
 
                 if (isset($registros_reales[$fecha_ciclo])) {
                     $estado = $registros_reales[$fecha_ciclo]['estado_justificacion'] == 'Aprobada' ? 'Justificado' : $registros_reales[$fecha_ciclo]['estado'];
-                    if (strpos($estado, 'Feriado') !== false) continue; // Omitir
+                    if (strpos($estado, 'Feriado') !== false) continue;
 
                     if (strpos($estado, 'Puntual') !== false) $p++;
                     if (strpos($estado, 'Retraso') !== false) $r++;
@@ -341,7 +338,7 @@ if ($id_personal != 'todos') {
                     if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
                     if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_emp) {
-                        if (!$es_feriado) { // Solo falta si NO es feriado
+                        if (!$es_feriado) { 
                             $f++;
                         }
                     }
@@ -353,6 +350,9 @@ if ($id_personal != 'todos') {
     }
 
 } else {
+    // ==========================================
+    // REPORTE GENERAL
+    // ==========================================
     $nombre_cargo_filtro = "";
     $sql_personal = "SELECT p.id_personal, p.nombres, p.apellidos, p.fecha_ingreso, c.nombre_cargo 
                      FROM personal p 
@@ -366,21 +366,37 @@ if ($id_personal != 'todos') {
         $stmt_nom_cargo->execute([$filtro_cargo]);
         $nombre_cargo_filtro = " - " . mb_strtoupper($stmt_nom_cargo->fetchColumn());
     }
-    $sql_personal .= " ORDER BY p.nombres ASC";
+    
+    $sql_personal .= " ORDER BY c.id_cargo ASC, p.nombres ASC";
     
     $stmt_personal = $conexion->query($sql_personal);
     $personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
 
     $html .= '<div class="titulo-reporte">REPORTE GENERAL' . $nombre_cargo_filtro . ' - ' . $nombre_mes . ' ' . $anio . '</div>';
     $html .= '<div style="margin-bottom: 15px; font-size: 12px; text-align: left;"><strong>Día de Emisión:</strong> ' . date('d/m/Y') . ' | <strong>Empleados Evaluados:</strong> ' . count($personal) . '</div>';
-    
-    $html .= '<table class="tabla-datos"><thead><tr><th class="texto-izq">Empleado</th><th>Puntual</th><th>Retraso</th><th>S.Temp</th><th>S.Irreg</th><th>Falta</th><th>Justif.</th></tr></thead><tbody>';
 
     $total_p_gen = 0; $total_r_gen = 0; $total_f_gen = 0; $total_st_gen = 0; $total_si_gen = 0; $total_j_gen = 0;
     $dias_del_mes = ($mes === 'todos') ? 0 : cal_days_in_month(CAL_GREGORIAN, $mes, $anio);
     $fecha_hoy = date('Y-m-d'); 
+    
+    // Variable para rastrear el cambio de cargo en el bucle
+    $cargo_actual = null;
 
     foreach ($personal as $per) {
+        if ($cargo_actual !== $per['nombre_cargo']) {
+            if ($cargo_actual !== null) {
+                $html .= '</tbody></table>';
+            }
+            $cargo_actual = $per['nombre_cargo'];
+            
+            $html .= '<div class="encabezado-cargo">GRUPO: ' . htmlspecialchars($cargo_actual) . '</div>';
+            $html .= '<table class="tabla-datos" style="margin-top: 0; border-top: none; border-radius: 0 0 4px 4px;">
+                        <thead>
+                            <tr><th class="texto-izq" style="width: 35%;">Empleado</th><th>Puntual</th><th>Retraso</th><th>S.Temp</th><th>S.Irreg</th><th>Falta</th><th>Justif.</th></tr>
+                        </thead>
+                        <tbody>';
+        }
+
         $id_p = $per['id_personal'];
         $fecha_ing_per = $per['fecha_ingreso'] ?: '2000-01-01'; 
         
@@ -399,9 +415,6 @@ if ($id_personal != 'todos') {
                 for ($d = 1; $d <= $dias_del_mes_ciclo; $d++) {
                     $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $m, $d);
                     
-                    // 🚀 FIX: Comentado para PDF general anual
-                    // if ($fecha_ciclo > $fecha_hoy) break;
-
                     $dia_semana = date('N', strtotime($fecha_ciclo)); 
                     if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
                     $es_feriado = in_array($fecha_ciclo, $feriados_array);
@@ -418,7 +431,7 @@ if ($id_personal != 'todos') {
                         if (strpos($estado, 'Salida Irregular') !== false) $si++;
                     } else {
                         if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
-                            if (!$es_feriado) { // Solo sumar falta si no es feriado
+                            if (!$es_feriado) { 
                                 $f++;
                             }
                         }
@@ -436,9 +449,6 @@ if ($id_personal != 'todos') {
 
             for ($d = 1; $d <= $dias_del_mes; $d++) {
                 $fecha_ciclo = sprintf("%04d-%02d-%02d", $anio, $mes, $d);
-                
-                // 🚀 FIX: Comentado para PDF general mensual
-                // if ($fecha_ciclo > $fecha_hoy) break;
 
                 $dia_semana = date('N', strtotime($fecha_ciclo)); 
                 if ($dia_semana > 5 && !isset($registros_reales[$fecha_ciclo])) continue;
@@ -456,7 +466,7 @@ if ($id_personal != 'todos') {
                     if (strpos($estado, 'Salida Irregular') !== false) $si++;
                 } else {
                     if ($fecha_ciclo < $fecha_hoy && $fecha_ciclo >= $fecha_ing_per) {
-                        if (!$es_feriado) { // Solo sumar falta si no es feriado
+                        if (!$es_feriado) { 
                             $f++; 
                         }
                     }
@@ -468,7 +478,13 @@ if ($id_personal != 'todos') {
 
         $html .= "<tr><td class='texto-izq'>{$per['nombres']} {$per['apellidos']}</td><td>{$p}</td><td>{$r}</td><td style='color:#3b82f6;font-weight:bold;'>{$st}</td><td style='color:#991b1b;font-weight:bold;'>{$si}</td><td class='alerta-roja'>{$f}</td><td>{$j}</td></tr>";
     }
-    $html .= '</tbody></table>';
+    
+    if ($cargo_actual !== null) {
+        $html .= '</tbody></table>';
+    } else {
+        // En caso excepcional de que no hayan empleados
+        $html .= '<table class="tabla-datos"><tbody><tr><td colspan="7">No se encontraron empleados registrados.</td></tr></tbody></table>';
+    }
 
     if ($mes !== 'todos' && count($personal) > 0) {
         $total_eventos = $total_p_gen + $total_r_gen + $total_f_gen + $total_j_gen; 
@@ -519,6 +535,9 @@ $html .= '
             </td>
         </tr>
     </table>
+    <div style="margin-top: 15px; font-size: 9px; color: #475569; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 6px; letter-spacing: 0.2px;">
+        <strong>Dirección:</strong> Parroquia Vista Hermosa Urbanización Santa Fe Carrera 7, Municipio Angostura del Orinoco, Ciudad Bolívar - Estado Bolívar.
+    </div>
 </div>
 </body>
 </html>';
@@ -530,7 +549,6 @@ $dompdf->render();
 $identificador = ($id_personal == 'todos') ? ($filtro_cargo == 'todos' ? "General" : "Filtrado") : $emp['cedula'];
 
 ob_end_clean(); 
-// Al poner true, forzamos la descarga directa con el nombre correcto y extensión .pdf
 $dompdf->stream("Reporte_{$identificador}_{$nombre_mes}_{$anio}.pdf", array("Attachment" => true));
 exit; 
 ?>

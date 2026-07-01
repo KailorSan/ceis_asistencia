@@ -296,4 +296,60 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cerrarResumen = cerrarResumen;
     window.toggleTarjetaFeriados = toggleTarjetaFeriados;
     window.descargarPDF = descargarPDF;
+
+    // =======================================================
+    // 9. INICIALIZACIÓN DE LA GUÍA DINÁMICA (REPORTES)
+    // =======================================================
+    let diccionarioReportes = [];
+
+    // 1. Filtros de Periodo (Mes/Año)
+    if (document.querySelector('.contenedor-filtros-globales')) {
+        diccionarioReportes.push({ 
+            selector: '.contenedor-filtros-globales', 
+            titulo: 'Filtros de Período', 
+            texto: 'Selecciona el mes y año específico para generar reportes históricos. Los datos se actualizarán automáticamente al cambiar la fecha.' 
+        });
+    }
+
+    // 2. Buscador de Personal
+    if (document.querySelector('.contenedor-busqueda-elegante')) {
+        diccionarioReportes.push({ 
+            selector: '.contenedor-busqueda-elegante', 
+            titulo: 'Buscador de Personal', 
+            texto: 'Escribe el nombre de un empleado para filtrar sus reportes individuales entre toda la lista.' 
+        });
+    }
+
+    // 3. Botón de Descarga General (PDF)
+    if (document.querySelector('.btn-descarga-general')) {
+        diccionarioReportes.push({ 
+            selector: '.btn-descarga-general', 
+            titulo: 'Descargar Reporte General', 
+            texto: 'Genera un archivo PDF con el resumen completo de asistencias de todo el personal para el período seleccionado.' 
+        });
+    }
+
+    // 4. Botón de Descarga Individual (PDF)
+    if (document.querySelectorAll('.btn-descargar-pdf-tarjeta').length > 0) {
+        diccionarioReportes.push({ 
+            selector: '.btn-descargar-pdf-tarjeta', 
+            titulo: 'Reporte Individual', 
+            texto: 'Descarga un informe detallado exclusivo de este empleado, incluyendo cada día laborado y sus incidencias.' 
+        });
+    }
+
+    // 5. Botón Ver Resumen Web
+    if (document.querySelectorAll('.btn-ver-resumen').length > 0) {
+        diccionarioReportes.push({ 
+            selector: '.btn-ver-resumen', 
+            titulo: 'Resumen Web', 
+            texto: 'Abre una ventana rápida con gráficas de rendimiento del empleado sin necesidad de descargar el PDF.' 
+        });
+    }
+
+    // Instanciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppReportes = new window.GuiaDinamica(diccionarioReportes);
+    }
+    
 });

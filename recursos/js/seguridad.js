@@ -442,4 +442,95 @@ document.addEventListener('DOMContentLoaded', () => {
     window.seleccionarCdd = seleccionarCdd;
     window.filtrarBitacora = filtrarBitacora;
     window.limpiarFiltrosBitacora = limpiarFiltrosBitacora;
+
+    // =======================================================
+    // 6. INICIALIZACIÓN DE LA GUÍA DINÁMICA (SEGURIDAD)
+    // =======================================================
+    let diccionarioSeguridad = [];
+
+    // 1. Botón de Bitácora / Auditoría
+    if (document.querySelector('.btn-bitacora-seg')) {
+        diccionarioSeguridad.push({
+            selector: '.btn-bitacora-seg',
+            titulo: 'Registro de Auditoría',
+            texto: 'Abre la bitácora interactiva del sistema. Te permite rastrear, filtrar y auditar todos los movimientos críticos realizados por los usuarios.'
+        });
+    }
+
+    // 2. Descarga del Manual Técnico (Exclusivo de Admin)
+    if (document.querySelector('a[download="Manual_Tecnico_CEIS.pdf"]')) {
+        diccionarioSeguridad.push({
+            selector: 'a[download="Manual_Tecnico_CEIS.pdf"]',
+            titulo: 'Manual de Arquitectura',
+            texto: 'Descarga el documento de diseño y funcionamiento interno del sistema. Fundamental para futuros desarrolladores o mantenimientos.'
+        });
+    }
+
+    // 3. Tarjetas de Límites Diarios
+    if (document.querySelectorAll('.card-contador').length > 0) {
+        diccionarioSeguridad.push({
+            selector: '.card-contador',
+            titulo: 'Límites del Servidor',
+            texto: 'Para prevenir sobrecargas y ataques, el sistema limita estrictamente cuántas veces puedes crear, subir o restaurar la base de datos por día.'
+        });
+    }
+
+    // 4. Botón Generar (Local)
+    if (document.querySelector('.botones-generar .btn-guardar')) {
+        diccionarioSeguridad.push({
+            selector: '.botones-generar .btn-guardar',
+            titulo: 'Respaldo de Servidor',
+            texto: 'Crea una copia de la base de datos y la asegura en la carpeta del historial. El sistema guarda un máximo de 10 archivos rotativos.'
+        });
+    }
+
+    // 5. Botón Generar (Descarga)
+    if (document.querySelector('.botones-generar .btn-cancelar')) {
+        diccionarioSeguridad.push({
+            selector: '.botones-generar .btn-cancelar',
+            titulo: 'Descarga Instantánea',
+            texto: 'Genera el archivo .SQL y lo descarga directamente a tu computadora o USB, sin ocupar un espacio de almacenamiento en el servidor.'
+        });
+    }
+
+    // 6. Botón Subir Archivo
+    if (document.querySelector('label[for="archivo_sql"]')) {
+        diccionarioSeguridad.push({
+            selector: 'label[for="archivo_sql"]',
+            titulo: 'Importar Respaldo',
+            texto: '¿Tienes un respaldo viejo en tu dispositivo? Súbelo aquí para que ingrese al historial y el sistema te permita restaurarlo.'
+        });
+    }
+
+    // 7. Botón Restaurar (El más peligroso)
+    if (document.querySelectorAll('.btn-restaurar').length > 0) {
+        diccionarioSeguridad.push({
+            selector: '.btn-restaurar',
+            titulo: 'Restaurar Sistema',
+            texto: '⚠️ ¡PELIGRO! Reemplaza toda la base de datos actual con la información de este archivo. Por seguridad, te exigirá tu contraseña.'
+        });
+    }
+
+    // 8. Botón Descargar del Historial (El que faltaba)
+    if (document.querySelectorAll('.btn-descargar').length > 0) {
+        diccionarioSeguridad.push({
+            selector: '.btn-descargar',
+            titulo: 'Descargar Archivo',
+            texto: 'Baja esta versión específica de la base de datos a tu computadora. Ideal para guardar copias en memorias USB externas.'
+        });
+    }
+
+    // 9. Botón Eliminar
+    if (document.querySelectorAll('.btn-eliminar').length > 0) {
+        diccionarioSeguridad.push({
+            selector: '.btn-eliminar',
+            titulo: 'Borrar Respaldo',
+            texto: 'Elimina este archivo .SQL del servidor para limpiar tu historial.'
+        });
+    }
+
+    // Instanciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppSeguridad = new window.GuiaDinamica(diccionarioSeguridad);
+    }
 });

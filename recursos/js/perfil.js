@@ -342,4 +342,85 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. EXPORTACIÓN AL SCOPE GLOBAL
     // =======================================================
     window.alternarVisibilidad = alternarVisibilidad;
+
+    // =======================================================
+    // 5. INICIALIZACIÓN DE LA GUÍA DINÁMICA (MI PERFIL)
+    // =======================================================
+
+    let diccionarioPerfil = [
+        
+        { selector: '.perfil-avatar', titulo: 'Fotografía Actual', texto: 'Este es tu avatar del sistema. Se recomiendan imágenes cuadradas para mantener una estética uniforme.' },
+        { selector: '.perfil-btn-foto', titulo: 'Cambiar Fotografía', texto: 'Haz clic aquí para seleccionar y subir una nueva imagen desde tu dispositivo (JPG, PNG o WEBP).' },
+        { selector: '#nombres', titulo: 'Nombres', texto: 'Tus nombres de pila. Solo se permiten letras y espacios para mantener la integridad de los reportes.' },
+        { selector: '#apellidos', titulo: 'Apellidos', texto: 'Tus apellidos. Forman parte de tu identificación legal dentro de la plataforma.' },
+        { selector: '#cedula', titulo: 'Cédula de Identidad', texto: 'Tu documento de identidad. Es estrictamente numérico y debe tener un mínimo de 6 dígitos.' },
+        { selector: '#telefono', titulo: 'Número Telefónico', texto: 'Información de contacto actualizada. Debe tener 11 dígitos sin guiones ni caracteres especiales.' },
+        { selector: '#input_nombre_usuario', titulo: 'Usuario de Acceso', texto: 'El alias que usas para iniciar sesión. El sistema comprobará en tiempo real si el nuevo nombre está disponible.' },
+        { selector: '#nueva_password', titulo: 'Nueva Contraseña', texto: 'Si deseas cambiar tu clave, escríbela aquí. Observa la barra de colores inferior para asegurar un nivel "Excelente".' },
+        { selector: '#confirmar_password', titulo: 'Confirmar Contraseña', texto: 'Vuelve a escribir la nueva contraseña. El sistema verificará que ambas coincidan exactamente antes de guardarla.' },
+        { selector: '#perfil_pregunta_1', titulo: 'Pregunta de Seguridad 1', texto: 'Elige una pregunta y establece su respuesta. Es fundamental por si algún día necesitas recuperar tu cuenta.' },
+        { selector: '#perfil_pregunta_2', titulo: 'Pregunta de Seguridad 2', texto: 'Segunda validación de seguridad. Usa respuestas que sean fáciles de recordar para ti pero difíciles de adivinar para otros.' },
+        { selector: '#perfil_pregunta_3', titulo: 'Pregunta de Seguridad 3', texto: 'Última pregunta de recuperación. Si las dejas en blanco, el sistema conservará las que ya tenías.' },
+        { selector: '.perfil-bloque-confirmar', titulo: 'Validación Obligatoria', texto: '⚠️ ¡IMPORTANTE! Para procesar cualquier cambio que hayas hecho arriba, DEBES ingresar tu contraseña actual aquí.' },
+        { selector: '.btn-guardar', titulo: 'Guardar Cambios', texto: 'Al hacer clic, el sistema revisará todos los campos. Si todo está en orden y tu clave actual es correcta, tu perfil se actualizará.' }
+    ];
+
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppPerfil = new window.GuiaDinamica(diccionarioPerfil);
+    }
+
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppPerfil = new window.GuiaDinamica(diccionarioPerfil);
+    }
+
+    // 1. Sección de foto de perfil
+    if (document.querySelector('.perfil-col-foto')) {
+        diccionarioPerfil.push({ 
+            selector: '.perfil-col-foto', 
+            titulo: 'Avatar del Sistema', 
+            texto: 'Haz clic en "Cambiar foto..." para subir una nueva imagen. El sistema acepta formatos JPG, PNG y WEBP.' 
+        });
+    }
+
+    // 2. Nombre de Usuario
+    if (document.querySelector('#input_nombre_usuario')) {
+        diccionarioPerfil.push({ 
+            selector: '#input_nombre_usuario', 
+            titulo: 'Nombre de Usuario', 
+            texto: 'Es tu identificador para iniciar sesión. Si decides cambiarlo, el sistema verificará en tiempo real si el nuevo nombre está disponible.' 
+        });
+    }
+
+    // 3. Nueva Contraseña
+    if (document.querySelector('#nueva_password')) {
+        diccionarioPerfil.push({ 
+            selector: '#nueva_password', 
+            titulo: 'Cambio de Contraseña', 
+            texto: 'Déjalo en blanco si no quieres cambiar tu clave. Si escribes una nueva, el medidor inferior te indicará su nivel de seguridad.' 
+        });
+    }
+
+    // 4. Preguntas de Seguridad
+    if (document.querySelector('#perfil_pregunta_1')) {
+        diccionarioPerfil.push({ 
+            selector: '#perfil_pregunta_1', 
+            titulo: 'Preguntas de Respaldo', 
+            texto: 'Vitales para recuperar tu cuenta si olvidas tu contraseña. Puedes dejarlas en blanco para conservar las que ya tenías guardadas.' 
+        });
+    }
+
+    // 5. Bloque de Confirmación (El más importante)
+    if (document.querySelector('.perfil-bloque-confirmar')) {
+        diccionarioPerfil.push({ 
+            selector: '.perfil-bloque-confirmar', 
+            titulo: 'Validación de Identidad', 
+            texto: 'Como medida de máxima seguridad, el sistema NO aplicará ningún cambio en tu perfil a menos que ingreses tu contraseña actual aquí.' 
+        });
+    }
+
+    // Instanciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppPerfil = new window.GuiaDinamica(diccionarioPerfil);
+    }
+    
 });

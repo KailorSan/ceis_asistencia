@@ -69,6 +69,8 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
     <title>Reportes - CEIS Julian Yánez</title>
     <link rel="icon" href="../recursos/img/logo_ceis_transparente.png" type="image/png">
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
+
     <script>
         (function() {
             const idUsr = "<?php echo $_SESSION['id_usuario']; ?>";
@@ -321,6 +323,7 @@ $lista_personal = $stmt_personal->fetchAll(PDO::FETCH_ASSOC);
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/chart.min.js"></script>
     <script src="../recursos/js/reportes.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

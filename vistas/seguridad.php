@@ -68,8 +68,8 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguridad y Respaldos - CEIS Julian Yánez</title>
-    
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
     
     <script>
         (function() {
@@ -510,6 +510,7 @@ $fechas_validas_json = json_encode(array_keys($fechas_validas));
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/seguridad.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

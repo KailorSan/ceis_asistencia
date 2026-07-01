@@ -250,7 +250,104 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error(e);
     }
 
-    // 7. Cronjob Virtual Silencioso
+    // ==========================================
+    // 7. INICIALIZACIÓN DE LA GUÍA DINÁMICA
+    // ==========================================
+    let diccionarioPrincipal = [];
+    const rolUsuarioGuia = window.PrincipalConfig.idRol; // 1 y 2 = Admin/Directivo, 3 = Personal Común
+
+    // --- EVALUAR BOTÓN DE ENTRADA ---
+    const btnEntrada = document.querySelector('.btn-marcar-entrada');
+    if (btnEntrada) {
+        let textoBtn = btnEntrada.textContent.trim();
+        let titulo = 'Registrar Entrada';
+        let texto = 'Registra tu hora de llegada en el sistema. Asegúrate de hacerlo dentro de tu tolerancia para evitar retrasos.';
+        
+        if (textoBtn.includes('Justificar Llegada Tardía')) {
+            titulo = 'Retraso Detectado';
+            texto = 'Has excedido tu tolerancia de llegada. Debes enviar una justificación a Dirección antes de poder registrar tu entrada.';
+        } else if (textoBtn.includes('(Retraso)')) {
+            titulo = 'Entrada con Retraso';
+            texto = 'Tu justificación por llegada tardía ya fue enviada. Haz clic aquí para registrar físicamente tu entrada en el sistema.';
+        }
+        
+        diccionarioPrincipal.push({ selector: '.btn-marcar-entrada', titulo: titulo, texto: texto });
+    }
+
+    // --- EVALUAR BOTÓN DE SALIDA ---
+    const btnSalida = document.querySelector('.btn-marcar-salida');
+    if (btnSalida) {
+        let textoBtn = btnSalida.textContent.trim();
+        let titulo = 'Registrar Salida';
+        let texto = 'Al finalizar tu jornada, haz clic aquí para marcar tu salida y completar tu asistencia diaria.';
+        
+        if (btnSalida.hasAttribute('disabled')) {
+            titulo = 'Aún no es hora de salida';
+            texto = 'Este botón está bloqueado. Se habilitará automáticamente cuando se cumpla tu horario de salida reglamentario.';
+        } else if (textoBtn.includes('Salida Temprana')) {
+            titulo = 'Salida Anticipada';
+            texto = 'Como tu permiso fue procesado, ya puedes registrar tu salida antes de la hora estipulada.';
+        }
+        
+        diccionarioPrincipal.push({ selector: '.btn-marcar-salida', titulo: titulo, texto: texto });
+    }
+
+    // --- BOTÓN JUSTIFICACIÓN GENERAL ---
+    const btnJustificacion = document.querySelector('.btn-justificacion');
+    if (btnJustificacion) {
+        diccionarioPrincipal.push({ 
+            selector: '.btn-justificacion', 
+            titulo: 'Crear Justificación', 
+            texto: '¿Tuviste un inconveniente? Usa este botón para reportar inasistencias o gestionar permisos, adjuntando una evidencia.' 
+        });
+    }
+
+    // --- TARJETAS INFORMATIVAS (DINÁMICAS POR ROL) ---
+    const tarjetas = document.querySelectorAll('.tarjeta');
+    if (tarjetas.length > 0) {
+        if (rolUsuarioGuia == 1 || rolUsuarioGuia == 2) {
+            // Textos para Directivos
+            diccionarioPrincipal.push({ 
+                selector: '.tarjeta', 
+                titulo: 'Métricas Generales', 
+                texto: 'Estas tarjetas te muestran un resumen rápido del estado de la asistencia de todo el personal en el día actual.' 
+            });
+        } else {
+            // Textos para el Usuario Común (Personal)
+            diccionarioPrincipal.push({ 
+                selector: '.tarjeta', 
+                titulo: 'Mi Balance Mensual', 
+                texto: 'Estas tarjetas reflejan tu récord personal del mes en curso: días asistidos, faltas justificadas y retrasos acumulados.' 
+            });
+        }
+    }
+
+    // --- GRÁFICOS (DINÁMICOS POR ROL) ---
+    const graficos = document.querySelectorAll('.tarjeta-grafico');
+    if (graficos.length > 0) {
+        if (rolUsuarioGuia == 1 || rolUsuarioGuia == 2) {
+            // Textos para Directivos
+            diccionarioPrincipal.push({ 
+                selector: '.tarjeta-grafico', 
+                titulo: 'Análisis Visual Diario', 
+                texto: 'Representación gráfica de la puntualidad, asistencias y justificaciones pendientes del día a nivel institucional.' 
+            });
+        } else {
+            // Textos para el Usuario Común (Personal)
+            diccionarioPrincipal.push({ 
+                selector: '.tarjeta-grafico', 
+                titulo: 'Mi Rendimiento Mensual', 
+                texto: 'Estas gráficas evalúan visualmente tu puntualidad y comparan tus días asistidos contra tus faltas en el mes actual.' 
+            });
+        }
+    }
+
+    // Iniciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaApp = new window.GuiaDinamica(diccionarioPrincipal);
+    }
+
+    // 8. Cronjob Virtual Silencioso
     fetch('../controladores/ControladorCronjob.php')
         .then(response => response.json())
         .then(data => {
@@ -261,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch(error => console.error('[Cronjob] Error en mantenimiento:', error));
 });
 
-// 8. Funciones Globales para el Modal
+// 9. Funciones Globales para el Modal
 // Al estar en un archivo externo, para que el HTML reconozca onclick="abrirModalJustificacion()"
 // necesitamos engancharlas al objeto window globalmente.
 window.abrirModalJustificacion = function(tipo = '') {

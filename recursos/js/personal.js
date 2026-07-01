@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     // 1. CONFIGURACIÓN Y VARIABLES DE ESTADO
     // =======================================================
-    const config = window.PersonalConfig; // Variables inyectadas desde PHP
+    const config = window.PersonalConfig; 
     const html = document.documentElement;
 
     const inputBuscadorUniv = document.getElementById('buscador-universal');
@@ -24,10 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. MANEJO DE TEMAS (DARK/LIGHT) Y ALERTAS GLOBALES
     // =======================================================
     
-    /**
-     * Retorna los colores de fondo y texto actuales según el tema
-     * para aplicarlos dinámicamente a las alertas de SweetAlert2.
-     */
     function parametrosTema() {
         const esDark = html.getAttribute('data-theme') === 'dark';
         return {
@@ -36,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Listener para el botón de cambiar tema
     const btnCambiarTema = document.getElementById('btnCambiarTema');
     if (btnCambiarTema) {
         btnCambiarTema.addEventListener('click', function(e) {
@@ -47,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mostrar alertas enviadas desde PHP al cargar la página
     if (config.alerta && config.alerta.mostrar) {
         Swal.fire({
             title: config.alerta.titulo,
@@ -62,10 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. FUNCIONES PRINCIPALES DE INTERFAZ (UI)
     // =======================================================
 
-    /**
-     * Filtra las tarjetas de personal por cargo y texto de búsqueda.
-     * Maneja también la paginación visual ("Ver más").
-     */
     function aplicarFiltroUniversal(idCargo = null, botonSeleccionado = null, reiniciarPaginacion = true) {
         if (reiniciarPaginacion) limiteActual = ITEMS_POR_CARGA;
         
@@ -105,9 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnVerMas) btnVerMas.style.display = coincidentes > limiteActual ? 'block' : 'none';
     }
 
-    /**
-     * Abre el modal para editar el horario personalizado del empleado.
-     */
     function abrirModalHorario(btn) {
         document.getElementById('modal_h_id_personal').value = btn.dataset.id;
         document.getElementById('modal_h_nombre').textContent = "Horario: " + btn.dataset.nombre.split(' ')[0];
@@ -117,10 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalHorario').classList.add('activo');
     }
 
-    /**
-     * Abre el modal de edición de datos personales y usuario.
-     * Bloquea ciertos campos si el administrador se está editando a sí mismo.
-     */
     function abrirModalEditar(btn) {
         const esElMismo = (btn.dataset.idusuario == config.idUsuario);
 
@@ -135,20 +118,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal_e_estado').value      = btn.dataset.estado;
         document.getElementById('modal_e_rol').value         = btn.dataset.rol;
 
-        // Cargar datos ocultos para validaciones de backend
         document.getElementById('modal_e_estado_hidden').value = btn.dataset.estado;
         document.getElementById('modal_e_rol_hidden').value    = btn.dataset.rol;
 
         document.getElementById('modal_e_nombre').textContent = "Editar: " + btn.dataset.nombres.split(' ')[0];
         document.getElementById('modalEditar').setAttribute('data-nombre-eliminar', btn.dataset.nombres + ' ' + btn.dataset.apellidos);
         
-        // Reset de archivo fotográfico
         document.getElementById('modal_e_foto').value = '';
         document.getElementById('texto-archivo-editar').textContent = 'Seleccionar nueva imagen...';
 
         limpiarValidaciones();
 
-        // Elementos de protección anti-suicidio (no editarse permisos a sí mismo)
         const selectEstado = document.getElementById('modal_e_estado');
         const selectRol    = document.getElementById('modal_e_rol');
         const avisoEstado  = document.getElementById('aviso-estado-bloqueado');
@@ -181,9 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalEditar').classList.add('activo');
     }
 
-    /**
-     * Cierra cualquier modal abierto con una suave animación.
-     */
     function cerrarModales() {
         const modalActivo = document.querySelector('.modal-contenido.activo');
         const modalOverlay = document.getElementById('modalOverlay');
@@ -200,7 +177,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 220);
     }
 
-// =======================================================
+    /**
+     * Elimina el horario especial del usuario vaciando los inputs
+     */
+    function eliminarHorarioEspecial() {
+        const nombre = document.getElementById('modal_h_nombre').textContent.replace('Horario: ', '');
+        
+        Swal.fire({
+            title: `¿Quitar horario especial?`,
+            html: `<b>${nombre}</b> volverá a regirse por el <b>horario general</b> de la institución.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Sí, quitar horario',
+            cancelButtonText: 'Cancelar',
+            ...parametrosTema()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('modal_h_entrada').value = '';
+                document.getElementById('modal_h_salida').value = '';
+                
+                Swal.fire({
+                    title: 'Procesando...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); },
+                    ...parametrosTema()
+                });
+                
+                document.querySelector('#modalHorario form').submit();
+            }
+        });
+    }
+
+    // =======================================================
     // 4. LÓGICA DE SEGURIDAD: ELIMINACIÓN DE USUARIO
     // =======================================================
     function confirmarEliminacion() {
@@ -263,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('id', idUsr);
                 formData.append('password', password);
 
-                // El fetch ocurre MIENTRAS la ventanita sigue abierta
                 return fetch('../controladores/ControladorEliminarPersonal.php', {
                     method: 'POST',
                     body: formData
@@ -274,10 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .then(data => {
                     if (!data.success) {
-                        // Si falla, mostramos el error dentro de la misma ventana
                         Swal.showValidationMessage(data.msg);
                     }
-                    return data; // Pasamos la data al .then externo
+                    return data;
                 })
                 .catch(error => {
                     Swal.showValidationMessage('Fallo de red o comunicación con el servidor.');
@@ -291,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ...parametrosTema()
         }).then((result) => {
             if (result.isConfirmed && result.value.success) {
-                // Solo si tuvo éxito cerramos la ventana anterior y mostramos la de victoria
                 Swal.fire({
                     title: 'Eliminado',
                     text: result.value.msg,
@@ -302,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     location.reload(); 
                 });
             } else if (result.isDismissed) {
-                // Si le dio a Cancelar, le devolvemos sus modales
                 modalOverlay.classList.remove('cerrando');
                 modalEditar.classList.remove('cerrando');
                 modalOverlay.classList.add('activo');
@@ -311,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Ojo: Solo toggleamos la clase .oculto, sin tocar el style.display
     window.alternarClaveSwal = function(spanElement) {
         const input = document.getElementById('swal-input-password');
         const iconVer = spanElement.querySelector('.icono-ver');
@@ -329,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =======================================================
-    // 5. VALIDACIONES DE FORMULARIO (EDICIÓN)
+    // 5. VALIDACIONES DE FORMULARIO (EDICIÓN Y HORARIOS)
     // =======================================================
 
     function setError(inputId, errorId, mostrar) {
@@ -376,22 +381,77 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!input.files[0]) return true;
 
         const tiposPermitidos = ['image/jpeg','image/png','image/webp','image/gif'];
-        const tamanoMax = 2 * 1024 * 1024; // 2MB máximo recomendado para frontend
+        const tamanoMax = 2 * 1024 * 1024;
         const archivo = input.files[0];
         const invalido = !tiposPermitidos.includes(archivo.type) || archivo.size > tamanoMax;
         return setError('modal_e_foto', 'err-foto', invalido);
+    }
+
+    const formHorario = document.querySelector('#modalHorario form');
+
+    if (formHorario) {
+        formHorario.addEventListener('submit', function (e) {
+            const inputEntrada = document.getElementById('modal_h_entrada');
+            const inputSalida  = document.getElementById('modal_h_salida');
+
+            if (inputEntrada && inputSalida && inputEntrada.value && inputSalida.value) {
+                
+                function horaAMinutos(hora) {
+                    const [h, m] = hora.split(':').map(Number);
+                    return (h * 60) + m;
+                }
+
+                const minEntrada = horaAMinutos(inputEntrada.value);
+                const minSalida  = horaAMinutos(inputSalida.value);
+                const duracion   = minSalida - minEntrada;
+
+                if (minSalida <= minEntrada) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Horario inválido',
+                        text: 'La hora de salida debe ser posterior a la hora de entrada.',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        ...parametrosTema()
+                    });
+                    return;
+                }
+
+                if (duracion < 60) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Jornada muy corta',
+                        text: 'El horario especial debe ser de al menos 1 hora (60 minutos).',
+                        icon: 'warning',
+                        confirmButtonColor: '#f59e0b',
+                        ...parametrosTema()
+                    });
+                    return;
+                }
+
+                if (duracion > 480) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Jornada excesiva',
+                        html: `El horario especial no puede superar las <strong>8 horas</strong> máximas permitidas.<br>Duración actual: <strong>${duracion} min</strong>.`,
+                        icon: 'warning',
+                        confirmButtonColor: '#f59e0b',
+                        ...parametrosTema()
+                    });
+                    return;
+                }
+            }
+        });
     }
 
     // =======================================================
     // 6. EVENT LISTENERS Y TRIGGERS
     // =======================================================
     
-    // Búsqueda en tiempo real
     if (inputBuscadorUniv) {
         inputBuscadorUniv.addEventListener('input', () => aplicarFiltroUniversal(null, null, true));
     }
     
-    // Botón de Paginación
     const btnCargarMas = document.getElementById('btn-ver-mas-personal');
     if (btnCargarMas) {
         btnCargarMas.addEventListener('click', () => {
@@ -400,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cerrar modales haciendo click afuera
     const modalOverlayEl = document.getElementById('modalOverlay');
     if (modalOverlayEl) {
         modalOverlayEl.addEventListener('click', (e) => { 
@@ -408,7 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Validaciones en tiempo real (Blur)
     const elNombres = document.getElementById('modal_e_nombres');
     const elApellidos = document.getElementById('modal_e_apellidos');
     const elCedula = document.getElementById('modal_e_cedula');
@@ -422,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elTelefono) elTelefono.addEventListener('blur', () => validarCampo('modal_e_telefono', 'err-telefono', REGEX.telefono, 7));
     if (elUsuario) elUsuario.addEventListener('blur', () => validarCampo('modal_e_usuario', 'err-usuario', REGEX.usuario, 4));
 
-    // Limpiar errores visuales al empezar a escribir nuevamente (Input)
     ['modal_e_nombres','modal_e_apellidos','modal_e_cedula','modal_e_telefono','modal_e_usuario'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -437,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Validación final antes de enviar formulario
     if (formEditar) {
         formEditar.addEventListener('submit', function(e) {
             const checks = [
@@ -470,14 +526,63 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================
     // 7. EXPORTACIÓN AL SCOPE GLOBAL (WINDOW)
     // =======================================================
-    // Permite llamar a estas funciones desde eventos inline (onclick) en el HTML
-    window.aplicarFiltroUniversal = aplicarFiltroUniversal;
-    window.abrirModalHorario      = abrirModalHorario;
-    window.abrirModalEditar       = abrirModalEditar;
-    window.cerrarModales          = cerrarModales;
-    window.validarFoto            = validarFoto;
-    window.confirmarEliminacion   = confirmarEliminacion;
+    window.aplicarFiltroUniversal  = aplicarFiltroUniversal;
+    window.abrirModalHorario       = abrirModalHorario;
+    window.abrirModalEditar        = abrirModalEditar;
+    window.cerrarModales           = cerrarModales;
+    window.validarFoto             = validarFoto;
+    window.confirmarEliminacion    = confirmarEliminacion;
+    window.eliminarHorarioEspecial = eliminarHorarioEspecial; 
 
-    // Ejecución Inicial: Aplica los filtros para mostrar los primeros registros
+    // Ejecución Inicial
     aplicarFiltroUniversal(null, null, true);
+
+    // =======================================================
+    // 8. INICIALIZACIÓN DE LA GUÍA DINÁMICA (PERSONAL)
+    // =======================================================
+    let diccionarioPersonal = [];
+
+    if (document.querySelector('.campo-busqueda-elegante')) {
+        diccionarioPersonal.push({ 
+            selector: '.campo-busqueda-elegante', 
+            titulo: 'Buscador de Personal', 
+            texto: 'Encuentra rápidamente a cualquier empleado escribiendo su nombre, apellido o cargo sin recargar la página.' 
+        });
+    }
+
+    if (document.querySelectorAll('.btn-filtro').length > 0) {
+        diccionarioPersonal.push({ 
+            selector: '.btn-filtro', 
+            titulo: 'Filtros Rápidos', 
+            texto: 'Haz clic en estas etiquetas para aislar la vista y mostrar únicamente a los empleados que pertenezcan a ese departamento.' 
+        });
+    }
+
+    if (document.querySelectorAll('.tarjeta-perfil').length > 0) {
+        diccionarioPersonal.push({ 
+            selector: '.tarjeta-perfil', 
+            titulo: 'Tarjeta de Empleado', 
+            texto: 'Muestra los datos básicos, foto y una etiqueta que indica si el usuario está activo o suspendido en el sistema.' 
+        });
+    }
+
+    if (document.querySelectorAll('.btn-editar-horario').length > 0) {
+        diccionarioPersonal.push({ 
+            selector: '.btn-editar-horario', 
+            titulo: 'Horario Personalizado', 
+            texto: 'Abre un panel para asignarle a este empleado horas de entrada y salida exclusivas, las cuales ignorarán el horario general de la institución.' 
+        });
+    }
+
+    if (document.querySelectorAll('.btn-editar-usuario').length > 0) {
+        diccionarioPersonal.push({ 
+            selector: '.btn-editar-usuario', 
+            titulo: 'Editar y Gestionar', 
+            texto: 'Permite modificar los datos personales, cambiar su cargo o rol, subir una nueva foto, suspender su acceso o eliminar su cuenta permanentemente.' 
+        });
+    }
+
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppPersonal = new window.GuiaDinamica(diccionarioPersonal);
+    }
 });

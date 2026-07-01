@@ -33,7 +33,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #b5253f; }
 
         /* ══════════════════════════════════════
-           PANTALLA DE TRANSICIÓN (FONDO BLANCO LIMPIO)
+           PANTALLA DE TRANSICIÓN 
         ══════════════════════════════════════ */
         #pantalla-transicion {
             position: fixed;
@@ -52,11 +52,10 @@
             width: 110px; height: auto;
             margin-bottom: 24px;
             opacity: 0;
-            /* Eliminado el mix-blend-mode y los filtros para mantener la calidad real del JPG */
         }
         .transicion-spinner {
             width: 48px; height: 48px;
-            border: 3px solid rgba(139, 28, 49, 0.15); /* Gris claro/vinotinto transparente */
+            border: 3px solid rgba(139, 28, 49, 0.15); 
             border-top-color: #8b1c31; /* Vinotinto institucional */
             border-radius: 50%;
             animation: girar 0.8s linear infinite;
@@ -73,7 +72,7 @@
         .transicion-texto {
             font-size: clamp(1.4rem, 3vw, 2rem);
             font-weight: 800;
-            color: #4a0e1a; /* Texto oscuro para contrastar con el fondo blanco */
+            color: #4a0e1a; 
             letter-spacing: 0.1em;
             opacity: 0;
             margin: 0 0 6px;
@@ -82,16 +81,13 @@
         .transicion-subtexto {
             font-size: 0.82rem;
             font-weight: 600;
-            color: #6b7280; /* Gris oscuro elegante */
+            color: #6b7280;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             opacity: 0;
             margin: 0;
         }
 
-        /* ══════════════════════════════════════
-           HERO
-        ══════════════════════════════════════ */
         .hero-title {
             font-family: Georgia, 'Times New Roman', serif;
             font-size: clamp(2.2rem, 5vw, 4rem);
@@ -175,7 +171,7 @@
         .stat-divider { width: 1px; background: #e5e7eb; }
 
         /* ══════════════════════════════════════
-           SECCIÓN CARACTERÍSTICAS (TARJETAS)
+           SECCIÓN CARACTERÍSTICAS 
         ══════════════════════════════════════ */
         .features-grid {
             display: grid;
@@ -212,7 +208,7 @@
         .feature-desc { font-size: 0.9rem; color: #6b7280; line-height: 1.6; margin: 0; }
 
         /* ══════════════════════════════════════
-           SECCIÓN PILARES (PANELES GRANDES)
+           SECCIÓN PILARES 
         ══════════════════════════════════════ */
         .pilares-section {
             background: #140508;
@@ -585,7 +581,6 @@
     <script src="recursos/librerias/gsap.min.js"></script>
     <script src="recursos/librerias/ScrollTrigger.min.js"></script>
     <script>
-    // Solución al problema del botón "Atrás" del navegador (Bfcache)
     window.addEventListener('pageshow', function(event) {
         if (event.persisted) {
             var pantalla = document.getElementById('pantalla-transicion');

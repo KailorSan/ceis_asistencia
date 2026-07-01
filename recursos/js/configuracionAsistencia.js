@@ -614,4 +614,60 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cerrarModalFeriados          = cerrarModalFeriados;
     window.cerrarModalFeriadosSiOverlay = cerrarModalFeriadosSiOverlay;
     window.cambiarMesFeriado            = cambiarMesFeriado;
+
+    // =======================================================
+    // INICIALIZACIÓN DE LA GUÍA DINÁMICA (CONFIGURACIÓN)
+    // =======================================================
+    let diccionarioConfiguracion = [];
+
+    // 1. Los inputs del formulario global
+    if (document.querySelector('.grid-formulario')) {
+        diccionarioConfiguracion.push({ 
+            selector: '.grid-formulario', 
+            titulo: 'Parámetros Globales', 
+            texto: 'Establece la hora oficial de entrada, salida y los minutos de tolerancia. Esto aplicará por defecto a todo el personal.' 
+        });
+    }
+
+    // 2. Botón flotante de Días Libres/Feriados
+    const btnFeriados = document.querySelector('.btn-flotante-rango-modal') || document.querySelector('.btn-flotante-feriados-movil');
+    if (btnFeriados) {
+        diccionarioConfiguracion.push({ 
+            selector: '.btn-flotante-rango-modal, .btn-flotante-feriados-movil', 
+            titulo: 'Días Libres y Feriados', 
+            texto: 'Haz clic aquí para abrir el calendario anual y marcar días festivos. El sistema no exigirá asistencia ni marcará faltas en estas fechas.' 
+        });
+    }
+
+    // 3. Tarjetas de Plantillas Preestablecidas
+    if (document.querySelectorAll('.tarjeta-preestablecida').length > 0) {
+        diccionarioConfiguracion.push({ 
+            selector: '.tarjeta-preestablecida', 
+            titulo: 'Plantillas Rápidas', 
+            texto: '¿Tienes un horario de contingencia o navideño? Haz clic en "Aplicar" para cargar esa configuración al formulario al instante. Haz doble clic en el nombre para editarlo.' 
+        });
+    }
+
+    // 4. Botón de guardar como nueva plantilla
+    if (document.querySelector('.tarjeta-agregar-nueva')) {
+        diccionarioConfiguracion.push({ 
+            selector: '.tarjeta-agregar-nueva', 
+            titulo: 'Guardar como Plantilla', 
+            texto: 'Toma la configuración que tienes actualmente escrita en el formulario y la guarda como una nueva plantilla reutilizable (Límite: 4).' 
+        });
+    }
+
+    // 5. Botón principal de guardar
+    if (document.querySelector('.btn-guardar')) {
+        diccionarioConfiguracion.push({ 
+            selector: '.btn-guardar', 
+            titulo: 'Aplicar Configuración', 
+            texto: 'Guarda los cambios y altera el reloj del sistema. Nota: Los empleados que tienen un horario personalizado configurado en su perfil no se verán afectados.' 
+        });
+    }
+
+    // Instanciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppConfig = new window.GuiaDinamica(diccionarioConfiguracion);
+    }
 });

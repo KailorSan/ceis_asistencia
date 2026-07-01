@@ -2,7 +2,6 @@
 require_once '../configuracion/seguridad.php';
 require_once '../configuracion/conexion.php'; 
 
-// Validar si es fin de semana (Sábado = 6, Domingo = 7)
 date_default_timezone_set('America/Caracas');
 $dia_semana = date('N');
 $es_fin_de_semana = ($dia_semana == 6 || $dia_semana == 7);
@@ -92,6 +91,7 @@ if ($es_admin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Asistencia - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
     
     <script>
         (function() {
@@ -370,11 +370,9 @@ if ($es_admin) {
         };
     </script>
 
-    <!-- Librerías Externas -->
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
-
-    <!-- Aquí vinculamos tu nuevo archivo JavaScript extraído -->
     <script src="../recursos/js/asistencia.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

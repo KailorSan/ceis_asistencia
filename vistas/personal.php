@@ -42,6 +42,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Personal - CEIS Julian Yánez</title>
     <link rel="stylesheet" href="../recursos/css/principal.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../recursos/css/guia_dinamica.css?v=<?php echo time(); ?>">
 
     <script>
         (function() {
@@ -168,7 +169,18 @@ try {
                         <input type="time" name="hora_salida" id="modal_h_salida">
                     </div>
                 </div>
-                <button type="submit" class="btn-guardar" style="inline-size: 100%; justify-content: center;">Guardar Horario</button>
+                
+                <div style="display: flex; gap: 15px; margin-block-start: 15px; inline-size: 100%;">
+                    <button type="button" class="btn-eliminar-usuario" onclick="eliminarHorarioEspecial()" style="margin: 0; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="inline-size: 18px; block-size: 18px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Eliminar Horario
+                    </button>
+                    <button type="submit" class="btn-guardar" style="margin: 0; flex: 1; justify-content: center; padding: 12px; font-size: 0.95rem;">
+                        Guardar Horario
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -332,6 +344,7 @@ try {
 
     <script src="../recursos/js/sweetalert2.all.min.js"></script>
     <script src="../recursos/js/personal.js?v=<?php echo time(); ?>"></script>
+    <script src="../recursos/js/guia_dinamica.js"></script>
 
 </body>
 </html>

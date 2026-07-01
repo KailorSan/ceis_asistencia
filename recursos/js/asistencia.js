@@ -857,4 +857,92 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarListenersUI();
     inicializarTooltipCalendario();
     inicializarSwipeCalendario();
+
+    // =======================================================
+    // 5. INICIALIZACIÓN DE LA GUÍA DINÁMICA (ASISTENCIA)
+    // =======================================================
+    // =======================================================
+    // 5. INICIALIZACIÓN DE LA GUÍA DINÁMICA (ASISTENCIA)
+    // =======================================================
+    let diccionarioAsistencia = [];
+
+    if (config.esAdmin) {
+        // --- GUÍA PARA DIRECTIVOS Y ADMINS ---
+        
+        if (document.querySelector('.reloj-widget')) {
+            diccionarioAsistencia.push({ 
+                selector: '.reloj-widget', 
+                titulo: 'Reloj de Sistema', 
+                texto: 'Sincronizado con el servidor, determina los minutos restantes del periodo de tolerancia para el registro del personal.' 
+            });
+        }
+        
+        // CORRECCIÓN: Resaltamos las tarjetas individualmente en lugar de su contenedor cuadrado
+        if (document.querySelectorAll('.stat-tarjeta').length > 0) {
+            diccionarioAsistencia.push({ 
+                selector: '.stat-tarjeta', 
+                titulo: 'Monitoreo en Tiempo Real', 
+                texto: 'Te muestra alertas críticas: cuántos empleados faltan por llegar y cuántas justificaciones están esperando tu revisión.' 
+            });
+        }
+
+        // CORRECCIÓN: Resaltamos el input redondeado en lugar de la caja que lo envuelve
+        if (document.querySelector('.campo-busqueda-elegante')) {
+            diccionarioAsistencia.push({ 
+                selector: '.campo-busqueda-elegante', 
+                titulo: 'Buscador Inteligente', 
+                texto: 'Encuentra empleados rápidamente escribiendo su nombre, apellido o cargo sin tener que recargar la página.' 
+            });
+        }
+
+        // CORRECCIÓN: Resaltamos cada "píldora" de filtro de forma individual
+        if (document.querySelectorAll('.btn-filtro').length > 0) {
+            diccionarioAsistencia.push({ 
+                selector: '.btn-filtro', 
+                titulo: 'Filtros por Cargo', 
+                texto: 'Aísla la vista para revisar solo a los obreros, docentes o administrativos con un solo clic.' 
+            });
+        }
+
+        if (document.querySelector('.perfil-widget-min .btn-editar-horario')) {
+            diccionarioAsistencia.push({ 
+                selector: '.perfil-widget-min .btn-editar-horario', 
+                titulo: 'Mi Calendario Personal', 
+                texto: 'Abre tu propio calendario para consultar tus entradas y salidas. Como administrador, no puedes alterar tu propio récord de asistencia.' 
+            });
+        }
+
+        if (document.querySelector('.grid-perfiles .btn-editar-horario')) {
+            diccionarioAsistencia.push({ 
+                selector: '.grid-perfiles .btn-editar-horario', 
+                titulo: 'Gestionar Récord del Personal', 
+                texto: 'Abre el calendario interactivo de este empleado para modificar sus marcajes, aprobar justificaciones o añadir permisos por rango de días.' 
+            });
+        }
+
+    } else {
+        // --- GUÍA PARA USUARIOS COMUNES (PERSONAL) ---
+        
+        // CORRECCIÓN: En lugar de resaltar todo el contenedor, iluminamos las celdas de los días
+        if (document.querySelectorAll('.dia-celda').length > 0) {
+            diccionarioAsistencia.push({ 
+                selector: '.dia-celda', 
+                titulo: 'Mi Récord Diario', 
+                texto: 'Si haces clic (o tocas) sobre cualquier día laborable, podrás ver a qué hora exacta registraste tu entrada y salida.' 
+            });
+        }
+            
+        if (document.querySelector('.controles-calendario')) {
+            diccionarioAsistencia.push({ 
+                selector: '.controles-calendario', 
+                titulo: 'Navegación de Meses', 
+                texto: 'Usa estas flechas para retroceder y revisar tu historial de puntualidad de meses anteriores.' 
+            });
+        }
+    }
+
+    // Arrancamos el motor de la guía si el JS global está cargado
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppAsistencia = new window.GuiaDinamica(diccionarioAsistencia);
+    }
 });

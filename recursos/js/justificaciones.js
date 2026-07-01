@@ -131,4 +131,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. EXPORTACIÓN AL SCOPE GLOBAL
     // =======================================================
     window.procesar = procesar;
+
+    // =======================================================
+    // 5. INICIALIZACIÓN DE LA GUÍA DINÁMICA (JUSTIFICACIONES)
+    // =======================================================
+    let diccionarioJustificaciones = [];
+
+    // 1. Aviso de justificaciones propias (si existe)
+    if (document.querySelector('.aviso-propias')) {
+        diccionarioJustificaciones.push({
+            selector: '.aviso-propias',
+            titulo: 'Política de Transparencia',
+            texto: 'El sistema detectó que tienes una justificación propia pendiente. Por seguridad, no puedes auto-aprobarte; otro directivo debe procesarla.'
+        });
+    }
+
+    // 2. Tarjeta general de la solicitud
+    if (document.querySelectorAll('.tarjeta-justificacion').length > 0) {
+        diccionarioJustificaciones.push({
+            selector: '.tarjeta-justificacion',
+            titulo: 'Solicitud de Justificación',
+            texto: 'Muestra los datos del empleado, la fecha de la incidencia y su argumento ("Llegada Tardía", "Inasistencia" o "Salida Temprana").'
+        });
+    }
+
+    // 3. Botón de evidencia adjunta
+    if (document.querySelectorAll('.btn-evidencia').length > 0) {
+        diccionarioJustificaciones.push({
+            selector: '.btn-evidencia',
+            titulo: 'Evidencia Adjunta',
+            texto: 'Abre el documento PDF o la imagen (ej: récipe médico o constancia) que el empleado subió como prueba.'
+        });
+    }
+
+    // 4. Botón Aprobar
+    if (document.querySelectorAll('.btn-aprobar').length > 0) {
+        diccionarioJustificaciones.push({
+            selector: '.btn-aprobar',
+            titulo: 'Aprobar Solicitud',
+            texto: 'Autoriza la incidencia. El récord del empleado cambiará a "Justificado" o "Salida Temprana" y la falta desaparecerá.'
+        });
+    }
+
+    // 5. Botón Rechazar
+    if (document.querySelectorAll('.btn-rechazar').length > 0) {
+        diccionarioJustificaciones.push({
+            selector: '.btn-rechazar',
+            titulo: 'Rechazar Solicitud',
+            texto: 'Deniega el permiso. El sistema te pedirá escribir un motivo, el cual será enviado directamente a la campana de notificaciones del empleado.'
+        });
+    }
+
+    // Instanciar el motor de la guía
+    if (typeof window.GuiaDinamica !== 'undefined') {
+        const guiaAppJustificaciones = new window.GuiaDinamica(diccionarioJustificaciones);
+    }
+    
 });
